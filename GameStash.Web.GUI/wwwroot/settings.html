@@ -1,0 +1,21 @@
+﻿<h1>Global Settings</h1>
+
+<div class="settings-card">
+    <h2>IGDB API Integration</h2>
+    <div style="margin-top: 20px;">
+        <div class="form-group">
+            <label>Enter IGDB Client ID</label>
+            <input type="text" id="client-id-input" placeholder="Loading dynamic fields...">
+        </div>
+        <div class="form-group">
+            <label>Enter IGDB Secret</label>
+            <input type="password" id="secret-input" placeholder="Loading dynamic fields...">
+        </div>
+        <button class="btn" onclick="saveCredentials()">Save Credentials</button>
+    </div>
+
+    <h2 style="margin-top: 40px;">Monitored Storage Folders</h2>
+    <div id="folders-list" style="margin-top: 15px;">
+        <p style="color: var(--text-muted); font-size: 13px; font-style: italic;">Loading storage directories...</p>
+    </div>
+</div>

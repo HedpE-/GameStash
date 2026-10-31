@@ -1,0 +1,264 @@
+﻿/* ==========================================================================
+   BROWSE GAMES VIEW (WPF MATERIAL DESIGN REPLICATION)
+   ========================================================================== */
+.browse-container {
+    padding: 10px 25px 30px 25px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.browse-header {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-purple);
+    margin-bottom: 20px;
+}
+
+/* Search Row */
+.search-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    max-width: 900px;
+    margin-bottom: 15px;
+}
+
+.search-input-wrapper {
+    position: relative;
+    flex: 1;
+}
+
+.search-input {
+    width: 100%;
+    padding: 12px 35px 12px 16px;
+    background: rgba(30, 30, 30, 0.6);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    color: var(--text-main);
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+    .search-input:focus {
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 0 2px rgba(187, 134, 252, 0.2);
+    }
+
+.search-input-clear-btn {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 14px;
+    display: none;
+}
+
+.action-btn {
+    background: rgba(37, 37, 37, 0.85);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    width: 44px;
+    height: 44px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+}
+
+    .action-btn:hover {
+        background-color: var(--primary-purple);
+        border-color: var(--primary-purple);
+        color: white;
+    }
+
+/* Toolbar & Summary */
+.results-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 0 15px 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 15px;
+}
+
+.results-summary {
+    font-size: 14px;
+    color: var(--text-muted);
+}
+
+    .results-summary strong {
+        color: var(--text-main);
+    }
+
+.dropdown-container {
+    position: relative;
+}
+
+.toolbar-dropdown-btn {
+    background: rgba(37, 37, 37, 0.6);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+}
+
+    .toolbar-dropdown-btn:hover {
+        border-color: var(--primary-purple);
+    }
+
+.dropdown-menu {
+    position: absolute;
+    top: 100%;
+    right: 0;
+    margin-top: 6px;
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    min-width: 170px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.6);
+    z-index: 100;
+    display: none;
+    overflow: hidden;
+}
+
+.dropdown-item {
+    padding: 10px 14px;
+    font-size: 13px;
+    color: var(--text-main);
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    transition: background 0.15s;
+}
+
+    .dropdown-item:hover {
+        background: #2a2a2a;
+        color: var(--primary-purple);
+    }
+
+    .dropdown-item.active {
+        color: var(--primary-purple);
+        font-weight: bold;
+    }
+
+/* Spinner */
+.browse-loading {
+    display: flex;
+    justify-content: center;
+    padding: 60px 0;
+}
+
+.spinner {
+    width: 44px;
+    height: 44px;
+    border: 4px solid rgba(255, 255, 255, 0.1);
+    border-top-color: var(--primary-purple);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Results List Rows */
+.browse-results-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.game-row-item {
+    display: grid;
+    grid-template-columns: 110px 1fr auto;
+    gap: 18px;
+    background: rgba(30, 30, 30, 0.45);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 12px;
+    cursor: pointer;
+    transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+    .game-row-item:hover {
+        transform: translateY(-2px);
+        border-color: var(--primary-purple);
+        background: rgba(37, 37, 37, 0.7);
+    }
+
+.game-row-cover {
+    width: 110px;
+    height: 145px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.game-row-details {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    gap: 6px;
+}
+
+.game-row-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--text-main);
+}
+
+.game-row-date {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+.game-row-developer {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: var(--text-main);
+}
+
+.game-row-dev-logo {
+    max-height: 20px;
+    max-width: 55px;
+    object-fit: contain;
+    filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
+}
+
+.game-row-platforms {
+    font-size: 12px;
+    color: var(--text-muted);
+    line-height: 1.4;
+}
+
+/* Category Chip */
+.game-row-chip {
+    align-self: flex-start;
+    padding: 4px 10px;
+    font-size: 11px;
+    font-weight: 600;
+    background: #03dac6;
+    color: #121212;
+    border-radius: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}

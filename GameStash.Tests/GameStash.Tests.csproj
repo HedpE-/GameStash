@@ -1,0 +1,32 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentAssertions" Version="8.11.0" />
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="18.11.0" />
+    <PackageReference Include="Reqnroll.NUnit" Version="3.3.4" />
+    <PackageReference Include="nunit" Version="5.0.0" />
+    <PackageReference Include="NUnit3TestAdapter" Version="6.3.1" />
+    <PackageReference Include="Selenium.Support" Version="4.52.0" />
+    <PackageReference Include="Selenium.WebDriver" Version="4.52.0" />
+    <PackageReference Include="Selenium.WebDriver.ChromeDriver" Version="156.0.8078.8000" />
+    <PackageReference Include="Selenium.WebDriver.MSEdgeDriver" Version="155.0.4283.60" />
+    <PackageReference Include="Serilog.Sinks.NUnit" Version="1.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Drivers\" />
+    <Folder Include="Support\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\IgdbSharp\IgdbSharp\IgdbSharp.csproj" />
+    <ProjectReference Include="..\GameStash.Core\GameStash.Core.csproj" />
+  </ItemGroup>
+
+</Project>

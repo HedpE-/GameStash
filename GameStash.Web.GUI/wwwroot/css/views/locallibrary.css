@@ -1,0 +1,380 @@
+﻿/* ==========================================================================
+   LOCAL LIBRARY VIEW (WPF 150x200 CARDS + ALPHABET JUMP COLUMN)
+   ========================================================================== */
+.library-container {
+    padding: 10px 25px 30px 25px;
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+}
+
+.library-header-row {
+    display: flex;
+    align-items: baseline;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.library-title {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--primary-purple);
+}
+
+.library-count-badge {
+    font-size: 20px;
+    font-weight: 700;
+    color: #03dac6;
+}
+
+/* Toolbar */
+.library-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 15px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    margin-bottom: 20px;
+}
+
+.toolbar-left-actions,
+.toolbar-right-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toolbar-action-btn,
+.toolbar-dropdown-btn {
+    background: rgba(37, 37, 37, 0.6);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    transition: all 0.2s ease;
+}
+
+    .toolbar-action-btn:hover,
+    .toolbar-dropdown-btn:hover {
+        background: var(--primary-purple);
+        border-color: var(--primary-purple);
+        color: white;
+    }
+
+/* Workspace Grid & Alphabet Layout */
+.library-workspace {
+    display: flex;
+    gap: 15px;
+    align-items: flex-start;
+}
+
+.library-games-grid {
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 150px));
+    justify-content: start;
+    gap: 20px 18px;
+}
+
+/* 150x200 Game Card */
+.lib-card-container {
+    width: 150px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+    transition: transform 0.2s ease;
+}
+
+    .lib-card-container:hover {
+        transform: translateY(-3px);
+    }
+
+.lib-card-frame {
+    width: 150px;
+    height: 200px;
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border-color);
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+}
+
+/* Hover Action Bar on Card */
+.lib-card-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.65);
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 8px;
+    pointer-events: none;
+}
+
+.lib-card-container:hover .lib-card-overlay {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Favorite Heart Toggle */
+.lib-favorite-btn {
+    align-self: flex-end;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    transition: transform 0.15s ease;
+}
+
+    .lib-favorite-btn:hover {
+        transform: scale(1.15);
+    }
+
+    .lib-favorite-btn.active {
+        color: #ff4081;
+    }
+
+/* Three-dots menu */
+.lib-menu-btn {
+    align-self: flex-end;
+    background: rgba(0, 0, 0, 0.6);
+    border: none;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+}
+
+.lib-card-context-menu {
+    position: absolute;
+    bottom: 40px;
+    right: 8px;
+    background: #222;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    display: none;
+    flex-direction: column;
+    z-index: 20;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.8);
+    overflow: hidden;
+    min-width: 110px;
+}
+
+    .lib-card-context-menu button {
+        background: transparent;
+        border: none;
+        padding: 8px 12px;
+        color: var(--text-main);
+        text-align: left;
+        font-size: 12px;
+        cursor: pointer;
+    }
+
+        .lib-card-context-menu button:hover {
+            background: var(--primary-purple);
+            color: white;
+        }
+
+        .lib-card-context-menu button.danger:hover {
+            background: #ff5252;
+        }
+
+/* Sub-card Text info */
+.lib-card-text {
+    width: 100%;
+    text-align: center;
+    margin-top: 6px;
+}
+
+.lib-game-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-main);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lib-game-meta {
+    font-size: 11px;
+    color: var(--text-muted);
+    margin-top: 2px;
+}
+
+/* Alphabet Jump Column */
+.library-alphabet-bar {
+    position: sticky;
+    top: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: rgba(25, 25, 25, 0.8);
+    border: 1px solid var(--border-color);
+    padding: 6px 4px;
+    border-radius: 6px;
+}
+
+.alphabet-letter-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 12px;
+    font-weight: 700;
+    cursor: pointer;
+    width: 24px;
+    height: 22px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+}
+
+    .alphabet-letter-btn:hover {
+        background: var(--primary-purple);
+        color: white;
+    }
+
+/* Dialogs */
+.modal-dialog-card {
+    background: var(--bg-card);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px 24px;
+    width: 90%;
+    max-width: 380px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+.dialog-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.dialog-btn {
+    background: rgba(45, 45, 45, 0.8);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 6px 16px;
+    border-radius: 4px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+    .dialog-btn.primary {
+        background: var(--primary-purple);
+        border-color: var(--primary-purple);
+        color: white;
+    }
+
+    .dialog-btn.danger {
+        background: #ff5252;
+        border-color: #ff5252;
+        color: white;
+    }
+
+.lib-loading-indicator {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 80px 0;
+    gap: 15px;
+}
+
+.toolbar-progress-center {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    flex: 1;
+    max-width: 320px;
+}
+
+.progress-label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.progress-track {
+    width: 100%;
+    height: 4px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    overflow: hidden;
+}
+
+.progress-fill {
+    height: 100%;
+    background: var(--primary-purple);
+    transition: width 0.3s ease;
+}
+
+/* Missing folder overlay */
+.lib-missing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    z-index: 10;
+}
+
+    .lib-missing-overlay::before {
+        content: "MISSING";
+        color: #ff5252;
+        font-size: 13px;
+        font-weight: 700;
+        letter-spacing: 0.5px;
+        margin-bottom: 8px;
+    }
+
+    .lib-missing-overlay .menu-action-delete {
+        background: #ff5252;
+        border: none;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        color: white;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.2s, background-color 0.2s;
+        box-shadow: 0 4px 12px rgba(255, 82, 82, 0.4);
+    }
+
+        .lib-missing-overlay .menu-action-delete:hover {
+            transform: scale(1.1);
+            background: #ff7676;
+        }

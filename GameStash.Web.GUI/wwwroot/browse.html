@@ -1,0 +1,59 @@
+﻿<div class="browse-container">
+    <!-- Header -->
+    <h1 class="browse-header">Browse Games</h1>
+
+    <!-- Search Controls Bar -->
+    <div class="search-bar-row">
+        <div class="search-input-wrapper">
+            <input type="text" id="browse-search-input" class="search-input" placeholder="Enter game name to search..." autocomplete="off" />
+            <button type="button" id="browse-search-clear-input-btn" class="search-input-clear-btn" title="Clear text">✕</button>
+        </div>
+        <button type="button" id="browse-search-btn" class="action-btn" title="Search">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+        </button>
+        <button type="button" id="browse-clear-results-btn" class="action-btn" title="Clear Search Results">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+        </button>
+    </div>
+
+    <!-- Results Meta & Sort Actions Toolbar -->
+    <div id="browse-meta-toolbar" class="results-toolbar" style="display: none;">
+        <div class="results-summary">
+            The search for '<strong id="browse-query-label"></strong>' returned <strong id="browse-count-label">0</strong> results.
+        </div>
+
+        <div class="toolbar-actions">
+            <!-- Sort Dropdown Trigger -->
+            <div class="dropdown-container">
+                <button type="button" id="browse-sort-toggle" class="toolbar-dropdown-btn" title="Sort By">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <line x1="11" y1="5" x2="11" y2="19"></line>
+                        <polyline points="7 9 11 5 15 9"></polyline>
+                        <line x1="17" y1="19" x2="17" y2="11"></line>
+                        <polyline points="13 15 17 19 21 15"></polyline>
+                    </svg>
+                    <span id="browse-current-sort-label">Sort: Name ↑</span>
+                </button>
+                <div id="browse-sort-menu" class="dropdown-menu">
+                    <div class="dropdown-item active" data-sort="Name">Name <span class="sort-indicator">↑</span></div>
+                    <div class="dropdown-item" data-sort="ReleaseDate">Release Date <span class="sort-indicator"></span></div>
+                    <div class="dropdown-item" data-sort="Rating">Rating <span class="sort-indicator"></span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Circular Loading Indicator -->
+    <div id="browse-loading-indicator" class="browse-loading" style="display: none;">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Search Results Item List -->
+    <div id="browse-results-list" class="browse-results-list" style="display: none;"></div>
+</div>

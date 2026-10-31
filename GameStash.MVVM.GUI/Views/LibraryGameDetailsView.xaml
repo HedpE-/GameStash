@@ -1,0 +1,306 @@
+<UserControl x:Class="GameStash.MVVM.GUI.Views.LibraryGameDetailsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:Common.Lib.Converters;assembly=Common.Lib"
+             xmlns:localConverters="clr-namespace:GameStash.MVVM.GUI.Converters"
+             xmlns:localViews="clr-namespace:GameStash.MVVM.GUI.Views"
+             xmlns:coreModels="clr-namespace:GameStash.Core.Models;assembly=GameStash.Core"
+             xmlns:igdbModels="clr-namespace:IgdbSharp.Models;assembly=IgdbSharp"
+             xmlns:viewModels="clr-namespace:GameStash.MVVM.GUI.ViewModels"
+             Width="800">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <converters:NullObjectOrStringEmptyConverter x:Key="NullOrStringEmptyToVisibilityConverter" 
+                                                         TrueValue="{x:Static Visibility.Visible}" 
+                                                         FalseValue="{x:Static Visibility.Collapsed}" />
+            <converters:NullObjectOrStringEmptyConverter x:Key="NullOrStringEmptyToInvertedVisibilityConverter" 
+                                                         TrueValue="{x:Static Visibility.Collapsed}" 
+                                                         FalseValue="{x:Static Visibility.Visible}" />
+            <converters:BooleanConverter x:Key="BooleanToVisibilityConverter"
+                                         TrueValue="{x:Static Visibility.Visible}"
+                                         FalseValue="{x:Static Visibility.Collapsed}" />
+            <converters:BooleanConverter x:Key="BooleanToInvertedVisibilityConverter" 
+                                         TrueValue="{x:Static Visibility.Collapsed}" 
+                                         FalseValue="{x:Static Visibility.Visible}" />
+            <localConverters:UrlToImageConverter x:Key="UrlToImageConverter" />
+            <localConverters:VideoToThumbnailImageConverter x:Key="VideoToThumbnailImageConverter" />
+            <localConverters:RatingConverter x:Key="RatingConverter" />
+            <localConverters:ListToStringConverter x:Key="ListToStringConverter"/>
+            <localConverters:FormatBytesConverter x:Key="FormatBytesConverter" />
+            <localConverters:PercentageConverter x:Key="PercentageConverter" />
+
+            <DataTemplate DataType="{x:Type igdbModels:Game}">
+                <localViews:GameCardView />
+            </DataTemplate>
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid MaxWidth="{Binding ActualWidth, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource PercentageConverter}, ConverterParameter=0.7}"
+          MaxHeight="{Binding ActualHeight, RelativeSource={RelativeSource AncestorType=Window}, Converter={StaticResource PercentageConverter}, ConverterParameter=0.8}">
+        <Grid Margin="10">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="Auto" />
+                <ColumnDefinition Width="10" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <Image Source="{Binding Cover.Value.Url, FallbackValue='https://images.igdb.com/igdb/image/upload/t_cover_big/nocover.png', Converter={StaticResource UrlToImageConverter}, ConverterParameter=cover_big}"
+                       Width="170" HorizontalAlignment="Left" VerticalAlignment="Top" Stretch="UniformToFill" />
+                <Grid Grid.Row="1" Margin="0 10 0 0">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="10" />
+                        <RowDefinition Height="Auto" />
+                    </Grid.RowDefinitions>
+                    <StackPanel>
+                        <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+                            <TextBlock Text="Added to Library: " FontWeight="SemiBold" Style="{StaticResource MaterialDesignCaptionTextBlock}" />
+                            <TextBlock Text="{Binding DateAdded, StringFormat=dd/MM/yyyy, TargetNullValue='No date available'}" Style="{StaticResource MaterialDesignCaptionTextBlock}" />
+                        </StackPanel>
+                        <StackPanel Orientation="Horizontal">
+                            <ToggleButton IsChecked="{Binding IsInstalled}" Cursor="Hand"
+                                          Background="{DynamicResource MaterialDesign.Brush.Primary}">
+                                <ToggleButton.Style>
+                                    <Style TargetType="ToggleButton" BasedOn="{StaticResource MaterialDesignFlatToggleButton}">
+                                        <Setter Property="Foreground" Value="{DynamicResource MaterialDesign.Brush.Foreground}" />
+                                        <Style.Triggers>
+                                            <Trigger Property="IsChecked" Value="True">
+                                                <Setter Property="Foreground" Value="{DynamicResource MaterialDesign.Brush.Primary.Foreground}" />
+                                            </Trigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </ToggleButton.Style>
+                                <materialDesign:PackIcon Width="21" Height="21" Kind="FolderWrench" />
+                            </ToggleButton>
+                            <TextBlock Text="Installed" Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                       VerticalAlignment="Center" Margin="10 0 0 0" Visibility="{Binding IsInstalled, Converter={StaticResource BooleanToVisibilityConverter}}" />
+                            <TextBlock Text="Not Installed" Style="{StaticResource MaterialDesignHeadline6TextBlock}"
+                                       VerticalAlignment="Center" Margin="5 0 0 0" Visibility="{Binding IsInstalled, Converter={StaticResource BooleanToInvertedVisibilityConverter}}" />
+                        </StackPanel>
+                    </StackPanel>
+                    <StackPanel Grid.Row="2">
+                        <Button Grid.Row="2" Content="Open Game Folder" Margin="0 10"
+                                Command="{Binding DataContext.OpenGameFolderCommand, RelativeSource={RelativeSource AncestorType=Window}}"
+                                CommandParameter="{Binding }" />
+                    </StackPanel>
+                </Grid>
+            </Grid>
+
+            <Grid Grid.Column="2">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto" />
+                    <RowDefinition Height="*" />
+                </Grid.RowDefinitions>
+                <StackPanel>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Text="{Binding Name}" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" TextWrapping="Wrap" Margin="0 0 50 0" Style="{StaticResource MaterialDesignHeadline5TextBlock}" />
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Top">
+                            <ToggleButton Content="{materialDesign:PackIcon Kind=HeartOffOutline, Size=30}"
+                                          Style="{StaticResource MaterialDesignActionToggleButton}"
+                                          IsChecked="{Binding IsFavorite}"
+                                          Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
+                                          Background="Transparent" ToolTip="Favorite" Margin="0 0 10 0"
+                                          VerticalAlignment="Center">
+                                <materialDesign:ToggleButtonAssist.OnContent>
+                                    <materialDesign:PackIcon Kind="Heart" Foreground="Red" Width="30" Height="30" />
+                                </materialDesign:ToggleButtonAssist.OnContent>
+                            </ToggleButton>
+                            <Button Content="{materialDesign:PackIcon Kind=Close}"
+                                    Style="{StaticResource MaterialDesignIconButton}"
+                                    Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
+                                    CommandTarget="{Binding ElementName=RootDialog}" />
+                        </StackPanel>
+                    </Grid>
+                    <TextBlock Text="{Binding FirstReleaseDate, StringFormat=dd/MM/yyyy, TargetNullValue='No release date available'}"
+                               Style="{StaticResource MaterialDesignSubtitle1TextBlock}" />
+                    <StackPanel Orientation="Horizontal" Margin="0 5">
+                        <Grid Visibility="{Binding DeveloperCompany, Converter={StaticResource NullOrStringEmptyToInvertedVisibilityConverter}}">
+                            <Image Source="{Binding DeveloperCompany.Company.Value.Logo.Value.Url, Converter={StaticResource UrlToImageConverter}, ConverterParameter=logo_med}"
+                                   Visibility="{Binding DeveloperCompany.Company.Value.Logo, Converter={StaticResource NullOrStringEmptyToInvertedVisibilityConverter}}"
+                                   Height="30" Stretch="UniformToFill" Margin="0 0 10 0" />
+                        </Grid>
+                        <TextBlock Text="{Binding DeveloperCompany.Company.Value.Name, FallbackValue='No developer company available'}"
+                                   Style="{StaticResource MaterialDesignSubtitle1TextBlock}" />
+                    </StackPanel>
+                    <TextBlock Text="{Binding Platforms.Values, FallbackValue='No platforms available', Converter={StaticResource ListToStringConverter}}" TextWrapping="Wrap" Style="{StaticResource MaterialDesignCaptionTextBlock}" />
+                    <StackPanel Orientation="Horizontal">
+                        <materialDesign:RatingBar IsPreviewValueEnabled="True" Min="0" Max="5" ValueIncrements="0.1" IsEnabled="False"
+                                                  Value="{Binding TotalRating, Converter={StaticResource RatingConverter}}"
+                                                  ToolTip="{Binding TotalRating, Converter={StaticResource RatingConverter}}" />
+                        <TextBlock Foreground="{DynamicResource MaterialDesign.Brush.Secondary}" Style="{StaticResource MaterialDesignCaptionTextBlock}" VerticalAlignment="Bottom">
+                            <Run Text="(" />
+                            <Run Text="{Binding TotalRating, StringFormat=#.#, FallbackValue=0, TargetNullValue=0}" />
+                            <Run Text=")" />
+                        </TextBlock>
+                    </StackPanel>
+                    <TextBlock Foreground="{DynamicResource MaterialDesign.Brush.Secondary}" Style="{StaticResource MaterialDesignCaptionTextBlock}">
+                        <Run Text="{Binding TotalRatingCount, FallbackValue=0, TargetNullValue=0}" />
+                        <Run Text="ratings" />
+                    </TextBlock>
+                    <TextBlock Text="{Binding Genres.Values, Converter={StaticResource ListToStringConverter}}" Style="{StaticResource MaterialDesignCaptionTextBlock}" />
+                    <TextBlock Text="{Binding Themes.Values, Converter={StaticResource ListToStringConverter}}" Style="{StaticResource MaterialDesignCaptionTextBlock}" />
+                    <TextBlock Text="{Binding PlayerPerspectives.Values, Converter={StaticResource ListToStringConverter}, TargetNullValue=-}" Style="{StaticResource MaterialDesignCaptionTextBlock}" />
+                    <TextBlock Text="{Binding GameModes.Values, Converter={StaticResource ListToStringConverter}}" Style="{StaticResource MaterialDesignCaptionTextBlock}" />
+                    <StackPanel Margin="0 15 0 0">
+                        <TextBlock Text="{Binding Type}" Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
+                        <TextBlock Text="{Binding Folder}" TextWrapping="Wrap" Style="{StaticResource MaterialDesignCaptionTextBlock}"/>
+                        <TextBlock Text="{Binding FolderDiskSpaceBytes, Converter={StaticResource FormatBytesConverter}}" Style="{StaticResource MaterialDesignCaptionTextBlock}" />
+                    </StackPanel>
+                </StackPanel>
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto" Margin="0 20 0 0">
+                    <StackPanel>
+                        <StackPanel Visibility="{Binding Summary, Converter={StaticResource NullOrStringEmptyToInvertedVisibilityConverter}}">
+                            <TextBlock Text="Summary" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" Margin="0 10 5 0" Style="{StaticResource MaterialDesignHeadline5TextBlock}" />
+                            <TextBlock Text="{Binding Summary}" Margin="0 10" TextWrapping="Wrap" Style="{StaticResource MaterialDesignBody2TextBlock}" />
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding Storyline, Converter={StaticResource NullOrStringEmptyToInvertedVisibilityConverter}}">
+                            <TextBlock Text="Storyline" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" Margin="0 10 5 0" Style="{StaticResource MaterialDesignHeadline5TextBlock}" />
+                            <TextBlock Text="{Binding Storyline}" Margin="0 10" TextWrapping="Wrap" Style="{StaticResource MaterialDesignBody2TextBlock}" />
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding Screenshots.Values, Converter={StaticResource NullOrStringEmptyToInvertedVisibilityConverter}}">
+                            <TextBlock Text="Screenshots" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" Margin="0 10 5 0" Style="{StaticResource MaterialDesignHeadline5TextBlock}" />
+                            <ItemsControl ItemsSource="{Binding Screenshots.Values}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel IsItemsHost="True" Margin="5" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <!-- Screenshot Card -->
+                                        <Border x:Name="ScreenshotCard" Width="180" Height="110" Margin="5" Cursor="Hand" CornerRadius="4" MouseLeftButtonUp="ScreenshotCard_MouseLeftButtonUp">
+                                            <Rectangle RadiusX="4" RadiusY="4" ClipToBounds="True">
+                                                <Rectangle.Fill>
+                                                    <ImageBrush ImageSource="{Binding Url, Converter={StaticResource UrlToImageConverter}, ConverterParameter=screenshot_big}" Stretch="UniformToFill" />
+                                                </Rectangle.Fill>
+                                            </Rectangle>
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Style.Triggers>
+                                                        <!-- Trigger for showing the CardTopPanel when mouse is over -->
+                                                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True">
+                                                            <Setter Property="Opacity" Value="0.7" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="False">
+                                                            <Setter Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding Videos, Converter={StaticResource NullOrStringEmptyToInvertedVisibilityConverter}}">
+                            <TextBlock Text="Videos" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" Margin="0 10 5 0" Style="{StaticResource MaterialDesignHeadline5TextBlock}" />
+                            <ItemsControl ItemsSource="{Binding Videos.Values}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel IsItemsHost="True" Margin="5" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <Border x:Name="VideoCard" Width="200" Height="150" Margin="5" CornerRadius="4">
+                                            <Grid>
+                                                <Rectangle RadiusX="4" RadiusY="4" ClipToBounds="True">
+                                                    <Rectangle.Fill>
+                                                        <ImageBrush ImageSource="{Binding VideoId, Converter={StaticResource VideoToThumbnailImageConverter}}"
+                                                                    Stretch="UniformToFill" />
+                                                    </Rectangle.Fill>
+                                                </Rectangle>
+                                                <Button Style="{DynamicResource MaterialDesignFlatPaperButton}" Padding="0" Width="50">
+                                                    <materialDesign:PackIcon Kind="Youtube" Foreground="Red" VerticalAlignment="Center" HorizontalAlignment="Center" Height="50" Width="50" />
+                                                </Button>
+                                                <StackPanel VerticalAlignment="Bottom">
+                                                    <TextBlock Text="{Binding Name}" Style="{StaticResource MaterialDesignCaptionTextBlock}" VerticalAlignment="Bottom" HorizontalAlignment="Center" Background="#80000000" Padding="5" TextTrimming="CharacterEllipsis" TextWrapping="WrapWithOverflow" TextAlignment="Center" />
+                                                </StackPanel>
+                                            </Grid>
+                                            <Border.Style>
+                                                <Style TargetType="Border">
+                                                    <Style.Triggers>
+                                                        <!-- Trigger for showing the CardTopPanel when mouse is over -->
+                                                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="True">
+                                                            <Setter Property="Opacity" Value="0.7" />
+                                                        </DataTrigger>
+                                                        <DataTrigger Binding="{Binding IsMouseOver, RelativeSource={RelativeSource Self}}" Value="False">
+                                                            <Setter Property="Opacity" Value="1" />
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </Border.Style>
+                                        </Border>
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                        </StackPanel>
+                        <StackPanel Visibility="{Binding SimilarGames.Values, Converter={StaticResource NullOrStringEmptyToInvertedVisibilityConverter}}">
+                            <TextBlock Text="Similar Games" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" Margin="0 10 5 0" Style="{StaticResource MaterialDesignHeadline5TextBlock}" />
+                            <ItemsControl ItemsSource="{Binding SimilarGames, RelativeSource={RelativeSource AncestorType=UserControl}}">
+                                <ItemsControl.ItemsPanel>
+                                    <ItemsPanelTemplate>
+                                        <WrapPanel IsItemsHost="True" Margin="5" />
+                                    </ItemsPanelTemplate>
+                                </ItemsControl.ItemsPanel>
+                                <ItemsControl.ItemTemplate>
+                                    <DataTemplate>
+                                        <localViews:GameCardView DataContext="{Binding .}" />
+                                    </DataTemplate>
+                                </ItemsControl.ItemTemplate>
+                            </ItemsControl>
+                            <StackPanel Visibility="{Binding IsUpdatingSimilarGames, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                        Orientation="Horizontal" Margin="0 10 0 0">
+                                <ProgressBar Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                             IsIndeterminate="True"
+                                             Value="0" />
+                                <TextBlock Text="Loading, please wait" Foreground="{DynamicResource MaterialDesign.Brush.Foreground}"
+                                           Margin="15 0 0 0" Style="{StaticResource MaterialDesignBody2TextBlock}" />
+                            </StackPanel>
+                        </StackPanel>
+                    </StackPanel>
+                </ScrollViewer>
+            </Grid>
+        </Grid>
+        <Grid Background="#FA000000" Visibility="{Binding IsScreenshotsViewerVisible, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource BooleanToVisibilityConverter}}">
+            <Grid Margin="5">
+                <Image Source="{Binding CurrentScreenshot.Url, RelativeSource={RelativeSource AncestorType=UserControl}, Converter={StaticResource UrlToImageConverter}, ConverterParameter=screenshot_big}" Stretch="Uniform" VerticalAlignment="Center" HorizontalAlignment="Center" />
+                <StackPanel Orientation="Horizontal" Margin="10" VerticalAlignment="Top" HorizontalAlignment="Center" Background="#80000000">
+                    <TextBlock Text="{Binding CurrentScreenshotNumber, RelativeSource={RelativeSource AncestorType=UserControl}, FallbackValue=0}"
+                               Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"
+                               Style="{StaticResource MaterialDesignBody2TextBlock}"
+                               FontWeight="Bold"
+                               Padding="10 10 0 10" />
+                    <TextBlock Text="/"
+                               Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"
+                               Style="{StaticResource MaterialDesignBody2TextBlock}"
+                               FontWeight="Bold"
+                               Padding="0 10" />
+                    <TextBlock Text="{Binding Screenshots.Values.Count, TargetNullValue=0}"
+                               Foreground="{DynamicResource MaterialDesign.Brush.Secondary}"
+                               Style="{StaticResource MaterialDesignBody2TextBlock}"
+                               FontWeight="Bold"
+                               Padding="0 10 10 10" />
+                </StackPanel>
+                <Button Style="{StaticResource MaterialDesignIconButton}" Background="#80000000" Margin="10 10" HorizontalAlignment="Right" VerticalAlignment="Top" Click="CloseButton_Click">
+                    <materialDesign:PackIcon Kind="Close" />
+                </Button>
+                <Button Style="{StaticResource MaterialDesignIconButton}" Background="#80000000" Margin="10 0" HorizontalAlignment="Left" VerticalAlignment="Center" Click="LeftButton_Click">
+                    <materialDesign:PackIcon Kind="ChevronLeft" />
+                </Button>
+                <Button Style="{StaticResource MaterialDesignIconButton}" Background="#80000000" Margin="10 0" HorizontalAlignment="Right" VerticalAlignment="Center" Click="RightButton_Click">
+                    <materialDesign:PackIcon Kind="ChevronRight" />
+                </Button>
+            </Grid>
+        </Grid>
+    </Grid>
+</UserControl>

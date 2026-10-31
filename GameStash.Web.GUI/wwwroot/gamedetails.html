@@ -1,0 +1,142 @@
+﻿<div id="game-details-modal" class="modal-overlay">
+    <div class="modal-container">
+        <!-- Floating Navigation System Interface Core Controls -->
+        <div class="modal-floating-actions-bar">
+            <!-- Isolated back navigation button on the left -->
+            <button id="md-nav-back" class="history-nav-btn" type="button">←</button>
+
+            <!-- Grouped actions on the right (Favorite + Forward + Close) -->
+            <div class="modal-actions-right">
+                <!-- Local Library Favorite Button (Visible only for local games) -->
+                <button id="md-favorite-btn" class="modal-favorite-btn" type="button" title="Toggle Favorite" style="display: none;">
+                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                    </svg>
+                </button>
+
+                <button id="md-nav-forward" class="history-nav-btn" type="button">→</button>
+                <button class="modal-header-close" type="button">✕</button>
+            </div>
+        </div>
+
+        <div class="modal-body">
+            <div class="modal-sidebar-art">
+                <div id="md-cover" class="modal-cover-frame"></div>
+
+                <!-- Local Library Specific Sidebar Panel (Hidden for Browse Games) -->
+                <div id="md-local-sidebar" class="local-sidebar-panel" style="display: none;">
+                    <div class="local-meta-row">
+                        <span class="local-label">Added to Library:</span>
+                        <span id="md-added-date" class="local-value"></span>
+                    </div>
+
+                    <div id="md-install-status" class="install-status-badge" role="button" tabindex="0" title="Click to toggle Installed / Not Installed">
+                        <svg id="md-install-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                        </svg>
+                        <span id="md-install-status-text">Not Installed</span>
+                    </div>
+
+                    <button type="button" id="md-open-folder-btn" class="open-folder-btn">
+                        Open Game Folder
+                    </button>
+                </div>
+
+                <div class="metadata-sidebar-panel">
+                    <div class="meta-label">Released</div>
+                    <div id="md-release-date" class="meta-value"></div>
+
+                    <div class="meta-label">Developer Company</div>
+                    <div class="meta-developer-block">
+                        <img id="md-developer-logo" class="developer-logo" src="" alt="Developer Logo" style="display: none;" />
+                        <div id="md-developer-company" class="meta-value"></div>
+                    </div>
+
+                    <div class="meta-label">Rating</div>
+                    <div class="meta-rating-block">
+                        <div class="rating-bar-container" id="md-stars-container">
+                            <div class="stars-empty">★★★★★</div>
+                            <div id="md-stars-fill" class="stars-fill">★★★★★</div>
+                        </div>
+                        <div id="md-rating-meta" class="meta-count"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="modal-main-scroll">
+                <h1 id="md-title"></h1>
+                <div id="md-platforms" class="game-subtitle"></div>
+
+                <div class="modal-tabs-bar">
+                    <div class="modal-tab-link active">Summary</div>
+                    <div class="modal-tab-link">Media</div>
+                    <div class="modal-tab-link">Similar Games</div>
+                </div>
+
+                <div id="tab-summary" class="modal-tab-content active">
+                    <div class="taxonomies-grid">
+                        <div><strong>Genres:</strong> <span id="md-genres"></span></div>
+                        <div><strong>Themes:</strong> <span id="md-themes"></span></div>
+                        <div><strong>Perspectives:</strong> <span id="md-perspectives"></span></div>
+                        <div><strong>Game Modes:</strong> <span id="md-modes"></span></div>
+                    </div>
+
+                    <!-- Local Library Technical Specs (Type, Path, Size) -->
+                    <div id="md-local-specs" class="local-specs-container" style="display: none;">
+                        <div id="md-local-type" class="local-spec-type"></div>
+                        <div id="md-local-path" class="local-spec-path" title=""></div>
+                        <div id="md-local-size" class="local-spec-size"></div>
+                    </div>
+
+                    <h2>Summary</h2>
+                    <p id="md-summary" style="line-height: 1.6; margin-bottom: 20px; color: var(--text-main);"></p>
+                    <h2>Storyline</h2>
+                    <p id="md-storyline" style="line-height: 1.6; color: var(--text-muted);"></p>
+                </div>
+
+                <div id="tab-media" class="modal-tab-content">
+                    <h2>Screenshots</h2>
+                    <div id="md-screenshots" class="screenshot-grid"></div>
+                    <h2 style="margin-top: 25px;">Videos</h2>
+                    <div id="md-videos" class="video-grid"></div>
+                </div>
+
+                <div id="tab-similar-games" class="modal-tab-content">
+                    <h2>Similar Games</h2>
+                    <div id="md-similar" class="similar-grid"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Lightbox / Media Viewer supporting Images (with mouse wheel zoom) and Embedded Videos -->
+<div id="media-viewer" class="media-viewer-overlay" tabindex="0">
+    <div id="viewer-title" class="viewer-title-header"></div>
+
+    <button class="viewer-close-btn" aria-label="Close" type="button">✕</button>
+
+    <button class="viewer-nav-btn prev" aria-label="Previous" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="15 18 9 12 15 6"></polyline>
+        </svg>
+    </button>
+
+    <div id="viewer-stage" class="viewer-stage">
+        <img id="viewer-img" src="" alt="Capture" style="display: none;" />
+        <iframe id="viewer-video"
+                src=""
+                title="YouTube video player"
+                frameborder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowfullscreen
+                style="display: none;">
+        </iframe>
+    </div>
+
+    <button class="viewer-nav-btn next" aria-label="Next" type="button">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polyline points="9 18 15 12 9 6"></polyline>
+        </svg>
+    </button>
+</div>

@@ -1,0 +1,114 @@
+﻿/* ==========================================================================
+   CENTRAL STYLESHEET ORCHESTRATOR & CORE PIPELINE
+   ========================================================================== */
+@import url('views/importfolders.css');
+@import url('views/dashboard.css');
+@import url('views/gamedetails.css');
+@import url('views/browse.css');
+@import url('views/locallibrary.css');
+@import url('views/settings.css');
+
+:root {
+    --bg-dark: #121212;
+    --bg-sidebar: #1a1a1a;
+    --bg-card: #1e1e1e;
+    --primary-purple: #814de6;
+    --text-main: #e0e0e0;
+    --text-muted: #aaaaaa;
+    --border-color: #2d2d2d;
+    --input-bg: #252525;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+body {
+    background-color: var(--bg-dark);
+    color: var(--text-main);
+    display: flex;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 240px;
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+}
+
+.brand {
+    padding: 0 20px 20px 20px;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--primary-purple);
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 15px;
+}
+
+.nav-item {
+    padding: 12px 20px;
+    color: var(--text-muted);
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .nav-item:hover, .nav-item.active {
+        color: var(--text-main);
+        background-color: #252525;
+        border-left: 4px solid var(--primary-purple);
+    }
+
+.nav-sub-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.nav-sub-item {
+    padding-left: 28px !important;
+    font-size: 13px;
+    opacity: 0.9;
+}
+
+    .nav-sub-item:hover {
+        opacity: 1;
+    }
+
+.nav-section {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #555555;
+    font-weight: bold;
+    padding: 15px 20px 5px 20px;
+    letter-spacing: 1px;
+}
+
+.content-area {
+    flex: 1;
+    padding: 40px;
+    overflow-y: auto;
+}
+
+h1 {
+    margin-bottom: 25px;
+    font-size: 28px;
+    font-weight: 600;
+}
+
+h2 {
+    color: var(--primary-purple);
+    margin: 25px 0 15px 0;
+    font-size: 18px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}

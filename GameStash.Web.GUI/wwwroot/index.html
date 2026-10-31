@@ -1,0 +1,51 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GameStash</title>
+    <link rel="stylesheet" href="/css/content.css">
+</head>
+<body>
+    <!-- Sidebar Navigation -->
+    <div class="sidebar">
+        <!-- Brand Header matching XAML -->
+        <div class="brand">GameStash</div>
+
+        <!-- Top-Level Navigation Items -->
+        <div id="nav-home" class="nav-item active" data-tag="Home">Home</div>
+        <div id="nav-browse" class="nav-item" data-tag="Browse">Browse Games</div>
+
+        <!-- Game Libraries Section (IsExpanded="True" in XAML) -->
+        <div class="nav-section">Game Libraries</div>
+        <div class="nav-sub-group">
+            <div id="nav-total-library" class="nav-item nav-sub-item" data-tag="TotalLibrary">Total Library</div>
+            <div id="nav-locallibrary" class="nav-item nav-sub-item" data-tag="LocalLibrary">Local Library</div>
+            <div id="nav-epic-library" class="nav-item nav-sub-item" data-tag="EpicLibrary">Epic Library</div>
+            <div id="nav-steam-library" class="nav-item nav-sub-item" data-tag="SteamLibrary">Steam Library</div>
+            <div id="nav-amazon-library" class="nav-item nav-sub-item" data-tag="AmazonLibrary">Amazon Library</div>
+        </div>
+
+        <!-- Settings Section -->
+        <div class="nav-section">Settings</div>
+        <div class="nav-sub-group">
+            <div id="nav-settings" class="nav-item nav-sub-item" data-tag="GlobalSettings">Global Settings</div>
+            <div id="nav-importfolders" class="nav-item nav-sub-item" data-tag="ImportFromRootFolders">Import from Root Folders</div>
+        </div>
+
+        <!-- System Section -->
+        <div class="nav-section">System</div>
+        <div id="nav-system" class="nav-item" data-tag="System">System</div>
+    </div>
+
+    <!-- Main Dynamic Application Workspace -->
+    <div class="content-area">
+        <div id="content-workspace">
+            <p class="loading-text">Loading view engine components...</p>
+        </div>
+    </div>
+
+    <!-- Single entry point execution architecture for all ES modules -->
+    <script type="module" src="/app.js"></script>
+</body>
+</html>

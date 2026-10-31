@@ -1,0 +1,135 @@
+﻿<UserControl x:Class="GameStash.MVVM.GUI.Views.SettingsView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:Common.Lib.Converters;assembly=Common.Lib"
+             xmlns:localConverters="clr-namespace:GameStash.MVVM.GUI.Converters"
+             xmlns:vm="clr-namespace:GameStash.MVVM.GUI.ViewModels">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <localConverters:FormatBytesConverter x:Key="FormatBytesConverter" />
+            <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" 
+                                         TrueValue="{x:Static Visibility.Visible}" 
+                                         FalseValue="{x:Static Visibility.Collapsed}" />
+            <converters:BooleanConverter x:Key="BooleanToInvertedVisibilityConverter" 
+                                         TrueValue="{x:Static Visibility.Collapsed}" 
+                                         FalseValue="{x:Static Visibility.Visible}" />
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Margin="10">
+        <!-- Define the main layout grid -->
+        <Grid.RowDefinitions>
+            <!-- Root Folders section -->
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <!-- IGDB Settings section -->
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+        <!-- Root Folders Section -->
+        <TextBlock Style="{StaticResource MaterialDesignHeadline4TextBlock}"
+                   Foreground="{DynamicResource MaterialDesign.Brush.Primary}"
+                   Text="Root Folders" FontWeight="Bold" />
+
+        <ListView Grid.Row="1" ItemsSource="{Binding RootFolders}" Margin="0 0 10 0" Height="150">
+            <ListView.View>
+                <GridView>
+                    <GridViewColumn Header="Path" DisplayMemberBinding="{Binding Path}" Width="300" />
+                    <GridViewColumn Header="Free Space" DisplayMemberBinding="{Binding FreeSpace, Converter={StaticResource FormatBytesConverter}}" Width="150" />
+                    <GridViewColumn Header="Used Space" DisplayMemberBinding="{Binding UsedSpace, Converter={StaticResource FormatBytesConverter}}" Width="150" />
+                    <GridViewColumn Header="Games Found" DisplayMemberBinding="{Binding FoundGamesCount}" Width="Auto" />
+                    <GridViewColumn Width="Auto">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <StackPanel Orientation="Horizontal">
+                                    <Button Command="{Binding DataContext.RefreshRootFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Width="18" Height="18"
+                                            Visibility="{Binding IsImportingFolders, Converter={StaticResource BooleanToInvertedVisibilityConverter}}"
+                                            Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}">
+                                        <materialDesign:PackIcon Kind="Refresh" />
+                                    </Button>
+                                    <ProgressBar IsIndeterminate="True"
+                                                 Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                                 VerticalAlignment="Center"
+                                                 Visibility="{Binding IsImportingFolders, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                 Value="0" Height="18" Width="18" />
+                                    <Button Command="{Binding DataContext.RemoveRootFolderCommand, RelativeSource={RelativeSource AncestorType=UserControl}}"
+                                            CommandParameter="{Binding}"
+                                            Width="18" Height="18" Margin="10 0 0 0"
+                                            Style="{StaticResource MaterialDesignFloatingActionMiniLightButton}">
+                                        <materialDesign:PackIcon Kind="Close" />
+                                    </Button>
+                                </StackPanel>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" VerticalAlignment="Top" Margin="10">
+            <TextBox x:Name="FolderPathTextBox"
+                     Width="300"
+                     Text="{Binding FolderPath, UpdateSourceTrigger=PropertyChanged}"
+                     materialDesign:HintAssist.Hint="Enter folder path"
+                     materialDesign:TextFieldAssist.HasClearButton="True"
+                     VerticalContentAlignment="Center"
+                     KeyUp="TextBox_KeyUp" />
+            <Button Content="Browse" Margin="10 0"
+                    Click="BrowseButton_Click" />
+            <Button Content="Add Folder"
+                    Command="{Binding AddFolderCommand}" />
+        </StackPanel>
+        <!-- IGDB Settings Section -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal">
+            <TextBlock Style="{StaticResource MaterialDesignHeadline4TextBlock}"
+                       Foreground="{DynamicResource MaterialDesign.Brush.Primary}"
+                       Text="IGDB Settings" FontWeight="Bold" />
+            <Button Style="{DynamicResource MaterialDesignFlatPaperButton}"
+                    Content="{materialDesign:PackIcon Kind=InfoCircle}"
+                    VerticalAlignment="Center" Padding="0" Margin="10 0" Height="15"
+                    Command="{x:Static materialDesign:DialogHost.OpenDialogCommand}">
+                <Button.CommandParameter>
+                    <StackPanel Margin="10" Width="200">
+                        <TextBlock Text="IGDB API key"
+                                   Style="{StaticResource MaterialDesignHeadline5TextBlock}"
+                                   Foreground="{DynamicResource MaterialDesign.Brush.Primary}"/>
+                        <TextBlock Text="To create an IGDB API key, click on the URL bellow and follow the instructions"
+                                   Margin="0 10" TextWrapping="WrapWithOverflow" />
+                        <TextBlock>
+                            <Hyperlink Cursor="Hand"
+                                       NavigateUri="https://api-docs.igdb.com/#getting-started"
+                                       RequestNavigate="Hyperlink_OnRequestNavigate">
+                                Getting Started - IGDB API Docs
+                            </Hyperlink>
+                        </TextBlock>
+                        <Button Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
+                                HorizontalAlignment="Center" Content="Close" Margin="0 10 0 0"
+                                Style="{StaticResource MaterialDesignFlatButton}" />
+                    </StackPanel>
+                </Button.CommandParameter>
+            </Button>
+        </StackPanel>
+
+        <StackPanel Grid.Row="4" Orientation="Horizontal" VerticalAlignment="Top" Margin="10">
+            <TextBox Width="300"
+                     Margin="0 0 10 0"
+                     Text="{Binding Igdb_Client_Id, UpdateSourceTrigger=PropertyChanged}"
+                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                     materialDesign:HintAssist.Hint="Enter IGDB client id"
+                     materialDesign:HintAssist.FloatingScale="1.1"
+                     materialDesign:TextFieldAssist.HasClearButton="True"
+                     VerticalContentAlignment="Center" />
+            <TextBox Width="300"
+                     Text="{Binding Igdb_Secret, UpdateSourceTrigger=PropertyChanged}"
+                     Style="{StaticResource MaterialDesignFloatingHintTextBox}"
+                     materialDesign:HintAssist.Hint="Enter IGDB Secret"
+                     materialDesign:HintAssist.FloatingScale="1.1"
+                     materialDesign:TextFieldAssist.HasClearButton="True"
+                     VerticalContentAlignment="Center" />
+        </StackPanel>
+    </Grid>
+</UserControl>

@@ -1,0 +1,12 @@
+<Solution>
+  <Folder Name="/.gitignore/">
+    <File Path="GameStash.Web.GUI/.gitignore" />
+  </Folder>
+  <Project Path="../Common.Lib/Common.Lib.csproj" Id="2fd19cda-a80a-492f-a325-b53e2d5305b4" />
+  <Project Path="../IgdbSharp/IgdbSharp/IgdbSharp.csproj" />
+  <Project Path="GameStash.Core/GameStash.Core.csproj" />
+  <Project Path="GameStash.GoogleGenAi/GameStash.GoogleGenAi.csproj" />
+  <Project Path="GameStash.MVVM.GUI/GameStash.MVVM.GUI.csproj" />
+  <Project Path="GameStash.Tests/GameStash.Tests.csproj" Id="0ba23835-4321-46fa-be1b-937bf44c0475" />
+  <Project Path="GameStash.Web.GUI/GameStash.Web.GUI.csproj" />
+</Solution>

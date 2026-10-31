@@ -1,0 +1,197 @@
+﻿<UserControl x:Class="GameStash.MVVM.GUI.Views.ImportGamesView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:local="clr-namespace:GameStash.MVVM.GUI"
+             xmlns:localConverters="clr-namespace:GameStash.MVVM.GUI.Converters"
+             xmlns:viewModels="clr-namespace:GameStash.MVVM.GUI.ViewModels"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             xmlns:converters="clr-namespace:Common.Lib.Converters;assembly=Common.Lib">
+    <UserControl.Resources>
+        <ResourceDictionary>
+            <converters:BooleanConverter x:Key="InvertedBooleanConverter" Invert="True" />
+            <converters:BooleanConverter x:Key="BooleanToVisibilityConverter" TrueValue="{x:Static Visibility.Visible}" FalseValue="{x:Static Visibility.Collapsed}" />
+            <converters:NullObjectOrStringEmptyConverter x:Key="NullOrStringEmptyToInvertedBooleanConverter" Invert="True" />
+            <localConverters:ListToStringConverter x:Key="ListToAbbreviatedStringConverter" Abbreviation="True" />
+        </ResourceDictionary>
+    </UserControl.Resources>
+    <Grid Margin="10">
+        <!-- Define the main layout grid -->
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <!-- Row for buttons and Select All -->
+            <RowDefinition Height="Auto" />
+            <!-- Row for Select All and Refresh buttons -->
+            <RowDefinition Height="*" />
+            <!-- Row for ListView -->
+            <RowDefinition Height="Auto" />
+            <!-- Row for Import Selected button -->
+        </Grid.RowDefinitions>
+
+        <!-- Header: Import Games -->
+        <StackPanel Orientation="Horizontal" Margin="0 0 0 10">
+            <TextBlock Style="{StaticResource MaterialDesignHeadline4TextBlock}" Foreground="{DynamicResource MaterialDesign.Brush.Primary}" Text="Import Games" FontWeight="Bold" />
+            <TextBlock Style="{StaticResource MaterialDesignHeadline6TextBlock}" Foreground="{DynamicResource MaterialDesign.Brush.Secondary}" Text="{Binding FoundFolders.Count}" FontWeight="Bold" Margin="20 0 0 4" VerticalAlignment="Bottom" />
+        </StackPanel>
+
+        <!-- Top row: Select All checkbox and Refresh button -->
+        <Grid Grid.Row="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="Auto" />
+            </Grid.ColumnDefinitions>
+            <StackPanel Orientation="Horizontal">
+                <!-- Refresh Button with Icon -->
+                <Button HorizontalAlignment="Left" VerticalAlignment="Top" Command="{Binding RefreshAllRootFoldersCommand}" ToolTip="Refresh all Root Folders">
+                    <materialDesign:PackIcon Kind="Refresh" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                </Button>
+                <!-- Match Button with Icon -->
+                <Button HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10 0 0 0" Command="{Binding IgdbMatchSelectedFoldersCommand}">
+                    <StackPanel Orientation="Horizontal">
+                        <!-- IGDB Logo as Path (SVG) -->
+                        <Path Data="M15.999 1.74c7.805 0 14.116 6.26 14.116 13.97 0 7.707-6.311 13.97-14.116 13.97-7.806 0-14.116-6.26-14.116-13.97 0-7.71 6.31-13.97 14.116-13.97zm0 25.25c6.074 0 10.996-4.822 10.996-10.28s-4.922-10.28-10.996-10.28-10.996 4.822-10.996 10.28 4.922 10.28 10.996 10.28zm0-15.428c2.574 0 4.712 2.065 4.712 4.548 0 2.466-2.138 4.533-4.712 4.533s-4.711-2.067-4.711-4.533c0-2.483 2.137-4.548 4.711-4.548zm0 7.975c1.617 0 2.931-1.29 2.931-2.898s-1.314-2.898-2.931-2.898-2.931 1.29-2.931 2.898 1.314 2.898 2.931 2.898z" 
+                              Fill="{DynamicResource MaterialDesign.Brush.Primary.Foreground}" Width="20" Height="20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Text="   IGDB Match Selected" />
+                    </StackPanel>
+                </Button>
+            </StackPanel>
+            <StackPanel Grid.Row="1" Orientation="Horizontal" Margin="0 10 0 0">
+                <!-- Select All Checkbox -->
+                <CheckBox x:Name="CheckAllBox" Content="Select All" Style="{StaticResource MaterialDesignCheckBox}"
+                          HorizontalAlignment="Left" VerticalAlignment="Top" Cursor="Hand"
+                          IsChecked="{Binding IsImportAllItemsSelected, Mode=TwoWay}">
+                </CheckBox>
+                <CheckBox x:Name="CheckAllWithMatchBox" Content="Select All with Match" Style="{StaticResource MaterialDesignCheckBox}"
+                          HorizontalAlignment="Left" VerticalAlignment="Top" Margin="10 0 0 0" Cursor="Hand"
+                          IsChecked="{Binding IsCheckAllWithMatchBoxSelected, Mode=TwoWay}">
+                </CheckBox>
+            </StackPanel>
+            <Button Grid.RowSpan="2" Grid.Column="1"
+                    Style="{DynamicResource MaterialDesignFlatPaperButton}"
+                    Content="{materialDesign:PackIcon Kind=HelpCircle, Size=30}"
+                    VerticalAlignment="Top" Padding="0" Height="30"
+                    Command="{x:Static materialDesign:DialogHost.OpenDialogCommand}">
+                <Button.CommandParameter>
+                    <StackPanel Margin="10" Width="500">
+                        <TextBlock Text="Import Games Help"
+                                   Style="{StaticResource MaterialDesignHeadline5TextBlock}"
+                                   Foreground="{DynamicResource MaterialDesign.Brush.Primary}"/>
+                        <TextBlock Text="If some folders aren't found by the engine and you want to include them in your local library (e.g. ISO games without an installer or a folder structure that doesn't get discovered by the engine), you can create a file called 'playarr.json' on the game folder, with Keys 'Name' and 'Type'(optional) and next time the Root Folder is scanned, the folder will appear here. Please refer to the image below for an example json structure."
+                                   Margin="0 20" TextWrapping="WrapWithOverflow" />
+                        <Image Source="/Resources/json_example.png"
+                               Stretch="Uniform" Width="400" />
+                        <TextBlock Text="If on the other hand, a certain folder is discovered and you don't want it to appear (some game Updates like RUNE get discovered by the engine), you can place a file called 'playarr.ignore' on that folder and it will be ignored along with its subfolders. The 'playarr.ignore' file content will be ignored so you just need to create an empty file."
+                                   Margin="0 20" TextWrapping="WrapWithOverflow" />
+                        <Button Command="{x:Static materialDesign:DialogHost.CloseDialogCommand}"
+                                HorizontalAlignment="Center" Content="Close"
+                                Style="{StaticResource MaterialDesignFlatButton}" />
+                    </StackPanel>
+                </Button.CommandParameter>
+            </Button>
+        </Grid>
+
+        <!-- ListView for Found Folders -->
+        <ListView Grid.Row="2" ItemsSource="{Binding FoundFolders}" HorizontalAlignment="Stretch">
+            <ListView.View>
+                <GridView>
+                    <!-- GridViewColumn for Select checkbox -->
+                    <GridViewColumn Width="40">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <!-- CheckBox for selecting the item -->
+                                <CheckBox IsChecked="{Binding IsSelected}" Style="{StaticResource MaterialDesignCheckBox}"/>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <!-- GridViewColumn for Match Name -->
+                    <GridViewColumn Header="Match Name" Width="300">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding MatchName}" ToolTip="{Binding MatchName}">
+                                    <TextBlock.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Copy"
+                                                      Icon="{materialDesign:PackIcon Kind=ContentCopy}"
+                                                      Click="MatchName_MenuItem_Click" />
+                                        </ContextMenu>
+                                    </TextBlock.ContextMenu>
+                                </TextBlock>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <!-- GridViewColumn for Match Name -->
+                    <GridViewColumn Header="Type" DisplayMemberBinding="{Binding Type}" Width="120" />
+
+                    <!-- GridViewColumn for Folder -->
+                    <GridViewColumn Header="Folder" Width="400">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding Folder}" ToolTip="{Binding Folder}">
+                                    <TextBlock.ContextMenu>
+                                        <ContextMenu>
+                                            <MenuItem Header="Copy"
+                                                      Icon="{materialDesign:PackIcon Kind=ContentCopy}"
+                                                      Click="Folder_MenuItem_Click" />
+                                        </ContextMenu>
+                                    </TextBlock.ContextMenu>
+                                </TextBlock>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+
+                    <!-- GridViewColumn for Game Name -->
+                    <GridViewColumn Header="Matched Game" Width="300">
+                        <GridViewColumn.CellTemplate>
+                            <DataTemplate>
+                                <Grid>
+                                    <!-- ComboBox for selecting the game -->
+                                    <ComboBox ItemsSource="{Binding IgdbMatches}"
+                                              SelectedValue="{Binding IgdbSelectedMatch, Mode=TwoWay}"
+                                              IsEnabled="{Binding IsLoadingIgdbMatches, Converter={StaticResource InvertedBooleanConverter}}"
+                                              IsEditable="True" Width="250" Margin="10 0 0 0"
+                                              KeyDown="ComboBox_KeyDown">
+                                        <ComboBox.ItemTemplate>
+                                            <DataTemplate>
+                                                <StackPanel Orientation="Horizontal">
+                                                    <TextBlock Text="{Binding Id}"/>
+                                                    <TextBlock Text=". "/>
+                                                    <TextBlock Text="{Binding Name}"/>
+                                                    <TextBlock Text=" ("/>
+                                                    <TextBlock Text="{Binding FirstReleaseDate.Year}"/>
+                                                    <TextBlock Text=") "/>
+                                                    <TextBlock Text="{Binding Platforms.Values, Converter={StaticResource ListToAbbreviatedStringConverter}}"
+                                                               VerticalAlignment="Center" Style="{StaticResource MaterialDesignOverlineTextBlock}" />
+                                                </StackPanel>
+                                            </DataTemplate>
+                                        </ComboBox.ItemTemplate>
+                                        <!-- Trigger to mark the item as selected when a value is chosen -->
+                                        <!--<ComboBox.Triggers>
+                                            <DataTrigger Binding="{Binding SelectedItem, RelativeSource={RelativeSource Self}}" Value="{x:Null}">
+                                                <Setter TargetName="CheckBox" Property="IsChecked" Value="True"/>
+                                            </DataTrigger>
+                                        </ComboBox.Triggers>-->
+                                    </ComboBox>
+                                    <ProgressBar IsIndeterminate="True"
+                                                 Visibility="{Binding IsLoadingIgdbMatches, Converter={StaticResource BooleanToVisibilityConverter}}"
+                                                 Style="{StaticResource MaterialDesignCircularProgressBar}"
+                                                 Value="0" />
+                                </Grid>
+                            </DataTemplate>
+                        </GridViewColumn.CellTemplate>
+                    </GridViewColumn>
+                </GridView>
+            </ListView.View>
+        </ListView>
+
+        <!-- Bottom row: Import Selected button -->
+        <StackPanel Grid.Row="3" Orientation="Horizontal">
+            <Button Content="Import Selected" Margin="0 10 0 0"
+                    Command="{Binding ImportSelectedFoldersCommand}" />
+        </StackPanel>
+    </Grid>
+</UserControl>
