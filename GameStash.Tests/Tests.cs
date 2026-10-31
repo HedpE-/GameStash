@@ -2,7 +2,9 @@ using FluentAssertions;
 using GameStash.Core.Models;
 using GameStash.Core.Services;
 using GameStash.Tests.Config;
+using Google.Apis.Auth.OAuth2;
 using IgdbSharp.Models;
+using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using Serilog;
@@ -15,8 +17,22 @@ namespace GameStash.Tests
     [TestFixture, Order(1)]
     public class Tests
     {
-        private readonly string igdb_client_id = "p8tfbuzs9lcvur6erh6fwevejsmzx9";
-        private readonly string igdb_secret = "8hgyaw52nkvhfbm3p9yf1dfx9e4hcf";
+        private IConfiguration _config;
+        private string igdb_client_id;
+        private string igdb_secret;
+
+        [OneTimeSetUp]
+        public void SetupOnce()
+        {
+            // AddUserSecrets<T>() automatically reads the secrets linked to this test assembly
+            _config = new ConfigurationBuilder()
+                .AddUserSecrets<Tests>()
+                .Build();
+
+            // Read the exact keys you defined in secrets.json
+            igdb_client_id = _config["igdb_client_id"];
+            igdb_secret = _config["igdb_secret"];
+        }
 
         [SetUp]
         public void Setup()
