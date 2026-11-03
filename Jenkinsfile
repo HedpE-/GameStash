@@ -28,14 +28,14 @@ pipeline {
         stage('Install .NET 9 SDK') {
             steps {
                 script {
-                    echo "A descarregar o script de instalação oficial do .NET..."
-                    // CORREÇÃO: URL direta para o script sh cru (raw) da Microsoft
+                    echo "A descarregar o script de instalação oficial do .NET (v1)..."
+                    // CORREÇÃO: URL exata do script bash puro, evitando o download do HTML do site
                     sh 'curl -sSL https://dot.net -o dotnet-install.sh'
                     sh 'chmod +x dotnet-install.sh'
                     
                     echo "A instalar o .NET 9 SDK na diretoria local..."
-                    // CORREÇÃO: Aspas duplas na string do bash para proteger o caminho com espaços do Workspace
-                    sh './dotnet-install.sh --version latest --channel 9.0 --install-dir "${DOTNET_ROOT}"'
+                    // CORREÇÃO: Aspas e chamada explícita via bash para neutralizar os espaços no nome do Workspace
+                    sh 'bash ./dotnet-install.sh --version latest --channel 9.0 --install-dir "${DOTNET_ROOT}"'
                 }
             }
         }
