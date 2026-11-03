@@ -1,0 +1,110 @@
+﻿/* ==========================================================================
+   REUSABLE PAGINATION BAR COMPONENT (OPTIMIZED & COMPACT)
+   ========================================================================== */
+
+/* Contentor principal que junta todos os botões e números injetados via JS */
+#pagination-numbers-container {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.import-pagination-bar {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 4px;
+    width: auto;
+}
+
+.pagination-numbers {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    gap: 4px;
+}
+
+/* Redução elegante de tamanho e preenchimento de todos os botões */
+.pagination-btn,
+.page-number-btn {
+    background: #1e1e1e;
+    border: 1px solid var(--border-color, #2e2e2e);
+    color: #e5e7eb;
+    padding: 4px 6px; /* Ajuste milimétrico de padding lateral */
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px; /* AUMENTADO: Todo o texto base (números e saltos) passa para 14px */
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 32px; /* Ajustado ligeiramente para os saltos com 3 caracteres (+10) não cortarem */
+    height: 30px;
+    box-sizing: border-box;
+    transition: all 0.15s ease;
+}
+
+    /* Força os botões de salto a acompanhar rigorosamente os mesmos 14px */
+    .pagination-btn.jump-btn {
+        font-size: 14px;
+        letter-spacing: -0.5px; /* Compensa o espaço do caractere para não alargar o botão */
+        color: #9ca3af;
+    }
+
+/* Mantém os números nítidos e destacados */
+.page-number-btn {
+    font-size: 14px;
+    font-weight: 700; /* Ligeiramente mais negrito para destacar dos saltos */
+}
+
+/* Diferenciação sutil de tamanho de letra para os botões de salto (+5, +10) */
+.pagination-btn.jump-btn {
+    font-size: 11px;
+    letter-spacing: -0.3px;
+    color: #9ca3af;
+}
+
+/* Centralização perfeita e redimensionamento dos ícones SVG internos */
+.pagination-btn.icon-btn svg {
+    display: block;
+    width: 14px; /* Reduzido proporcionalmente para bater certo com os 30px */
+    height: 14px;
+    color: inherit;
+    pointer-events: none;
+    transition: transform 0.1s ease;
+}
+
+/* Estados de Hover, Ativo e Disabled mantêm-se fiéis ao teu tema */
+.pagination-btn:hover:not(:disabled),
+.page-number-btn:hover {
+    background: #2a2a2a;
+    border-color: #4b5563;
+    color: #ffffff;
+}
+
+    .pagination-btn:hover:not(:disabled) svg {
+        transform: scale(1.05);
+    }
+
+.page-number-btn.active {
+    background: var(--primary-purple, #7c3aed);
+    border-color: var(--primary-purple, #7c3aed);
+    color: #ffffff;
+}
+
+.pagination-btn:disabled {
+    opacity: 0.22;
+    cursor: not-allowed;
+    background: #141414;
+    border-color: #222222;
+    color: #6b7280;
+}
+
+.pagination-info {
+    font-size: 13px;
+    color: var(--text-muted, #9ca3af);
+    margin-left: 8px;
+    white-space: nowrap;
+}

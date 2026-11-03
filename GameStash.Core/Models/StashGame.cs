@@ -1,21 +1,18 @@
 using Common.Lib.Extensions;
+using GameStash.Core.Extensions;
+using GameStash.Core.Services;
 using IgdbSharp;
 using IgdbSharp.Enumerators;
 using IgdbSharp.Models;
-using System;
-using System.Collections.Generic;
+using Serilog;
 using System.Diagnostics;
-using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text.RegularExpressions;
-using System.Threading;
-using System.Threading.Tasks;
 
 namespace GameStash.Core.Models
 {
     [DebuggerDisplay("{Id}, {Type}, {MatchName}, {Name}")]
-    public class Game : IgdbSharp.Models.Game
+    public class StashGame : Game
     {
         public static readonly string FullQueryFields =
             "*,genres.*,platforms.*,platforms.platform_logo.*,cover.*,websites.*,screenshots.*,videos.*," +
@@ -32,11 +29,18 @@ namespace GameStash.Core.Models
             "slug,standalone_expansions,storyline,summary,tags,themes,total_rating,total_rating_count,updated_at,url," +
             "version_parent,version_title,videos,websites";
 
-        private string _type;
-        public string Type
+        public static readonly string GameCardQueryFields = "id, name, cover.*";
+        public static readonly string ReleaseDateQueryField = "first_release_date";
+        public static readonly string RatingQueryFields = "rating, rating_count";
+
+        public static readonly string MatchGameQueryFields = $"{GameCardQueryFields}, {ReleaseDateQueryField}, {RatingQueryFields}," +
+            $" platforms.*,platforms.platform_logo.*,game_type.*,game_status.*,rating,rating_count";
+
+        private string _packageType;
+        public string PackageType
         {
-            get => _type;
-            set => _type = value;
+            get => _packageType;
+            set => _packageType = value;
         }
 
         public InvolvedCompany DeveloperCompany
@@ -143,6 +147,27 @@ namespace GameStash.Core.Models
             set => _isFavorite = value;
         }
 
+        private bool _isPlayed;
+        public bool IsPlayed
+        {
+            get => _isPlayed;
+            set => _isPlayed = value;
+        }
+
+        private bool _isPlaying;
+        public bool IsPlaying
+        {
+            get => _isPlaying;
+            set => _isPlaying = value;
+        }
+
+        private bool _isFinished;
+        public bool IsFinished
+        {
+            get => _isFinished;
+            set => _isFinished = value;
+        }
+
         private bool _isFolderValid;
         public bool IsFolderValid
         {
@@ -184,26 +209,44 @@ namespace GameStash.Core.Models
                 if (_igdbSelectedMatch != value)
                 {
                     _igdbSelectedMatch = value;
-                    if (value != null)
+                    if (value != null && IgdbMatches.Count() == 1)
                         IsSelected = true;
+                    else
+                        IsSelected = false;
                 }
             }
         }
 
-        public Task MatchIgdbGame(string client_id, string secret, CancellationToken cancellationToken = default, RequestPriority requestPriority = RequestPriority.Medium)
+        public string ReleaseDate => this.GetReleaseDate("dd MMM, yyyy");
+
+        public Task MatchIgdbGame(string client_id, string secret, int? limit = null, CancellationToken cancellationToken = default, RequestPriority requestPriority = RequestPriority.Medium)
         {
             var igdbClient = new IgdbClient(client_id, secret);
-            return MatchIgdbGame(igdbClient, cancellationToken, requestPriority);
+            return MatchIgdbGame(igdbClient, limit, cancellationToken, requestPriority);
         }
 
-        public async Task MatchIgdbGame(IgdbClient igdbClient, CancellationToken cancellationToken = default, RequestPriority requestPriority = RequestPriority.Medium)
+        public async Task MatchIgdbGame(IgdbClient igdbClient, int? limit = null, CancellationToken cancellationToken = default, RequestPriority requestPriority = RequestPriority.Medium)
         {
             IsLoadingIgdbMatches = true;
 
             try
             {
-                var query = $"fields {FullQueryFields}; search \"{MatchName}\"; limit 50;";
-                IgdbMatches = await igdbClient.QueryAsync<Game>(Endpoints.Games, query: query, cancellationToken: cancellationToken, requestPriority: requestPriority);
+                var query = $"fields {MatchGameQueryFields}; search \"{MatchName}\";";
+                var results = await igdbClient.QueryAsync<Game>(Endpoints.Games, query: query, limitResults: limit, cancellationToken: cancellationToken, requestPriority: requestPriority);
+
+                if (results != null && results.Any())
+                {
+                    // Order results by probability calculation descending
+                    IgdbMatches = results
+                        .OrderByDescending(candidate => GameMatchScorer.CalculateProbability(MatchName, candidate))
+                        .ThenByDescending(candidate => candidate.Name ?? null)
+                        .ThenByDescending(candidate => candidate.FirstReleaseDate ?? null)
+                        .ToList();
+                }
+                else
+                {
+                    IgdbMatches = Enumerable.Empty<Game>();
+                }
             }
             catch
             {
@@ -290,23 +333,60 @@ namespace GameStash.Core.Models
                     var val = property.GetValue(game);
                     property.SetValue(this, val);
                 }
-                catch
+                catch (Exception e)
                 {
-                    // Suppress reflection assignment errors on computed properties
+                    Log.ForContext<StashGame>().Error(e, "Failed to update property {PropertyName} on Game model.", property.Name);
                 }
             }
         }
 
-        public static Task<IgdbSharp.Models.Game> GetBaseGame(string client_id, string secret, long id)
+        public async Task Reset(IgdbClient igdbClient)
         {
-            var igdbClient = new IgdbClient(client_id, secret);
-            return GetBaseGame(igdbClient, id);
+            Game game;
+            if (Id.HasValue && !string.IsNullOrEmpty(Name) && Platforms?.Values != null && FirstReleaseDate.HasValue && Rating != null)
+                game = this.Clone();
+            else
+                game = await this.GetBaseGame(igdbClient, StashGame.MatchGameQueryFields);
+            if (IgdbMatches == null || !IgdbMatches.Any())
+            {
+                IgdbMatches = [game];
+            }
+            else
+            {
+                IgdbMatches = IgdbMatches.Append(game)
+                        .OrderByDescending(candidate => GameMatchScorer.CalculateProbability(MatchName, candidate))
+                        .ThenByDescending(candidate => candidate.Name ?? null)
+                        .ThenByDescending(candidate => candidate.FirstReleaseDate ?? null);
+            }
+
+            IgdbMatches = [game];
+            IgdbSelectedMatch = game;
+
+            if (string.IsNullOrEmpty(MatchName))
+                MatchName = Name ?? SortName;
+
+            PurgeIgdbData();
+            IsIgdbMatched = false;
+            DateAdded = null;
         }
 
-        public static async Task<IgdbSharp.Models.Game> GetBaseGame(IgdbClient igdbClient, long id, CancellationToken cancellationToken = default, RequestPriority requestPriority = RequestPriority.Medium)
+        public virtual void PurgeIgdbData()
         {
-            var igdbMatches = await igdbClient.QueryAsync<Game>(Endpoints.Games, query: $"fields {FullQueryFields}; where id = {id};", cancellationToken: cancellationToken, requestPriority: requestPriority);
-            return igdbMatches?.FirstOrDefault();
+            var properties = typeof(Game)
+                .GetProperties(BindingFlags.Public | BindingFlags.Instance)
+                .Where(p => p.CanRead && p.CanWrite);
+
+            foreach (var property in properties)
+            {
+                try
+                {
+                    property.SetValue(this, null);
+                }
+                catch (Exception e)
+                {
+                    Log.ForContext<StashGame>().Error(e, "Failed to update property {PropertyName} on Game model.", property.Name);
+                }
+            }
         }
     }
 }

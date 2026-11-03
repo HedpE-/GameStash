@@ -5,7 +5,7 @@ using System;
 
 namespace GameStash.Web.GUI.DTO
 {
-    public class LibraryGameCardDto : GameCardDto
+    public class StashGameCardDto : GameCardDto
     {
         public string SortName { get; set; } = string.Empty;
         public string ReleaseDateFormatted { get; set; } = string.Empty;
@@ -20,7 +20,7 @@ namespace GameStash.Web.GUI.DTO
         public bool IsFolderValid { get; set; }
         public string Folder { get; set; } = string.Empty;
 
-        public LibraryGameCardDto(Game game) : base(game)
+        public StashGameCardDto(StashGame game) : base(game)
         {
             if (game == null) throw new ArgumentNullException(nameof(game));
 
@@ -38,9 +38,9 @@ namespace GameStash.Web.GUI.DTO
             Folder = game.Folder ?? string.Empty;
         }
 
-        public static new LibraryGameCardDto FromModel(Game game)
+        public static new StashGameCardDto FromModel(StashGame game)
         {
-            return new LibraryGameCardDto(game);
+            return new StashGameCardDto(game);
         }
 
         private static string FormatBytes(long bytes)

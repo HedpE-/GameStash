@@ -1,13 +1,16 @@
 ﻿using GameStash.Core.Models;
+using IgdbSharp.Models;
 using System.Collections.Generic;
 using System.Linq;
 
 namespace GameStash.Web.GUI.DTO
 {
 
-    public class ImportFolderDto
+    public class FoundFolderDto
     {
         public string Folder { get; set; } = string.Empty;
+        public string RootFolder { get; set; } = string.Empty;
+        public string RelativeFolderPath { get => Folder?.Replace(RootFolder ?? "", "", System.StringComparison.CurrentCultureIgnoreCase); }
         public string MatchName { get; set; } = string.Empty;
         public string Type { get; set; } = string.Empty;
         public bool IsSelected { get; set; }
@@ -15,27 +18,20 @@ namespace GameStash.Web.GUI.DTO
         public long? SelectedMatchId { get; set; }
         public List<IgdbMatchOptionDto> IgdbMatches { get; set; } = new();
 
-        public static ImportFolderDto FromModel(Game game)
+        public static FoundFolderDto FromModel(StashGame game)
         {
-            return new ImportFolderDto
+            return new FoundFolderDto
             {
                 Folder = game.Folder ?? string.Empty,
-                MatchName = !string.IsNullOrEmpty(game.MatchName) ? game.MatchName : game.Name ?? string.Empty,
-                Type = game.Type ?? "PC",
+                RootFolder = game.RootFolder ?? string.Empty,
+                MatchName = game.MatchName ?? game.SortName ?? game.Name ?? string.Empty,
+                Type = game.PackageType ?? "PC",
                 IsSelected = game.IsSelected,
                 IsLoadingIgdbMatches = game.IsLoadingIgdbMatches,
                 SelectedMatchId = game.IgdbSelectedMatch?.Id,
-                IgdbMatches = (game.IgdbMatches ?? Enumerable.Empty<IgdbSharp.Models.Game>())
+                IgdbMatches = (game.IgdbMatches ?? Enumerable.Empty<Game>())
                     .Where(m => m.Id.HasValue)
-                    .Select(m => new IgdbMatchOptionDto
-                    {
-                        Id = m.Id!.Value,
-                        Name = m.Name ?? "Unknown",
-                        Year = m.FirstReleaseDate?.ToString("yyyy") ?? "TBD",
-                        Platforms = m.Platforms?.Values != null
-                            ? string.Join(", ", m.Platforms.Values.Select(p => p.Name))
-                            : string.Empty
-                    })
+                    .Select(m => IgdbMatchOptionDto.FromModel(m))
                     .ToList()
             };
         }

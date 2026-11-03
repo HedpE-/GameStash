@@ -1,0 +1,133 @@
+﻿/* ==========================================================================
+   MODULAR SIDEBAR / NAVBAR COMPONENT STYLES
+   ========================================================================== */
+.sidebar {
+    width: 240px;
+    background-color: var(--bg-sidebar, #1a1a1a);
+    border-right: 1px solid var(--border-color, #2d2d2d);
+    display: flex;
+    flex-direction: column;
+    padding: 20px 0;
+    flex-shrink: 0;
+}
+
+.brand {
+    padding: 0 20px 20px 20px;
+    font-size: 22px;
+    font-weight: bold;
+    color: var(--primary-purple, #814de6);
+    border-bottom: 1px solid var(--border-color, #2d2d2d);
+    margin-bottom: 15px;
+}
+
+.nav-section {
+    font-size: 11px;
+    text-transform: uppercase;
+    color: #555555;
+    font-weight: bold;
+    padding: 15px 20px 5px 20px;
+    letter-spacing: 1px;
+    user-select: none;
+}
+
+/* Itens de Navegação Principais */
+.nav-item {
+    padding: 12px 20px;
+    color: var(--text-muted, #aaaaaa);
+    text-decoration: none;
+    display: block;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 4px solid transparent;
+}
+
+    .nav-item:hover, .nav-item.active {
+        color: var(--text-main, #e0e0e0);
+        background-color: #252525;
+        border-left-color: var(--primary-purple, #814de6);
+    }
+
+/* Contentor e Animação do Grupo Colapsável (Estilo Sonarr) */
+.nav-sub-group {
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: max-height 0.25s ease-out, opacity 0.2s ease;
+    max-height: 300px; /* Altura suficiente para albergar os sub-itens */
+    opacity: 1;
+}
+
+    .nav-sub-group.collapsed {
+        max-height: 0 !important;
+        opacity: 0;
+        pointer-events: none;
+    }
+
+/* Alinhamento dos sub-itens aninhados */
+.nav-sub-item {
+    padding-left: 42px !important; /* Indentação marcada */
+    font-size: 13px;
+    font-style: italic;
+    color: var(--text-muted, #888888);
+    opacity: 0.85;
+    transition: all 0.15s ease-in-out;
+}
+
+    .nav-sub-item:hover,
+    .nav-sub-item.active {
+        opacity: 1;
+        color: var(--text-main, #ffffff);
+        background-color: rgba(255, 255, 255, 0.03);
+    }
+
+/* Transforma o botão da linha num item idêntico aos links de navegação */
+.nav-group-toggle-btn {
+    width: 100%;
+    text-align: left;
+    background: transparent;
+    border: none;
+    border-left: 4px solid transparent;
+    display: flex !important;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 20px; /* Alinhado com o .nav-item */
+    font-size: 14px;
+    color: var(--text-muted, #aaaaaa);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .nav-group-toggle-btn:hover {
+        color: var(--text-main, #e0e0e0);
+        background-color: #252525;
+    }
+
+    .nav-group-toggle-btn.active {
+        color: var(--text-main, #e0e0e0);
+        background-color: #252525;
+        border-left: 4px solid var(--primary-purple, #814de6) !important;
+    }
+
+.nav-group-header-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+/* Pequena seta discreta estilizada e respetiva rotação com .expanded */
+.sidebar-collapse-arrow {
+    font-size: 9px;
+    color: #555555;
+    transition: transform 0.25s ease;
+}
+
+.nav-group-toggle-btn:hover .sidebar-collapse-arrow {
+    color: var(--primary-purple);
+}
+
+/* Roda a seta corretamente quando o botão ganha a classe .expanded */
+.nav-group-toggle-btn.expanded .sidebar-collapse-arrow {
+    transform: rotate(180deg);
+}

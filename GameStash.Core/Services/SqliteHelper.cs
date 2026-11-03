@@ -137,7 +137,6 @@ namespace GameStash.Core.Services
                             // Create a new Settings object and populate it from the reader
                             return new Settings
                             {
-                                RootFolders = reader["RootFolders"]?.ToString(),
                                 IGDB_Client_ID = reader["IGDB_Client_ID"]?.ToString(),
                                 IGDB_Secret = reader["IGDB_Secret"]?.ToString()
                             };
@@ -148,9 +147,9 @@ namespace GameStash.Core.Services
             return null; // Return null if no settings are found
         }
 
-        public static async Task<List<Game>> GetLibraryAsync()
+        public static async Task<List<StashGame>> GetLibraryAsync()
         {
-            var libraryEntries = new List<Game>(); // List to hold the results
+            var libraryEntries = new List<StashGame>(); // List to hold the results
 
             using (var connection = new SqliteConnection($"Data Source={DbFilePath};"))
             {
@@ -163,10 +162,10 @@ namespace GameStash.Core.Services
                     {
                         while (await reader.ReadAsync()) // Loop through all rows
                         {
-                            var entry = new Game
+                            var entry = new StashGame
                             {
                                 Id = long.Parse(reader["IGDB_Id"].ToString()),
-                                Type = reader["Type"]?.ToString(),
+                                PackageType = reader["Type"]?.ToString(),
                                 Folder = reader["Folder"]?.ToString(),
                                 RootFolder = reader["RootFolder"]?.ToString(),
                                 Name = reader["Name"]?.ToString(),
@@ -210,7 +209,7 @@ namespace GameStash.Core.Services
             });
         }
 
-        public static void InsertOrUpdateLibraryEntry(Game game)
+        public static void InsertOrUpdateLibraryEntry(StashGame game)
         {
             using (var connection = new SqliteConnection($"Data Source={DbFilePath};"))
             {
@@ -228,7 +227,7 @@ namespace GameStash.Core.Services
                         string updateQuery = "UPDATE Library SET Type = @Type, Folder = @Folder, RootFolder = @RootFolder, Name = @Name, SortName = @SortName, IsFavorite = @IsFavorite, IsInstalled = @IsInstalled, DateAdded = @DateAdded WHERE IGDB_Id = @IGDB_Id";
                         using (var updateCommand = new SqliteCommand(updateQuery, connection))
                         {
-                            updateCommand.Parameters.AddWithValue("@Type", (object)game.Type ?? DBNull.Value);
+                            updateCommand.Parameters.AddWithValue("@Type", (object)game.PackageType ?? DBNull.Value);
                             updateCommand.Parameters.AddWithValue("@Folder", (object)game.Folder ?? DBNull.Value);
                             updateCommand.Parameters.AddWithValue("@RootFolder", (object)game.RootFolder ?? DBNull.Value);
                             updateCommand.Parameters.AddWithValue("@Name", (object)game.Name ?? DBNull.Value);
@@ -248,7 +247,7 @@ namespace GameStash.Core.Services
                         using (var insertCommand = new SqliteCommand(insertQuery, connection))
                         {
                             insertCommand.Parameters.AddWithValue("@IGDB_Id", game.Id);
-                            insertCommand.Parameters.AddWithValue("@Type", (object)game.Type ?? DBNull.Value);
+                            insertCommand.Parameters.AddWithValue("@Type", (object)game.PackageType ?? DBNull.Value);
                             insertCommand.Parameters.AddWithValue("@Folder", (object)game.Folder ?? DBNull.Value);
                             insertCommand.Parameters.AddWithValue("@RootFolder", (object)game.RootFolder ?? DBNull.Value);
                             insertCommand.Parameters.AddWithValue("@Name", (object)game.Name ?? DBNull.Value);
@@ -262,7 +261,7 @@ namespace GameStash.Core.Services
                 }
             }
         }
-        public static void RemoveEntryFromLibrary(Game game)
+        public static void RemoveEntryFromLibrary(StashGame game)
         {
             using (var connection = new SqliteConnection($"Data Source={DbFilePath};"))
             {

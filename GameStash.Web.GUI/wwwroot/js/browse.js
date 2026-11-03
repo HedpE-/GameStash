@@ -119,6 +119,7 @@ function setupBrowseEvents() {
 async function executeSearch() {
     const input = document.getElementById('browse-search-input');
     const query = input?.value.trim();
+    const limit = 500;
     if (!query) return;
 
     const loader = document.getElementById('browse-loading-indicator');
@@ -133,7 +134,7 @@ async function executeSearch() {
     }
 
     try {
-        const response = await fetch(`/api/games/search?query=${encodeURIComponent(query)}`);
+        const response = await fetch(`/api/games/search?query=${encodeURIComponent(query)}&limitResults=${limit}`);
         if (!response.ok) {
             const errData = await response.json().catch(() => null);
             throw new Error(errData?.Details || `HTTP Error ${response.status}`);

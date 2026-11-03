@@ -21,7 +21,7 @@ namespace GameStash.Web.GUI.Services
             try
             {
                 var igdbClient = _settingsService.GetIgdbClient();
-                var query = $"fields {Game.FullQueryFields}, videos.*; where id = {gameId};";
+                var query = $"fields {StashGame.FullQueryFields}, videos.*; where id = {gameId};";
 
                 // Agora o T é reconhecido aqui
                 var games = await igdbClient.QueryAsync<T>("games", query: query);

@@ -49,7 +49,7 @@ namespace GameStash.Web.GUI.Services
                     try
                     {
                         var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                        var query = $"fields {GameCardDto.GameCardReleaseDateQueryFields}; where first_release_date != null & platforms = (6) & first_release_date <= {currentTimestamp}; sort first_release_date desc; limit 10;";
+                        var query = $"fields {Core.Models.StashGame.GameCardQueryFields}, {Core.Models.StashGame.ReleaseDateQueryField}; where first_release_date != null & platforms = (6) & first_release_date <= {currentTimestamp}; sort first_release_date desc; limit 10;";
                         var rawGames = await igdbClient.QueryAsync<Game>("games", query: query, requestPriority: RequestPriority.High);
                         freshDashboard.LatestReleases = [.. rawGames.Select(GameCardDto.FromModel)];
                     }
@@ -62,7 +62,7 @@ namespace GameStash.Web.GUI.Services
                 {
                     try
                     {
-                        var query = $"fields {GameCardDto.GameCardRatingQueryFields}; where rating != null & platforms != null & platforms = (6); sort rating desc; limit 10;";
+                        var query = $"fields {Core.Models.StashGame.GameCardQueryFields}, {Core.Models.StashGame.RatingQueryFields}; where rating != null & platforms != null & platforms = (6); sort rating desc; limit 10;";
                         var rawGames = await igdbClient.QueryAsync<Game>("games", query: query, requestPriority: RequestPriority.High);
                         freshDashboard.Top10RatedGames = [.. rawGames.Select(GameCardDto.FromModel)];
                     }
@@ -76,7 +76,7 @@ namespace GameStash.Web.GUI.Services
                     try
                     {
                         long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                        var query = $"fields {GameCardDto.GameCardReleaseDateQueryFields}; where first_release_date > {currentTimestamp} & hypes > 0 & platforms != null & platforms = (6); sort hypes desc; limit 10;";
+                        var query = $"fields {Core.Models.StashGame.GameCardQueryFields}, {Core.Models.StashGame.ReleaseDateQueryField}; where first_release_date > {currentTimestamp} & hypes > 0 & platforms != null & platforms = (6); sort hypes desc; limit 10;";
                         var rawGames = await igdbClient.QueryAsync<Game>("games", query: query, requestPriority: RequestPriority.High);
                         freshDashboard.MostAnticipated = [.. rawGames.Select(GameCardDto.FromModel)];
                     }

@@ -11,9 +11,9 @@ namespace GameStash.Core.Services
     public class GameIdentifier
     {
         // Método para identificar jogos e seus tipos a partir de caminhos de arquivo
-        public IEnumerable<Game> IdentifyGames(IEnumerable<string> files)
+        public IEnumerable<StashGame> IdentifyGames(IEnumerable<string> files)
         {
-            ConcurrentBag<Game> identifiedGames = new ConcurrentBag<Game>();
+            ConcurrentBag<StashGame> identifiedGames = new ConcurrentBag<StashGame>();
 
             Parallel.ForEach(files, filePath =>
             {
@@ -122,9 +122,9 @@ namespace GameStash.Core.Services
                 // Se o nome do jogo foi identificado, adicioná-lo ao resultado
                 if (!string.IsNullOrEmpty(gameName))
                 {
-                    identifiedGames.Add(new Game
+                    identifiedGames.Add(new StashGame
                     {
-                        Type = repackType,
+                        PackageType = repackType,
                         MatchName = gameName,
                         Folder = directory
                     });
@@ -147,9 +147,9 @@ namespace GameStash.Core.Services
         }
 
         // Method to identify games and their types from file paths
-        public async Task<IEnumerable<Game>> IdentifyGamesAsync(IEnumerable<string> files)
+        public async Task<IEnumerable<StashGame>> IdentifyGamesAsync(IEnumerable<string> files)
         {
-            ConcurrentBag<Game> identifiedGames = await Task.Run(() => new ConcurrentBag<Game>());
+            ConcurrentBag<StashGame> identifiedGames = await Task.Run(() => new ConcurrentBag<StashGame>());
 
             await Task.Run(() => Parallel.ForEach(files, filePath =>
             {
@@ -260,9 +260,9 @@ namespace GameStash.Core.Services
                 // Se o nome do jogo foi identificado, adicioná-lo ao resultado
                 if (!string.IsNullOrEmpty(gameName))
                 {
-                    identifiedGames.Add(new Game
+                    identifiedGames.Add(new StashGame
                     {
-                        Type = repackType,
+                        PackageType = repackType,
                         MatchName = gameName,
                         Folder = directory
                     });

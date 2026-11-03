@@ -26,6 +26,7 @@ namespace GameStash.Web.GUI.DTO
         public string Modes { get; set; } = "Not specified";
         public double Rating { get; set; }
         public int RatingCount { get; set; }
+        public int DiskSpace { get; set; }
 
         public ScreenshotDto[] Screenshots { get; set; } = Array.Empty<ScreenshotDto>();
         public VideoDto[] Videos { get; set; } = Array.Empty<VideoDto>();

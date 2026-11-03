@@ -78,7 +78,7 @@ namespace GameStash.MVVM.GUI.Views
             this.DataContextChanged += LibraryGameDetailsView_DataContextChanged;
         }
 
-        public LibraryGameDetailsView(Game game) : this()
+        public LibraryGameDetailsView(StashGame game) : this()
         {
             this.DataContext = game;
         }
@@ -101,7 +101,7 @@ namespace GameStash.MVVM.GUI.Views
                             if (mainViewModel.LocalGamesLibrary.Any(g => g.Id == similarGame.Id))
                                 similarGames.Add(mainViewModel.LocalGamesLibrary.First(g => g.Id == similarGame.Id));
                             else
-                                similarGames.Add(await Game.GetBaseGame(mainViewModel.Igdb_Client_Id, mainViewModel.Igdb_Secret, similarGame.Id.Value));
+                                similarGames.Add(await StashGame.GetBaseGame(mainViewModel.Igdb_Client_Id, mainViewModel.Igdb_Secret, similarGame.Id.Value));
                         }
 
                         SimilarGames = similarGames;
@@ -120,7 +120,7 @@ namespace GameStash.MVVM.GUI.Views
             {
                 if(fe.DataContext is IgdbSharp.Models.Screenshot screenshot)
                 {
-                    if(this.DataContext is Game game)
+                    if(this.DataContext is StashGame game)
                     {
                         var screenshotPosition = Array.IndexOf(game.Screenshots.Values, screenshot) + 1;
                         CurrentScreenshotNumber = screenshotPosition;
@@ -138,7 +138,7 @@ namespace GameStash.MVVM.GUI.Views
 
         private void LeftButton_Click(object sender, RoutedEventArgs e)
         {
-            var game = this.DataContext as Game;
+            var game = this.DataContext as StashGame;
             if (CurrentScreenshotNumber == 1)
                 CurrentScreenshotNumber = game.Screenshots.Values.Count();
             else
@@ -149,7 +149,7 @@ namespace GameStash.MVVM.GUI.Views
 
         private void RightButton_Click(object sender, RoutedEventArgs e)
         {
-            var game = this.DataContext as Game;
+            var game = this.DataContext as StashGame;
             if (game.Screenshots.Values.Count() == CurrentScreenshotNumber)
                 CurrentScreenshotNumber = 1;
             else

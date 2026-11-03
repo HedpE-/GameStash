@@ -1,89 +1,61 @@
 ﻿<div class="import-container">
-    <!-- Header with Count -->
     <div class="import-header-row">
         <h1 class="import-title">Import Games</h1>
-        <span id="import-count-badge" class="import-count-badge">0</span>
     </div>
 
-    <!-- Toolbar Controls -->
+    <!-- Toolbar Superior -->
     <div class="import-toolbar">
         <div class="toolbar-left-group">
-            <button type="button" id="import-refresh-btn" class="toolbar-action-btn" title="Refresh all Root Folders">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="23 4 23 10 17 10"></polyline>
-                    <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"></path>
-                </svg>
-                <span>Refresh Folders</span>
-            </button>
-
-            <button type="button" id="import-match-selected-btn" class="toolbar-action-btn primary" title="Auto-match selected folders against IGDB">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
-                </svg>
-                <span>IGDB Match Selected</span>
-            </button>
+            <button id="import-refresh-btn" class="toolbar-action-btn">↻ Rescan Root Folders</button>
+            <button id="import-match-selected-btn" class="toolbar-action-btn" disabled>🔍 IGDB Match Selected</button>
         </div>
-
-        <button type="button" id="import-help-btn" class="help-btn" title="Import Games Help">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path>
-                <line x1="12" y1="17" x2="12.01" y2="17"></line>
-            </svg>
-        </button>
+        <button id="import-help-btn" class="help-btn" title="Help">❓ Help</button>
     </div>
 
-    <!-- Selection Checkboxes Row -->
+    <!-- Checkbox Bar -->
     <div class="selection-checkboxes-bar">
         <label class="custom-checkbox-label">
-            <input type="checkbox" id="import-check-all" />
-            <span>Select All</span>
+            <input type="checkbox" id="import-check-all" /> Select All
         </label>
         <label class="custom-checkbox-label">
-            <input type="checkbox" id="import-check-all-matched" />
-            <span>Select All with Match</span>
+            <input type="checkbox" id="import-check-all-matched" /> Select All with Match
+        </label>
+        <label class="custom-checkbox-label">
+            <input type="checkbox" id="import-check-page" /> Select All in Page
         </label>
     </div>
 
-    <!-- Data Table Container -->
+    <!-- Table Wrapper (Elástico com scroll vertical e horizontal automático) -->
     <div class="import-table-wrapper">
         <table class="import-table">
             <thead>
                 <tr>
-                    <th style="width: 45px; text-align: center;">✓</th>
-                    <th style="width: 25%;">Match Name</th>
-                    <th style="width: 10%;">Type</th>
-                    <th style="width: 35%;">Folder</th>
-                    <th style="width: 30%;">Matched Game</th>
+                    <th class="col-checkbox">[-]</th>
+                    <th class="col-match-name">Match Name</th>
+                    <th class="col-type">Type</th>
+                    <th class="col-folder">Folder</th>
+                    <th class="col-matched-game">Matched Game</th>
                 </tr>
             </thead>
             <tbody id="import-table-body">
-                <!-- Dynamically populated via importfolders.js -->
+                <!-- Injetado dinamicamente via JS -->
             </tbody>
         </table>
     </div>
 
-    <!-- Bottom Action Row -->
-    <div class="import-bottom-bar">
-        <button type="button" id="import-execute-btn" class="import-submit-btn">
-            Import Selected
-        </button>
-    </div>
-</div>
+    <!-- Barra Inferior de Paginação e Execução -->
+    <div class="import-footer-bar">
+        <div class="import-pagination-bar">
+            <!-- Removido o style embutido daqui -->
+            <div id="pagination-numbers-container"></div>
 
-<!-- Help Dialog Modal -->
-<div id="import-help-modal" class="modal-overlay">
-    <div class="modal-dialog-card help-modal-card">
-        <h3>Import Games Help</h3>
-        <p class="help-text">
-            If some folders aren't detected by the engine and you want to include them in your local library (e.g. ISO games without an installer or non-standard directory structures), you can create a file named <code>playarr.json</code> inside the game folder with keys <strong>"Name"</strong> and <strong>"Type"</strong> (optional). Next time the root folder is scanned, the folder will appear here.
-        </p>
-        <p class="help-text">
-            Conversely, if a discovered folder shouldn't be imported (such as updates or tools like RUNE), place an empty file named <code>playarr.ignore</code> inside that folder to skip it and all its subfolders.
-        </p>
-        <div class="dialog-actions">
-            <button type="button" id="import-help-close-btn" class="dialog-btn primary">Close</button>
+            <span class="pagination-info">
+                <span id="pagination-info">Page 1 of 1</span>
+                <span class="pagination-divider">•</span>
+                <strong id="import-count-badge">0</strong> total folders
+            </span>
         </div>
+
+        <button id="import-execute-btn" class="import-submit-btn">✓ Import Selected</button>
     </div>
 </div>

@@ -1,12 +1,15 @@
 ﻿/* ==========================================================================
    CENTRAL STYLESHEET ORCHESTRATOR & CORE PIPELINE
    ========================================================================== */
-@import url('views/importfolders.css');
+@import url('./snackbar.css');
+@import url('./pagination.css');
+@import url('./navbar.css');
+@import url('views/settings.css');
 @import url('views/dashboard.css');
 @import url('views/gamedetails.css');
 @import url('views/browse.css');
-@import url('views/locallibrary.css');
-@import url('views/settings.css');
+@import url('views/importfolders.css');
+@import url('views/localstash.css');
 
 :root {
     --bg-dark: #121212;
@@ -92,10 +95,22 @@ body {
     letter-spacing: 1px;
 }
 
-.content-area {
+.content-area,
+.main-view-workspace {
     flex: 1;
-    padding: 40px;
+    padding: 20px 30px;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
     overflow-y: auto;
+    overflow-x: auto;
+}
+
+#content-workspace {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
 }
 
 h1 {
@@ -111,4 +126,87 @@ h2 {
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
+}
+
+/* ==========================================================================
+   GLOBAL CUSTOM SCROLLBARS (Matches Dark/Purple Theme)
+   ========================================================================== */
+
+/* Modern Standard (Firefox) */
+* {
+    scrollbar-width: thin;
+    scrollbar-color: #2e2e2e transparent;
+}
+
+/* WebKit / Chromium / Edge / Electron */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #2b2b2b;
+    border-radius: 6px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+    transition: background-color 0.2s ease;
+}
+
+    ::-webkit-scrollbar-thumb:hover {
+        background-color: var(--primary-purple, #7c3aed);
+        border: 1px solid transparent;
+    }
+
+    ::-webkit-scrollbar-thumb:active {
+        background-color: #6d28d9;
+    }
+
+::-webkit-scrollbar-corner {
+    background: transparent;
+}
+
+/* ==========================================================================
+   GLOBAL FULL-VIEW LOADING SPINNER COMPONENT
+   ========================================================================== */
+.view-loading-indicator {
+    flex: 1;
+    min-height: 350px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* Spinner grande de 48px com brilho roxo */
+.spinner-large {
+    width: 48px;
+    height: 48px;
+    border: 4px solid rgba(255, 255, 255, 0.08);
+    border-top-color: var(--primary-purple, #7c3aed);
+    border-radius: 50%;
+    animation: spin 0.9s cubic-bezier(0.55, 0.15, 0.45, 0.85) infinite;
+    box-shadow: 0 0 15px rgba(124, 58, 237, 0.25);
+    flex-shrink: 0;
+}
+
+.view-loading-indicator .loading-text {
+    font-size: 14px;
+    color: var(--text-muted, #9ca3af);
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    margin: 0;
+    text-align: center;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }

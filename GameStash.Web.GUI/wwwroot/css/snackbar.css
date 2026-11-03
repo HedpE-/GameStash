@@ -1,0 +1,130 @@
+﻿/* ==========================================================================
+   NAVBAR BOTTOM-DOCKED FLOATING SNACKBAR (240px Sidebar Width)
+   ========================================================================== */
+
+/* 1. Container docked at the bottom of the 240px sidebar */
+.snackbar-container {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 240px; /* Exact width of the sidebar */
+    padding: 10px;
+    z-index: 99999;
+    display: flex;
+    flex-direction: column-reverse;
+    gap: 8px;
+    pointer-events: none;
+    box-sizing: border-box;
+}
+
+/* 2. Floating toast card with app's signature purple tint */
+.snackbar-toast {
+    pointer-events: auto;
+    width: 100%;
+    box-sizing: border-box;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 14px;
+    border-radius: 8px;
+    /* Dark surface with elegant purple gradient wash */
+    background: linear-gradient(180deg, rgba(129, 77, 230, 0.16) 0%, rgba(129, 77, 230, 0.08) 100%), #161616;
+    border: 1px solid rgba(139, 92, 246, 0.35);
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.8), 0 0 12px rgba(124, 58, 237, 0.15);
+    color: #f3f4f6;
+    font-size: 12.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    backdrop-filter: blur(8px);
+    /* Emerging animation from bottom of screen upwards */
+    opacity: 0;
+    transform: translateY(100%);
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+    /* Visible active state */
+    .snackbar-toast.snackbar-visible {
+        opacity: 1;
+        transform: translateY(0);
+    }
+
+    /* Slide-down dismissal */
+    .snackbar-toast.snackbar-hiding {
+        opacity: 0;
+        transform: translateY(30px) scale(0.95);
+    }
+
+/* Toast Content */
+.snackbar-icon {
+    font-size: 12px;
+    font-weight: 800;
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 1px;
+}
+
+.snackbar-message {
+    flex: 1;
+    word-break: break-word;
+    font-size: 12px;
+    color: #e5e7eb;
+}
+
+.snackbar-close-btn {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    cursor: pointer;
+    font-size: 10px;
+    padding: 2px 4px;
+    border-radius: 4px;
+    flex-shrink: 0;
+    transition: color 0.15s ease, background-color 0.15s ease;
+}
+
+    .snackbar-close-btn:hover {
+        color: #ffffff;
+        background: rgba(255, 255, 255, 0.1);
+    }
+
+/* Severity Accents */
+.snackbar-success {
+    border-left: 3px solid #10b981;
+}
+
+    .snackbar-success .snackbar-icon {
+        background: rgba(16, 185, 129, 0.2);
+        color: #34d399;
+    }
+
+.snackbar-error {
+    border-left: 3px solid #ef4444;
+}
+
+    .snackbar-error .snackbar-icon {
+        background: rgba(239, 68, 68, 0.2);
+        color: #f87171;
+    }
+
+.snackbar-warning {
+    border-left: 3px solid #f59e0b;
+}
+
+    .snackbar-warning .snackbar-icon {
+        background: rgba(245, 158, 11, 0.2);
+        color: #fbbf24;
+    }
+
+.snackbar-info {
+    border-left: 3px solid var(--primary-purple, #7c3aed);
+}
+
+    .snackbar-info .snackbar-icon {
+        background: rgba(124, 58, 237, 0.2);
+        color: #c4b5fd;
+    }

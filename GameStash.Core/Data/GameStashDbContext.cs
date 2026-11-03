@@ -1,15 +1,23 @@
 ﻿using GameStash.Core.Models;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 
 namespace GameStash.Core.Data
 {
     public class GameStashDbContext : DbContext
     {
-        public DbSet<Game> LocalLibrary { get; set; }
+        public DbSet<StashGame> LocalLibrary { get; set; }
         public DbSet<Settings> Settings { get; set; }
+        public DbSet<RootFolder> RootFolders { get; set; }
 
         protected override void OnConfiguring(DbContextOptionsBuilder options)
-            => options.UseNpgsql("Host=localhost;Database=gamestash;Username=postgres;Password=postgres");
+        {
+            options.UseNpgsql("Host=localhost;Database=gamestash;Username=postgres;Password=postgres");
+
+            options.ConfigureWarnings(warnings =>
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)
+            );
+        }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -20,16 +28,32 @@ namespace GameStash.Core.Data
             {
                 entity.ToTable("settings");
                 entity.HasKey(s => s.IGDB_Client_ID);
-                entity.Property(s => s.RootFolders);
-                entity.Property(s => s.IGDB_Client_ID).HasColumnName("igdb_client_id");
-                entity.Property(s => s.IGDB_Secret).HasColumnName("igdb_secret");
+                entity.Property(s => s.IGDB_Client_ID).HasColumnName("igdb_client_id").IsRequired();
+                entity.Property(s => s.IGDB_Secret).HasColumnName("igdb_secret").IsRequired();
             });
 
             // -------------------------------------------------------------
             // 2. Local Library Table Mapping (Game entity)
             // -------------------------------------------------------------
-            modelBuilder.Entity<Game>(entity =>
+            modelBuilder.Entity<RootFolder>(entity =>
             {
+                entity.ToTable("root_folders");
+                entity.HasKey(r => r.Id);
+                entity.Property(r => r.Id).HasColumnName("id").ValueGeneratedOnAdd();
+                entity.Property(r => r.Path).HasColumnName("path").IsRequired();
+                entity.Ignore(s => s.UsedSpace);
+                entity.Ignore(s => s.FreeSpace);
+                entity.Ignore(s => s.FoundGamesCount);
+                entity.Ignore(s => s.IsImportingFolders);
+                entity.Ignore(s => s.HasErrors);
+            });
+
+            // -------------------------------------------------------------
+            // 3. Local Library Table Mapping (Game entity)
+            // -------------------------------------------------------------
+            modelBuilder.Entity<StashGame>(entity =>
+            {
+                entity.HasBaseType((Type)null);
                 entity.ToTable("localLibrary");
                 entity.HasKey(g => g.Id);
                 entity.Property(g => g.Id).ValueGeneratedNever();
@@ -37,14 +61,21 @@ namespace GameStash.Core.Data
                 // ---------------------------------------------------------
                 // PERSISTED PROPERTIES (Actual columns in PostgreSQL)
                 // ---------------------------------------------------------
-                entity.Property(g => g.Type);
+                entity.Property(g => g.PackageType);
                 entity.Property(g => g.Folder);
                 entity.Property(g => g.RootFolder);
                 entity.Property(g => g.Name);
                 entity.Property(g => g.SortName);
                 entity.Property(g => g.IsFavorite);
                 entity.Property(g => g.IsInstalled);
-                entity.Property(g => g.DateAdded);
+                entity.Property(g => g.IsPlayed);
+                entity.Property(g => g.IsPlaying);
+                entity.Property(g => g.IsFinished);
+                entity.Property(g => g.DateAdded)
+                  .HasConversion(
+                      v => v.HasValue ? v.Value.ToUniversalTime() : (DateTime?)null,
+                      v => v.HasValue ? DateTime.SpecifyKind(v.Value, DateTimeKind.Utc) : (DateTime?)null
+                  );
 
                 // ---------------------------------------------------------
                 // LOCAL UI & RUNTIME STATE (Ignored by EF Core)
@@ -58,6 +89,7 @@ namespace GameStash.Core.Data
                 entity.Ignore(g => g.IsRefreshing);
                 entity.Ignore(g => g.IgdbMatches);
                 entity.Ignore(g => g.IgdbSelectedMatch);
+                entity.Ignore(g => g.ReleaseDate);
 
                 // ---------------------------------------------------------
                 // IGDB v4 COMPLEX RELATIONS & GRAPH PROPS (Ignored by EF Core)
@@ -123,7 +155,13 @@ namespace GameStash.Core.Data
 
                 // Computed/Helper bridges
                 entity.Ignore(g => g.DeveloperCompany);
+                entity.Ignore(g => g.ReleaseDate);
             });
+        }
+
+        public static GameStashDbContext CreateDbContext()
+        {
+            return new GameStashDbContext();
         }
     }
 }

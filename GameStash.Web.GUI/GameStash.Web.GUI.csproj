@@ -23,6 +23,10 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Content Remove="wwwroot\favicon.png" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Content Include="Resources\GameStash_Icon.ico" />
   </ItemGroup>
 
@@ -50,6 +54,7 @@
     <EmbeddedResource Include="Resources\json_example.png">
       <CopyToOutputDirectory>Never</CopyToOutputDirectory>
     </EmbeddedResource>
+    <EmbeddedResource Include="wwwroot\favicon.png" />
   </ItemGroup>
 
   <ItemGroup>

@@ -55,7 +55,7 @@ namespace GameStash.MVVM.GUI.ViewModels
                     try
                     {
                         var currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                        queryString = $"fields {Core.Models.Game.FullQueryFields}; where first_release_date != null & platforms = (6) & first_release_date <= {currentTimestamp}; sort first_release_date desc; limit 10;";
+                        queryString = $"fields {Core.Models.StashGame.FullQueryFields}; where first_release_date != null & platforms = (6) & first_release_date <= {currentTimestamp}; sort first_release_date desc; limit 10;";
                         var IgdbMatches = await igdbClient.QueryAsync<Game>(Endpoints.Games, queryString, requestPriority: RequestPriority.High);
                         LatestReleases = new ObservableCollection<Game>(IgdbMatches);
                     }
@@ -69,7 +69,7 @@ namespace GameStash.MVVM.GUI.ViewModels
                     string queryString = null;
                     try
                     {
-                        queryString = $"fields {Core.Models.Game.FullQueryFields}; where rating != null & platforms != null & platforms = (6); sort rating desc; limit 10;";
+                        queryString = $"fields {Core.Models.StashGame.FullQueryFields}; where rating != null & platforms != null & platforms = (6); sort rating desc; limit 10;";
                         var IgdbMatches = await igdbClient.QueryAsync<Game>(Endpoints.Games, queryString, requestPriority: RequestPriority.High);
                         Top10RatedGames = new ObservableCollection<Game>(IgdbMatches);
                     }
@@ -84,7 +84,7 @@ namespace GameStash.MVVM.GUI.ViewModels
                     try
                     {
                         long currentTimestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds();
-                        queryString = $"fields {Core.Models.Game.FullQueryFields}; where first_release_date > {currentTimestamp} & hypes > 0 & platforms != null & platforms = (6); sort hypes desc; limit 10;";
+                        queryString = $"fields {Core.Models.StashGame.FullQueryFields}; where first_release_date > {currentTimestamp} & hypes > 0 & platforms != null & platforms = (6); sort hypes desc; limit 10;";
                         var IgdbMatches = await igdbClient.QueryAsync<Game>(Endpoints.Games, queryString, requestPriority: RequestPriority.High);
                         MostAnticipated = new ObservableCollection<Game>(IgdbMatches.OrderBy(g => g.FirstReleaseDate));
                     }

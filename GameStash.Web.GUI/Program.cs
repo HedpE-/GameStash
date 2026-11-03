@@ -44,13 +44,11 @@ try
 
     // 2. Register Application Core Services in the IoC Container
     builder.Services.AddSingleton<ISettingsService, SettingsService>();
+    builder.Services.AddSingleton<IRootFoldersService, RootFoldersService>();
     // LibraryService registered as Singleton to hold the static in-memory library cache
-    builder.Services.AddSingleton<ILibraryService, LocalLibraryService>();
+    builder.Services.AddSingleton<IStashService, StashLibraryService>();
     builder.Services.AddScoped<IHomeDashboardService, HomeDashboardService>();
     builder.Services.AddScoped<IGameDetailsService, GameDetailsService>();
-
-    // Register background hosted synchronization workers
-    builder.Services.AddHostedService<RootFolderMonitorService>();
 
     // 3. Register Web API Routing Infrastructure
     builder.Services.AddControllers()
@@ -61,6 +59,20 @@ try
 
     var app = builder.Build();
 
+    try
+    {
+        using var scope = app.Services.CreateScope();
+
+        // 1. Settings & SQLite structure must complete first
+        var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
+        Log.ForContext(typeof(Program)).Information("Initializing settings ...");
+        await settingsService.InitializeAsync();
+    }
+    catch (Exception ex)
+    {
+        Log.ForContext(typeof(Program)).Error(ex, "Background initialization sequence encountered an unexpected error.");
+    }
+
     // 4. Asynchronous Concurrent Background Initialization (Non-blocking Boot)
     _ = Task.Run(async () =>
     {
@@ -68,16 +80,12 @@ try
         {
             using var scope = app.Services.CreateScope();
 
-            // 1. Settings & SQLite structure must complete first
-            var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
-            Log.ForContext(typeof(Program)).Information("Initializing settings, SQLite database, and root folders...");
-            await settingsService.InitializeAsync();
-
             // 2. Local Library initializes using the configured database and IGDB client
-            var libraryService = scope.ServiceProvider.GetRequiredService<ILibraryService>();
-            Log.ForContext(typeof(Program)).Information("Initializing local library cache and synchronizing entries...");
+            var rootFoldersService = scope.ServiceProvider.GetRequiredService<IRootFoldersService>();
+            await rootFoldersService.InitializeAsync();
+            // 2. Local Library initializes using the configured database and IGDB client
+            var libraryService = scope.ServiceProvider.GetRequiredService<IStashService>();
             await libraryService.InitializeAsync();
-
             Log.ForContext(typeof(Program)).Information("Background initialization sequence complete. All services are ready.");
         }
         catch (Exception ex)

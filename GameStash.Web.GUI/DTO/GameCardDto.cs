@@ -9,9 +9,6 @@ namespace GameStash.Web.GUI.DTO
 {
     public class GameCardDto
     {
-        public static readonly string GameCardQueryFields = "id, name, cover.*";
-        public static readonly string GameCardReleaseDateQueryFields = GameCardQueryFields + ", first_release_date";
-        public static readonly string GameCardRatingQueryFields = GameCardQueryFields + ", rating, rating_count";
         public long? Id { get; set; }
         public string Name { get; set; } 
         public string ReleaseDate { get; set; }

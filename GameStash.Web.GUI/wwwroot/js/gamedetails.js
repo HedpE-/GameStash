@@ -80,7 +80,7 @@ export async function openGameDetails(gameId, libraryType = "none") {
         let endpoint = "";
         switch (libraryType) {
             case "local":
-                endpoint = `/api/library/local/${gameId}/details`;
+                endpoint = `/api/stash/local/${gameId}/details`;
                 break;
             default:
                 endpoint = `/api/games/${gameId}`;
@@ -179,7 +179,7 @@ export async function openGameDetails(gameId, libraryType = "none") {
 
             updateInstallUI(!!game.IsInstalled);
 
-            // Wire Installation Status Toggle Click matching route /api/library/{type}/{id}/installed
+            // Wire Installation Status Toggle Click matching route /api/stash/{type}/{id}/installed
             if (installBadge) {
                 installBadge.onclick = async (e) => {
                     e.stopPropagation();
@@ -187,7 +187,7 @@ export async function openGameDetails(gameId, libraryType = "none") {
                     game.IsInstalled = newInstalledState;
                     updateInstallUI(newInstalledState);
 
-                    await fetch(`/api/library/${encodeURIComponent(libraryType)}/${gameId}/installed`, {
+                    await fetch(`/api/stash/${encodeURIComponent(libraryType)}/${gameId}/installed`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify(newInstalledState)
@@ -195,24 +195,24 @@ export async function openGameDetails(gameId, libraryType = "none") {
                 };
             }
 
-            // Wire Favorite Toggle Button matching route /api/library/{type}/{id}/favorite
+            // Wire Favorite Toggle Button matching route /api/stash/{type}/{id}/favorite
             favoriteBtn.onclick = async (e) => {
                 e.stopPropagation();
                 const newFavoriteState = !game.IsFavorite;
                 game.IsFavorite = newFavoriteState;
                 favoriteBtn.classList.toggle('active', newFavoriteState);
 
-                await fetch(`/api/library/${encodeURIComponent(libraryType)}/${gameId}/favorite`, {
+                await fetch(`/api/stash/${encodeURIComponent(libraryType)}/${gameId}/favorite`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newFavoriteState)
                 });
             };
 
-            // Wire Open Folder Button matching route /api/library/{type}/{id}/open-folder
+            // Wire Open Folder Button matching route /api/stash/{type}/{id}/open-folder
             if (openFolderBtn) {
                 openFolderBtn.onclick = async () => {
-                    await fetch(`/api/library/${encodeURIComponent(libraryType)}/${gameId}/open-folder`, {
+                    await fetch(`/api/stash/${encodeURIComponent(libraryType)}/${gameId}/open-folder`, {
                         method: 'POST'
                     });
                 };

@@ -1,0 +1,97 @@
+<div class="stash-container">
+    <!-- 1. Fixed Top Header & Toolbar Area -->
+    <div class="stash-fixed-header">
+        <div class="stash-header-row">
+            <h1 class="stash-title">Local Games Stash</h1>
+            <p id="stash-count-label" class="stash-subtitle">Loading games...</p>
+        </div>
+
+        <div class="stash-toolbar">
+            <div class="toolbar-left-actions">
+                <button type="button" id="stash-reload-btn" class="toolbar-action-btn">
+                    ↻ Reload Stash
+                </button>
+                <button type="button" id="stash-export-btn" class="toolbar-action-btn">
+                    📋 Export List
+                </button>
+                <button type="button" id="stash-flush-btn" class="toolbar-action-btn danger">
+                    🗑 Flush Database
+                </button>
+            </div>
+
+            <div class="toolbar-right-actions">
+                <!-- Sort Dropdown Context Menu -->
+                <div class="dropdown-container">
+                    <button type="button" id="stash-sort-toggle" class="toolbar-dropdown-btn">
+                        <span id="stash-sort-label">Sort: Name ↑</span>
+                    </button>
+                    <div id="stash-sort-menu" class="dropdown-menu">
+                        <div class="dropdown-item active" data-sort="Name">Name <span class="sort-indicator">↑</span></div>
+                        <div class="dropdown-item" data-sort="Release Date">Release Date <span class="sort-indicator"></span></div>
+                        <div class="dropdown-item" data-sort="Rating">Rating <span class="sort-indicator"></span></div>
+                        <div class="dropdown-item" data-sort="Date Added">Date Added <span class="sort-indicator"></span></div>
+                        <div class="dropdown-item" data-sort="Folder Size">Folder Size <span class="sort-indicator"></span></div>
+                    </div>
+                </div>
+
+                <!-- Filter Dropdown Context Menu -->
+                <div class="dropdown-container">
+                    <button type="button" id="stash-filter-toggle" class="toolbar-dropdown-btn">
+                        <span id="stash-filter-label">Filter: All</span>
+                    </button>
+                    <div id="stash-filter-menu" class="dropdown-menu">
+                        <div class="dropdown-item active" data-filter="All">All</div>
+                        <div class="dropdown-item" data-filter="Favorites">Favorites</div>
+                        <div class="dropdown-item" data-filter="Not Favorites">Not Favorites</div>
+                        <div class="dropdown-item" data-filter="Installed">Installed</div>
+                        <div class="dropdown-item" data-filter="Not Installed">Not Installed</div>
+                        <div class="dropdown-item" data-filter="Missing">Missing Folder</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Scrollable Render Workspace Grid -->
+    <div id="stash-workspace" class="stash-workspace" style="display: none;">
+        <div id="stash-games-grid" class="stash-games-grid"></div>
+        <div id="stash-alphabet-bar" class="stash-alphabet-bar"></div>
+    </div>
+
+    <!-- 3. Central Grid Fullscreen Visual Loading Spinner -->
+    <div id="stash-loading-indicator" class="stash-loading-indicator">
+        <div class="spinner"></div>
+        <p>Loading stash items...</p>
+    </div>
+
+    <!-- 4. Floating Operational Widgets -->
+    <button type="button" id="stash-scroll-top-btn" class="stash-scroll-top-btn" title="Scroll to Top">↑</button>
+
+    <!-- 5. Dialog Overlay Windows (Modals) -->
+    <!-- Edit Entry Modal Window -->
+    <div id="stash-edit-modal" class="modal-overlay">
+        <div class="modal-dialog-card">
+            <h3>Edit Game Entry</h3>
+            <div class="modal-form-group" style="margin: 15px 0;">
+                <label for="stash-edit-sortname-input" style="display:block; margin-bottom:5px; font-size:13px;">Custom Sort Name:</label>
+                <input type="text" id="stash-edit-sortname-input" style="width:100%; padding:8px; background:#111; border:1px solid #333; color:#fff; border-radius:4px;" />
+            </div>
+            <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" id="stash-edit-save-btn" class="toolbar-action-btn">Save</button>
+                <button type="button" id="stash-edit-close-btn" class="toolbar-action-btn">Close</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Remove Entry Confirmation Modal Window -->
+    <div id="stash-delete-modal" class="modal-overlay">
+        <div class="modal-dialog-card">
+            <h3>Remove Game Entry</h3>
+            <p id="stash-delete-message" style="margin: 15px 0; font-size:14px; color:#ccc;"></p>
+            <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px;">
+                <button type="button" id="stash-delete-confirm-btn" class="toolbar-action-btn danger">Yes</button>
+                <button type="button" id="stash-delete-cancel-btn" class="toolbar-action-btn">No</button>
+            </div>
+        </div>
+    </div>
+</div>

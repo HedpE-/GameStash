@@ -5,16 +5,24 @@
     display: flex;
     gap: 20px;
     overflow-x: auto;
+    overflow-y: hidden;
+    height: max-content; /* Adota estritamente a altura máxima do conteúdo */
+    flex-grow: 0; /* Impede que a strip estique para preencher vazios */
+    flex-shrink: 0; /* Impede que a strip encolha com a janela */
+    align-items: flex-start; /* Garante o alinhamento no topo sem esticar filhos */
+
     padding-top: 6px;
     margin-top: 19px;
-    padding-bottom: 15px;
+    padding-bottom: 16px; /* Respiro essencial para o translateY(-4px) do hover */
     margin-bottom: 25px;
     scrollbar-width: thin;
     scrollbar-color: var(--border-color) transparent;
 }
 
+/* Garante que o card mantém uma geometria estrita e não deforma na linha flex */
 .game-card {
     width: 150px;
+    height: auto;
     flex-shrink: 0;
     background-color: var(--bg-card);
     border-radius: 8px;
@@ -22,6 +30,7 @@
     border: 1px solid var(--border-color);
     transition: transform 0.2s, border-color 0.2s;
 }
+
 
     .game-card:hover {
         transform: translateY(-4px);

@@ -85,7 +85,7 @@ namespace GameStash.MVVM.GUI.Views
                     object targetItem = null;
                     foreach (var item in GamesItemsControl.Items)
                     {
-                        if (item is Game game)
+                        if (item is StashGame game)
                         {
                             var firstChar = string.IsNullOrEmpty(game.SortName) ? game.Name?.FirstOrDefault() : game.SortName?.FirstOrDefault();
                             if (!firstChar.HasValue) continue;
@@ -131,13 +131,13 @@ namespace GameStash.MVVM.GUI.Views
 
         private async void GameCard_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
         {
-            if (!DialogHost.IsDialogOpen("RootDialog") && sender is FrameworkElement fe && fe.DataContext is Game)
+            if (!DialogHost.IsDialogOpen("RootDialog") && sender is FrameworkElement fe && fe.DataContext is StashGame)
                 await DialogHost.Show(fe.DataContext, dialogIdentifier: "RootDialog");
         }
 
         private void RemoveGameEntryButton_Click(object sender, RoutedEventArgs e)
         {
-            if (((FrameworkElement)sender)?.DataContext is Game game && Application.Current.MainWindow.DataContext is MainViewModel vm)
+            if (((FrameworkElement)sender)?.DataContext is StashGame game && Application.Current.MainWindow.DataContext is MainViewModel vm)
             {
                 if (vm.RemoveLibraryItemCommand.CanExecute(game))
                     vm.RemoveLibraryItemCommand.Execute(game);

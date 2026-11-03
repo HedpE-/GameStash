@@ -119,7 +119,7 @@ namespace GameStash.Tests
             TestContext.Out.WriteLine("==========================================================================");
             TestContext.Out.WriteLine($"  IDENTIFICATION FINISHED - FOUND {games.Count()} FILES TO PROCESS");
             TestContext.Out.WriteLine("==========================================================================");
-            TestContext.Out.WriteLine(string.Join("\n", games.Select(game => $"{game.Type} - {game.MatchName}")));
+            TestContext.Out.WriteLine(string.Join("\n", games.Select(game => $"{game.PackageType} - {game.MatchName}")));
         }
 
         [Test]
@@ -147,7 +147,7 @@ namespace GameStash.Tests
             TestContext.Out.WriteLine("==========================================================================");
             TestContext.Out.WriteLine($"  IDENTIFICATION FINISHED - FOUND {games.Count()} FILES TO PROCESS");
             TestContext.Out.WriteLine("==========================================================================");
-            TestContext.Out.WriteLine(string.Join("\n", games.Select(game => $"{game.Type} - {game.MatchName}")));
+            TestContext.Out.WriteLine(string.Join("\n", games.Select(game => $"{game.PackageType} - {game.MatchName}")));
         }
 
         [Test]
@@ -175,7 +175,7 @@ namespace GameStash.Tests
             TestContext.Out.WriteLine("==========================================================================");
             TestContext.Out.WriteLine($"  IDENTIFICATION FINISHED - IDENTIFIED {games.Count()} GAMES");
             TestContext.Out.WriteLine("==========================================================================");
-            TestContext.Out.WriteLine(string.Join("\n", games.Select(game => $"{game.Type} - {game.MatchName}")));
+            TestContext.Out.WriteLine(string.Join("\n", games.Select(game => $"{game.PackageType} - {game.MatchName}")));
 
             await Parallel.ForEachAsync(games, CancellationToken.None/*new CancellationTokenSource(TimeSpan.FromSeconds(30)).Token*/,
                 async (game, token) => await game.MatchIgdbGame(igdb_client_id, igdb_secret));
@@ -200,7 +200,7 @@ namespace GameStash.Tests
         {
             int game_id = 140427;
 
-            var game = new Core.Models.Game { Id = game_id };
+            var game = new Core.Models.StashGame { Id = game_id };
 
             game.Should().NotBeNull();
             game.Id.Should().HaveValue("because the identity allocation phase should be completed");

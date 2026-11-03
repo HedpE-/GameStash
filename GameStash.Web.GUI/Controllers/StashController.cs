@@ -1,9 +1,9 @@
 ﻿using GameStash.Core.Models;
 using GameStash.Web.GUI.DTO;
 using GameStash.Web.GUI.Interfaces;
-using GameStash.Web.GUI.Services;
 using Microsoft.AspNetCore.Mvc;
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq; // Resolves CS1061 Select extension method
 using System.Threading.Tasks;
@@ -11,14 +11,29 @@ using System.Threading.Tasks;
 namespace GameStash.Web.GUI.Controllers
 {
     [ApiController]
-    [Route("api/library/{type}")]
-    public class LibraryController(ILibraryService libraryService, IGameDetailsService gameDetailsService) : ControllerBase
+    [Route("api/stash/{type}")]
+    public class StashController(IStashService libraryService, IGameDetailsService gameDetailsService, IRootFoldersService rootFoldersService) : ControllerBase
     {
-        private readonly ILibraryService _libraryService = libraryService;
+        private readonly IStashService _libraryService = libraryService;
         private readonly IGameDetailsService _gameDetailsService = gameDetailsService;
+        private readonly IRootFoldersService _rootFoldersService = rootFoldersService;
+
+        [HttpDelete]
+        public async Task<IActionResult> FlushLibrary(string type)
+        {
+            switch (type.ToLower())
+            {
+                case "local":
+                    // Invoke the cleanup sequence directly on the data layer service
+                    await _libraryService.Flush();
+                    return Ok(new { Success = true, Message = "PostgreSQL library catalog successfully flushed." });
+                default:
+                    return BadRequest(new { Message = $"Unsupported library type: {type}" });
+            }
+        }
 
         [HttpGet]
-        public IActionResult GetLibrary(string type, [FromQuery] bool refreshDb = false)
+        public IActionResult GetStash([FromRoute] string type, [FromQuery] bool refreshDb = false)
         {
             switch (type.ToLower())
             {
@@ -28,9 +43,48 @@ namespace GameStash.Web.GUI.Controllers
                         _ = _libraryService.InitializeAsync();
                     }
 
-                    var localGames = _libraryService.GetLocalLibrary(type);
-                    return Ok(localGames.Select(LibraryGameCardDto.FromModel));
+                    var localGames = _libraryService.GetLibrary(type);
+                    return Ok(localGames.Select(StashGameCardDto.FromModel));
 
+                default:
+                    return BadRequest(new { Message = $"Unsupported library type: {type}" });
+            }
+        }
+
+        [HttpPut]
+        public async Task<IActionResult> AddGameToStash([FromRoute] string type, [FromQuery] string folderPath)
+        {
+            switch (type.ToLower())
+            {
+                case "local":
+                    var game = _rootFoldersService.FoundFolders.FirstOrDefault(f => f.Folder == folderPath);
+                    if (game == null)
+                        return NotFound(new { Message = $"Game with path '{folderPath} was not found in the Root Folders discovered games." });
+
+                    try
+                    {
+                        game.MatchIgdbGame(game.IgdbSelectedMatch);
+                        if (!game.DateAdded.HasValue)
+                        {
+                            game.DateAdded = DateTime.Now;
+                        }
+
+                        await _libraryService.AddGameToLibrary(game);
+
+                        // Remove from unimported FoundFolders
+                        _rootFoldersService.RemoveFoundFolders(_rootFoldersService.FoundFolders.Where(f => f.Folder == game.Folder).Select(f => f.Folder));
+                        return Ok(new
+                        {
+                            Success = true,
+                            Id = game.Id,
+                            Message = $"Success adding game to {type} Stash"
+                        });
+                    }
+                    catch (Exception ex)
+                    {
+                        Serilog.Log.Error(ex, "Failed to import game: {Folder}", game.Folder);
+                        return this.BadRequest($"Failed to import game: {game.Folder}\n{ex.Message}");
+                    }
                 default:
                     return BadRequest(new { Message = $"Unsupported library type: {type}" });
             }
@@ -51,15 +105,15 @@ namespace GameStash.Web.GUI.Controllers
                     // Fetch deep IGDB graph (Summary, Storyline, Developer, Platforms, etc.)
                     if (localGame.Id.HasValue && localGame.Id.Value > 0)
                     {
-                        Game fullGame = await _gameDetailsService.GetGameDetailsAsync<Game>(localGame.Id.Value);
+                        StashGame fullGame = await _gameDetailsService.GetGameDetailsAsync<StashGame>(localGame.Id.Value);
                         if (fullGame != null)
                         {
                             localGame.MatchIgdbGame(fullGame);
-                            return Ok(LibraryGameDetailsDto.FromModel(fullGame));
+                            return Ok(StashGameDetailsDto.FromModel(fullGame));
                         }
                     }
 
-                    return Ok(LibraryGameDetailsDto.FromModel(localGame));
+                    return Ok(StashGameDetailsDto.FromModel(localGame));
                 // Future cases for other library types can be added here
                 default:
                     return BadRequest(new { Message = $"Unsupported library type: {type}" });
@@ -117,8 +171,7 @@ namespace GameStash.Web.GUI.Controllers
             switch (type.ToLower())
             {
                 case "local":
-                    var success = await _libraryService.RemoveAsync(id, type);
-                    if (!success) return NotFound();
+                    await _libraryService.RemoveGameFromLibrary(id.ToString());
                     return Ok(new { Success = true });
                 // Future cases for other library types can be added here
                 default:
@@ -134,7 +187,7 @@ namespace GameStash.Web.GUI.Controllers
                 case "local":
                     var game = await _libraryService.RefreshGameAsync(id, type);
                     if (game == null) return NotFound();
-                    return Ok(LibraryGameCardDto.FromModel(game));
+                    return Ok(StashGameCardDto.FromModel(game));
                 // Future cases for other library types can be added here
                 default:
                     return BadRequest(new { Message = $"Unsupported library type: {type}" });
@@ -175,6 +228,44 @@ namespace GameStash.Web.GUI.Controllers
                 default:
                     return BadRequest(new { Message = $"Unsupported library type: {type}" });
             }
+        }
+
+        [HttpPost("import-selected")]
+        public async Task<IActionResult> ImportSelected([FromBody] List<string> selectedFolderPaths)
+        {
+            if (selectedFolderPaths == null || selectedFolderPaths.Count == 0)
+                return BadRequest("No folders selected.");
+
+            var gamesToImport = _rootFoldersService.FoundFolders
+                .Where(f => selectedFolderPaths.Contains(f.Folder, StringComparer.OrdinalIgnoreCase) && f.IgdbSelectedMatch != null)
+                .ToList();
+
+            int importedCount = 0;
+
+            foreach (var game in gamesToImport)
+            {
+                try
+                {
+                    game.MatchIgdbGame(game.IgdbSelectedMatch);
+                    if (!game.DateAdded.HasValue)
+                    {
+                        game.DateAdded = DateTime.Now;
+                    }
+
+                    await _libraryService.AddGameToLibrary(game);
+
+                    // Remove from unimported FoundFolders
+                    _rootFoldersService.RemoveFoundFolders(_rootFoldersService.FoundFolders.Where(f => f.Folder == game.Folder).Select(f => f.Folder));
+
+                    importedCount++;
+                }
+                catch (Exception ex)
+                {
+                    Serilog.Log.Error(ex, "Failed to import game: {Folder}", game.Folder);
+                }
+            }
+
+            return Ok(new { Success = true, ImportedCount = importedCount });
         }
     }
 }

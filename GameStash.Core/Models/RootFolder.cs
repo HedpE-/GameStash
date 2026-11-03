@@ -5,6 +5,20 @@ namespace GameStash.Core.Models
 {
     public class RootFolder : ObservableObject
     {
+        private int _id;
+        public int Id
+        {
+            get => _id;
+            set
+            {
+                if (_id != value)
+                {
+                    _id = value;
+                    RaisePropertyChanged();
+                }
+            }
+        }
+
         private string _path;
         public string Path
         {
@@ -19,7 +33,7 @@ namespace GameStash.Core.Models
             }
         }
 
-        private long _usedSpace;
+        private long _usedSpace =0;
         public long UsedSpace
         {
             get => _usedSpace;
@@ -48,8 +62,8 @@ namespace GameStash.Core.Models
         }
 
 
-        public IEnumerable<Game> _foundGames;
-        public IEnumerable<Game> FoundGames
+        public IEnumerable<StashGame> _foundGames;
+        public IEnumerable<StashGame> FoundGames
         {
             get => _foundGames;
             set
@@ -62,7 +76,7 @@ namespace GameStash.Core.Models
             }
         }
 
-        private long _foundGamesCount;
+        private long _foundGamesCount = 0;
         public long FoundGamesCount
         {
             get => _foundGamesCount;
@@ -93,24 +107,21 @@ namespace GameStash.Core.Models
         public RootFolder(string path)
         {
             Path = path;
-            UpdateSpace();
+            _ = UpdateSpace();
         }
 
-        // Método para atualizar o espaço da pasta (caso necessário)
         public async Task UpdateSpace()
         {
             if (Directory.Exists(Path))
             {
                 await Task.Run(() =>
                 {
-                    // Obter o diretório da pasta (unidade) para usar com DriveInfo
                     var drive = new DriveInfo(Path);
 
-                    // Verificar se a unidade é acessível
                     if (drive.IsReady)
                     {
-                        FreeSpace = drive.AvailableFreeSpace;  // Espaço livre em bytes
-                        UsedSpace = drive.TotalSize - FreeSpace; // Espaço utilizado em bytes
+                        FreeSpace = drive.AvailableFreeSpace;  // bytes
+                        UsedSpace = drive.TotalSize - FreeSpace; // bytes
                     }
                 });                
             }
@@ -118,6 +129,7 @@ namespace GameStash.Core.Models
 
         public async Task FindGames()
         {
+            FoundGames = null;
             IsImportingFolders = true;
             try
             {

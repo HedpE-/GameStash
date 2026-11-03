@@ -37,7 +37,7 @@ namespace GameStash.MVVM.GUI.Views
                 var viewModel = DataContext as MainViewModel;
                 var comboBox = (ComboBox)sender;
                 var searchText = comboBox.Text;
-                var game = (Game)comboBox.DataContext;
+                var game = (StashGame)comboBox.DataContext;
                 game.MatchName = searchText;
                 game.MatchIgdbGame(viewModel.Igdb_Client_Id, viewModel.Igdb_Secret);
             }
@@ -45,7 +45,7 @@ namespace GameStash.MVVM.GUI.Views
 
         private void Folder_MenuItem_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            string text = ((Game)((MenuItem)sender).DataContext).Folder;
+            string text = ((StashGame)((MenuItem)sender).DataContext).Folder;
 
             if (string.IsNullOrEmpty(text))
                 return;
@@ -57,7 +57,7 @@ namespace GameStash.MVVM.GUI.Views
 
         private void MatchName_MenuItem_Click(object sender, System.Windows.RoutedEventArgs e)
         {
-            string text = ((Game)((MenuItem)sender).DataContext).MatchName;
+            string text = ((StashGame)((MenuItem)sender).DataContext).MatchName;
 
             if (string.IsNullOrEmpty(text))
                 return;

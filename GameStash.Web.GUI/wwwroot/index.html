@@ -1,47 +1,63 @@
-﻿<!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GameStash</title>
+    <title>GameStash - Dashboard</title>
     <link rel="stylesheet" href="/css/content.css">
 </head>
 <body>
-    <!-- Sidebar Navigation -->
-    <div class="sidebar">
-        <!-- Brand Header matching XAML -->
-        <div class="brand">GameStash</div>
+    <div class="app-container" style="display: flex; width: 100vw; height: 100vh; background-color: #0b0b0f; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; overflow: hidden;">
 
-        <!-- Top-Level Navigation Items -->
-        <div id="nav-home" class="nav-item active" data-tag="Home">Home</div>
-        <div id="nav-browse" class="nav-item" data-tag="Browse">Browse Games</div>
+        <!-- SIDEBAR / NAVBAR COMPONENT -->
+        <aside class="sidebar">
+            <div class="brand">GameStash</div>
 
-        <!-- Game Libraries Section (IsExpanded="True" in XAML) -->
-        <div class="nav-section">Game Libraries</div>
-        <div class="nav-sub-group">
-            <div id="nav-total-library" class="nav-item nav-sub-item" data-tag="TotalLibrary">Total Library</div>
-            <div id="nav-locallibrary" class="nav-item nav-sub-item" data-tag="LocalLibrary">Local Library</div>
-            <div id="nav-epic-library" class="nav-item nav-sub-item" data-tag="EpicLibrary">Epic Library</div>
-            <div id="nav-steam-library" class="nav-item nav-sub-item" data-tag="SteamLibrary">Steam Library</div>
-            <div id="nav-amazon-library" class="nav-item nav-sub-item" data-tag="AmazonLibrary">Amazon Library</div>
-        </div>
+            <nav class="nav-container">
+                <div class="nav-section">Dashboard</div>
+                <a class="nav-item" id="nav-home" data-view="home">🏠 Home</a>
+                <a class="nav-item" id="nav-browse" data-view="browse">🔍 Browse Games</a>
 
-        <!-- Settings Section -->
-        <div class="nav-section">Settings</div>
-        <div class="nav-sub-group">
-            <div id="nav-settings" class="nav-item nav-sub-item" data-tag="GlobalSettings">Global Settings</div>
-            <div id="nav-importfolders" class="nav-item nav-sub-item" data-tag="ImportFromRootFolders">Import from Root Folders</div>
-        </div>
+                <div class="nav-section">Game Stashes</div>
+                <a class="nav-item" id="nav-totalstash" data-view="totalstash">📦 Total Stash</a>
 
-        <!-- System Section -->
-        <div class="nav-section">System</div>
-        <div id="nav-system" class="nav-item" data-tag="System">System</div>
-    </div>
+                <!-- Acordeão Expansível do Local Stash -->
+                <button type="button" id="nav-group-local-stash" class="nav-item nav-group-toggle-btn">
+                    <span class="nav-group-header-item">
+                        <span>📁 Local Stash</span>
+                        <span class="sidebar-collapse-arrow">▼</span>
+                    </span>
+                </button>
 
-    <!-- Main Dynamic Application Workspace -->
-    <div class="content-area">
-        <div id="content-workspace">
-            <p class="loading-text">Loading view engine components...</p>
+                <!-- Sub-grupo do Local Stash -->
+                <div id="local-stash-sub-group" class="nav-sub-group collapsed">
+                    <a class="nav-item nav-sub-item" id="nav-localstashhome" data-view="localstashhome">↳ Home Stash</a>
+                    <a class="nav-item nav-sub-item" id="nav-localstash" data-view="localstash">↳ Browse Stash</a>
+                    <a class="nav-item nav-sub-item" id="nav-localstashplaylist" data-view="localstashplaylist">↳ Playlist</a>
+                    <a class="nav-item nav-sub-item" id="nav-importfolders" data-view="importfolders">↳ Import from Root Folders</a>
+                </div>
+
+                <!-- Outras Plataformas Externas -->
+                <a class="nav-item" id="nav-epicstash" data-view="epicstash">🎮 Epic Stash</a>
+                <a class="nav-item" id="nav-steamstash" data-view="steamstash">⚛️ Steam Stash</a>
+                <a class="nav-item" id="nav-amazonstash" data-view="amazonstash">👑 Amazon Stash</a>
+
+                <div class="nav-section">Settings</div>
+                <a class="nav-item" id="nav-settings" data-view="settings">⚙️ Global Settings</a>
+
+                <div class="nav-section">System</div>
+                <a class="nav-item" id="nav-system" data-view="system">📟 System</a>
+            </nav>
+        </aside>
+
+        <!-- MAIN WORKSPACE PLATFORM -->
+        <div class="content-area">
+            <div id="content-workspace">
+                <div class="view-loading-indicator">
+                    <div class="spinner-large"></div>
+                    <p class="loading-text">Loading view engine components...</p>
+                </div>
+            </div>
         </div>
     </div>
 

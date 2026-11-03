@@ -1,4 +1,4 @@
-﻿import { openGameDetails } from './gamedetails.js';
+import { openGameDetails } from './gamedetails.js';
 
 let libraryGames = [];
 let filteredGames = [];
@@ -9,30 +9,33 @@ let currentFilterOption = 'All';
 let activeGameForEdit = null;
 let activeGameForDelete = null;
 
-export async function initLocalLibraryView(workspaceElement) {
+export async function initLocalStashView(workspaceElement) {
     setupToolbarEvents();
     setupDialogEvents();
+    setupScrollTopEvent();
     await loadLibraryData();
 }
 
 async function loadLibraryData() {
-    const loader = document.getElementById('lib-loading-indicator');
-    const workspace = document.getElementById('lib-workspace');
+    const loader = document.getElementById('stash-loading-indicator');
+    const workspace = document.getElementById('stash-workspace');
+    const countLabel = document.getElementById('stash-count-label');
 
-    if (libraryGames.length === 0 && loader) {
-        loader.style.display = 'flex';
-    }
+    if (loader) loader.style.display = 'flex';
+    if (workspace) workspace.style.display = 'none';
+    if (countLabel) countLabel.innerText = 'Loading games...';
 
     try {
-        const response = await fetch('/api/library/local');
+        const response = await fetch('/api/stash/local');
         if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
         libraryGames = await response.json();
         applyFilterAndSort();
     } catch (err) {
-        console.error("Failed to load local library data:", err);
-        const grid = document.getElementById('lib-games-grid');
-        if (grid) grid.innerHTML = `<p style="color: #ff5252; padding: 20px;">Failed to load library items: ${err.message}</p>`;
+        console.error("Failed to load local stash data:", err);
+        const grid = document.getElementById('stash-games-grid');
+        if (grid) grid.innerHTML = `<p style="color: #ff5252; padding: 20px;">Failed to load stash items: ${err.message}</p>`;
+        if (countLabel) countLabel.innerText = 'Failed to load stash items';
     } finally {
         if (loader) loader.style.display = 'none';
         if (workspace) workspace.style.display = 'flex';
@@ -40,9 +43,27 @@ async function loadLibraryData() {
 }
 
 function setupToolbarEvents() {
-    document.getElementById('lib-reload-btn')?.addEventListener('click', () => loadLibraryData());
+    document.getElementById('stash-reload-btn')?.addEventListener('click', () => loadLibraryData());
 
-    document.getElementById('lib-export-btn')?.addEventListener('click', async () => {
+    document.getElementById('stash-flush-btn')?.addEventListener('click', async () => {
+        if (!confirm("CRITICAL WARNING:\nAre you sure you want to permanently flush the entire PostgreSQL database table?\nThis action cannot be undone.")) {
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stash/local/', { method: 'DELETE' });
+            if (response.ok) {
+                alert('Database successfully flushed.');
+                await loadLibraryData();
+            } else {
+                alert('Failed to clear database records.');
+            }
+        } catch (err) {
+            console.error("Flush transaction encountered a network exception:", err);
+        }
+    });
+
+    document.getElementById('stash-export-btn')?.addEventListener('click', async () => {
         const textLines = libraryGames.map(g => `${g.Name} (${g.IsFavorite ? 'Favorite | ' : ''}${g.IsInstalled ? 'Installed' : 'Not Installed'})`);
         try {
             await navigator.clipboard.writeText(textLines.join('\n'));
@@ -52,14 +73,14 @@ function setupToolbarEvents() {
         }
     });
 
-    const sortToggle = document.getElementById('lib-sort-toggle');
-    const sortMenu = document.getElementById('lib-sort-menu');
+    const sortToggle = document.getElementById('stash-sort-toggle');
+    const sortMenu = document.getElementById('stash-sort-menu');
     sortToggle?.addEventListener('click', (e) => {
         e.stopPropagation();
         sortMenu.style.display = sortMenu.style.display === 'flex' ? 'none' : 'flex';
     });
 
-    document.querySelectorAll('#lib-sort-menu .dropdown-item').forEach(item => {
+    document.querySelectorAll('#stash-sort-menu .dropdown-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.stopPropagation();
             const option = item.getAttribute('data-sort');
@@ -75,14 +96,14 @@ function setupToolbarEvents() {
         });
     });
 
-    const filterToggle = document.getElementById('lib-filter-toggle');
-    const filterMenu = document.getElementById('lib-filter-menu');
+    const filterToggle = document.getElementById('stash-filter-toggle');
+    const filterMenu = document.getElementById('stash-filter-menu');
     filterToggle?.addEventListener('click', (e) => {
         e.stopPropagation();
         filterMenu.style.display = filterMenu.style.display === 'flex' ? 'none' : 'flex';
     });
 
-    document.querySelectorAll('#lib-filter-menu .dropdown-item').forEach(item => {
+    document.querySelectorAll('#stash-filter-menu .dropdown-item').forEach(item => {
         item.addEventListener('click', (e) => {
             e.stopPropagation();
             currentFilterOption = item.getAttribute('data-filter');
@@ -99,11 +120,11 @@ function setupToolbarEvents() {
 }
 
 function updateSortUI() {
-    const label = document.getElementById('lib-sort-label');
+    const label = document.getElementById('stash-sort-label');
     const arrow = sortDirection === 'asc' ? '↑' : '↓';
     if (label) label.innerText = `Sort: ${currentSortOption} ${arrow}`;
 
-    document.querySelectorAll('#lib-sort-menu .dropdown-item').forEach(item => {
+    document.querySelectorAll('#stash-sort-menu .dropdown-item').forEach(item => {
         const opt = item.getAttribute('data-sort');
         const indicator = item.querySelector('.sort-indicator');
         if (opt === currentSortOption) {
@@ -117,10 +138,10 @@ function updateSortUI() {
 }
 
 function updateFilterUI() {
-    const label = document.getElementById('lib-filter-label');
+    const label = document.getElementById('stash-filter-label');
     if (label) label.innerText = `Filter: ${currentFilterOption}`;
 
-    document.querySelectorAll('#lib-filter-menu .dropdown-item').forEach(item => {
+    document.querySelectorAll('#stash-filter-menu .dropdown-item').forEach(item => {
         item.classList.toggle('active', item.getAttribute('data-filter') === currentFilterOption);
     });
 }
@@ -168,21 +189,29 @@ function applyFilterAndSort() {
         return 0;
     });
 
-    const countBadge = document.getElementById('lib-count-badge');
-    if (countBadge) countBadge.innerText = filteredGames.length;
+    const countLabel = document.getElementById('stash-count-label');
+    if (countLabel) {
+        const total = libraryGames.length;
+        const filtered = filteredGames.length;
+        if (currentFilterOption === 'All') {
+            countLabel.innerText = `${total} ${total === 1 ? 'game' : 'games'} cataloged`;
+        } else {
+            countLabel.innerText = `Showing ${filtered} of ${total} games (${currentFilterOption.toLowerCase()})`;
+        }
+    }
 
     renderGrid();
     renderAlphabetBar();
 }
 
 function renderGrid() {
-    const grid = document.getElementById('lib-games-grid');
+    const grid = document.getElementById('stash-games-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
     filteredGames.forEach(game => {
         const card = document.createElement('div');
-        card.className = 'lib-card-container';
+        card.className = 'stash-card-container';
         card.setAttribute('data-id', game.Id);
 
         const firstChar = (game.SortName || game.Name || '').trim().charAt(0).toUpperCase();
@@ -203,9 +232,9 @@ function renderGrid() {
         const isMissing = !game.IsFolderValid;
 
         card.innerHTML = `
-            <div class="lib-card-frame" style="background-image: url('${game.CoverUrl}');">
-                ${isMissing ? `
-                    <div class="lib-missing-overlay">
+            <div class="stash-card-frame" style="background-image: url('${game.CoverUrl}');">
+                ` + (isMissing ? `
+                    <div class="stash-missing-overlay">
                         <button type="button" class="menu-action-delete danger" title="Remove Missing Entry">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                                 <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -213,24 +242,24 @@ function renderGrid() {
                         </button>
                     </div>
                 ` : `
-                    <div class="lib-card-overlay">
-                        <button type="button" class="lib-favorite-btn ${game.IsFavorite ? 'active' : ''}" title="Favorite">
+                    <div class="stash-card-overlay">
+                        <button type="button" class="stash-favorite-btn ${game.IsFavorite ? 'active' : ''}" title="Favorite">
                             ${game.IsFavorite ? '♥' : '♡'}
                         </button>
                         <div style="position: relative; align-self: flex-end;">
-                            <button type="button" class="lib-menu-btn" title="Options">⋮</button>
-                            <div class="lib-card-context-menu">
+                            <button type="button" class="stash-menu-btn" title="Options">⋮</button>
+                            <div class="stash-card-context-menu">
                                 <button type="button" class="menu-action-refresh">Refresh</button>
                                 <button type="button" class="menu-action-edit">Edit</button>
                                 <button type="button" class="menu-action-delete danger">Delete</button>
                             </div>
                         </div>
                     </div>
-                `}
+                `) + `
             </div>
-            <div class="lib-card-text">
-                <div class="lib-game-title" title="${game.Name}">${game.Name}</div>
-                <div class="lib-game-meta">${subtitleText}</div>
+            <div class="stash-card-text">
+                <div class="stash-game-title" title="${game.Name}">${game.Name}</div>
+                <div class="stash-game-meta">${subtitleText}</div>
             </div>
         `;
 
@@ -240,17 +269,14 @@ function renderGrid() {
                 openDeleteModal(game);
             });
         } else {
-            // Normal game card click opens modal with 'local' provider
             card.addEventListener('click', (e) => {
-                if (e.target.closest('.lib-favorite-btn') || e.target.closest('.lib-menu-btn') || e.target.closest('.lib-card-context-menu')) {
+                if (e.target.closest('.stash-favorite-btn') || e.target.closest('.stash-menu-btn') || e.target.closest('.stash-card-context-menu')) {
                     return;
                 }
-                // Pass gameId and library provider 'local'
                 openGameDetails(game.Id, 'local');
             });
 
-            // Favorite toggle
-            const favBtn = card.querySelector('.lib-favorite-btn');
+            const favBtn = card.querySelector('.stash-favorite-btn');
             favBtn.addEventListener('click', async (e) => {
                 e.stopPropagation();
                 const newFav = !game.IsFavorite;
@@ -258,7 +284,7 @@ function renderGrid() {
                 favBtn.classList.toggle('active', newFav);
                 favBtn.innerText = newFav ? '♥' : '♡';
 
-                await fetch(`/api/library/local/${game.Id}/favorite`, {
+                await fetch(`/api/stash/local/${game.Id}/favorite`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(newFav)
@@ -269,22 +295,20 @@ function renderGrid() {
                 }
             });
 
-            // Context menu toggle
-            const menuBtn = card.querySelector('.lib-menu-btn');
-            const contextMenu = card.querySelector('.lib-card-context-menu');
+            const menuBtn = card.querySelector('.stash-menu-btn');
+            const contextMenu = card.querySelector('.stash-card-context-menu');
             menuBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
-                document.querySelectorAll('.lib-card-context-menu').forEach(m => {
+                document.querySelectorAll('.stash-card-context-menu').forEach(m => {
                     if (m !== contextMenu) m.style.display = 'none';
                 });
                 contextMenu.style.display = contextMenu.style.display === 'flex' ? 'none' : 'flex';
             });
 
-            // Action: Refresh
             card.querySelector('.menu-action-refresh').addEventListener('click', async (e) => {
                 e.stopPropagation();
                 contextMenu.style.display = 'none';
-                const res = await fetch(`/api/library/local/${game.Id}/refresh`, { method: 'POST' });
+                const res = await fetch(`/api/stash/local/${game.Id}/refresh`, { method: 'POST' });
                 if (res.ok) {
                     const updated = await res.json();
                     Object.assign(game, updated);
@@ -292,27 +316,25 @@ function renderGrid() {
                 }
             });
 
-            // Action: Edit
             card.querySelector('.menu-action-edit').addEventListener('click', (e) => {
                 e.stopPropagation();
                 contextMenu.style.display = 'none';
                 openEditModal(game);
             });
 
-            // Action: Delete
             card.querySelector('.menu-action-delete').addEventListener('click', (e) => {
                 e.stopPropagation();
                 contextMenu.style.display = 'none';
                 openDeleteModal(game);
             });
-        } // Closing the 'else' block correctly!
+        }
 
         grid.appendChild(card);
     });
 }
 
 function renderAlphabetBar() {
-    const alphabetBar = document.getElementById('lib-alphabet-bar');
+    const alphabetBar = document.getElementById('stash-alphabet-bar');
     if (!alphabetBar) return;
 
     if (currentSortOption !== 'Name') {
@@ -338,7 +360,7 @@ function renderAlphabetBar() {
         btn.innerText = letter;
 
         btn.addEventListener('click', () => {
-            const targetCard = document.querySelector(`.lib-card-container[data-letter="${letter}"]`);
+            const targetCard = document.querySelector(`.stash-card-container[data-letter="${letter}"]`);
             if (targetCard) {
                 targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
             }
@@ -348,53 +370,75 @@ function renderAlphabetBar() {
     });
 }
 
-function setupDialogEvents() {
-    document.getElementById('lib-edit-close-btn')?.addEventListener('click', () => {
-        document.getElementById('lib-edit-modal').classList.remove('active');
+function setupScrollTopEvent() {
+    const workspace = document.getElementById('stash-workspace');
+    const scrollTopBtn = document.getElementById('stash-scroll-top-btn');
+
+    if (!workspace || !scrollTopBtn) return;
+
+    workspace.addEventListener('scroll', () => {
+        if (workspace.scrollTop > 300) {
+            scrollTopBtn.classList.add('visible');
+        } else {
+            scrollTopBtn.classList.remove('visible');
+        }
     });
 
-    document.getElementById('lib-edit-save-btn')?.addEventListener('click', async () => {
+    scrollTopBtn.addEventListener('click', () => {
+        workspace.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+    });
+}
+
+function setupDialogEvents() {
+    document.getElementById('stash-edit-close-btn')?.addEventListener('click', () => {
+        document.getElementById('stash-edit-modal').classList.remove('active');
+    });
+
+    document.getElementById('stash-edit-save-btn')?.addEventListener('click', async () => {
         if (!activeGameForEdit) return;
-        const newSortName = document.getElementById('lib-edit-sortname-input').value.trim();
+        const newSortName = document.getElementById('stash-edit-sortname-input').value.trim();
         activeGameForEdit.SortName = newSortName;
 
-        await fetch(`/api/library/local/${activeGameForEdit.Id}/sortname`, {
+        await fetch(`/api/stash/local/${activeGameForEdit.Id}/sortname`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newSortName)
         });
 
-        document.getElementById('lib-edit-modal').classList.remove('active');
+        document.getElementById('stash-edit-modal').classList.remove('active');
         applyFilterAndSort();
     });
 
-    document.getElementById('lib-delete-cancel-btn')?.addEventListener('click', () => {
-        document.getElementById('lib-delete-modal').classList.remove('active');
+    document.getElementById('stash-delete-cancel-btn')?.addEventListener('click', () => {
+        document.getElementById('stash-delete-modal').classList.remove('active');
     });
 
-    document.getElementById('lib-delete-confirm-btn')?.addEventListener('click', async () => {
+    document.getElementById('stash-delete-confirm-btn')?.addEventListener('click', async () => {
         if (!activeGameForDelete) return;
 
-        await fetch(`/api/library/local/${activeGameForDelete.Id}`, { method: 'DELETE' });
+        await fetch(`/api/stash/local/${activeGameForDelete.Id}`, { method: 'DELETE' });
         libraryGames = libraryGames.filter(g => g.Id !== activeGameForDelete.Id);
 
-        document.getElementById('lib-delete-modal').classList.remove('active');
+        document.getElementById('stash-delete-modal').classList.remove('active');
         applyFilterAndSort();
     });
 }
 
 function openEditModal(game) {
     activeGameForEdit = game;
-    document.getElementById('lib-edit-sortname-input').value = game.SortName || game.Name;
-    document.getElementById('lib-edit-modal').classList.add('active');
+    document.getElementById('stash-edit-sortname-input').value = game.SortName || game.Name;
+    document.getElementById('stash-edit-modal').classList.add('active');
 }
 
 function openDeleteModal(game) {
     activeGameForDelete = game;
-    document.getElementById('lib-delete-message').innerHTML = `
-        This action will permanently remove <strong>'${game.Name}'</strong> from your library.
+    document.getElementById('stash-delete-message').innerHTML = `
+        This action will permanently remove <strong>'${game.Name}'</strong> from your stash.
         If the folder still exists, it will return to the 'Import from Root Folders' section.<br/><br/>
         Are you sure?
     `;
-    document.getElementById('lib-delete-modal').classList.add('active');
+    document.getElementById('stash-delete-modal').classList.add('active');
 }

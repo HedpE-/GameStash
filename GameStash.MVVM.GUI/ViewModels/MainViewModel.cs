@@ -52,8 +52,8 @@ namespace GameStash.MVVM.GUI.ViewModels
             }
         }
 
-        private ObservableCollection<Game> _localGamesLibrary;
-        public ObservableCollection<Game> LocalGamesLibrary
+        private ObservableCollection<StashGame> _localGamesLibrary;
+        public ObservableCollection<StashGame> LocalGamesLibrary
         {
             get => _localGamesLibrary;
             private set
@@ -115,8 +115,8 @@ namespace GameStash.MVVM.GUI.ViewModels
 
         public ObservableCollection<char> AvailableLetters { get; } = new();
 
-        private ObservableCollection<Game> _foundFolders;
-        public ObservableCollection<Game> FoundFolders
+        private ObservableCollection<StashGame> _foundFolders;
+        public ObservableCollection<StashGame> FoundFolders
         {
             get => _foundFolders;
             private set
@@ -397,16 +397,16 @@ namespace GameStash.MVVM.GUI.ViewModels
             {
                 return _removeLibraryItemCommand ??= new SimpleCommand
                 {
-                    CanExecuteDelegate = x => x is Game,
+                    CanExecuteDelegate = x => x is StashGame,
                     ExecuteDelegate = x =>
                     {
-                        var game = x as Game;
+                        var game = x as StashGame;
                         LocalGamesLibrary.Remove(game);
                         if (game.IsFolderValid)
                         {
-                            FoundFolders.Add(new Game
+                            FoundFolders.Add(new StashGame
                             {
-                                Type = game.Type,
+                                PackageType = game.PackageType,
                                 Folder = game.Folder,
                                 RootFolder = game.RootFolder,
                                 Name = game.Name,
@@ -429,13 +429,13 @@ namespace GameStash.MVVM.GUI.ViewModels
             {
                 return _openGameFolderCommand ??= new SimpleCommand
                 {
-                    CanExecuteDelegate = x => x is Game,
+                    CanExecuteDelegate = x => x is StashGame,
                     ExecuteDelegate = x =>
                     {
                         try
                         {
                             // Open Windows Explorer at the specified folder
-                            Process.Start("explorer.exe", $"\"{((Game)x).Folder}\"");
+                            Process.Start("explorer.exe", $"\"{((StashGame)x).Folder}\"");
                         }
                         catch (System.Exception ex)
                         {
@@ -456,10 +456,10 @@ namespace GameStash.MVVM.GUI.ViewModels
             {
                 return _refreshCommand ??= new SimpleCommand
                 {
-                    CanExecuteDelegate = x => x is Game,
+                    CanExecuteDelegate = x => x is StashGame,
                     ExecuteDelegate = async x =>
                     {
-                        var game = x as Game;
+                        var game = x as StashGame;
                         game.Cover = null;
                         MessageQueue.Enqueue($"Refreshing {game.Name} {(game.FirstReleaseDate.HasValue ? "(" + game.FirstReleaseDate.Value.Year + ")" : "")}");
                         game.CheckIsFolderValid();
@@ -540,23 +540,23 @@ namespace GameStash.MVVM.GUI.ViewModels
         {
             _rootFolderWatchers = new List<FolderMonitorWithThrottle>();
             RootFolders = new FastObservableCollection<RootFolder>();
-            FoundFolders = new ObservableCollection<Game>();
-            LocalGamesLibrary = new ObservableCollection<Game>();
+            FoundFolders = new ObservableCollection<StashGame>();
+            LocalGamesLibrary = new ObservableCollection<StashGame>();
             //LocalGamesLibrary.ItemChanged += ImportedGames_ItemChanged;
             InitializeDatabase();
         }
 
-        private void ImportedGames_ItemChanged(object? sender, ItemChangedEventArgs<Game> e)
+        private void ImportedGames_ItemChanged(object? sender, ItemChangedEventArgs<StashGame> e)
         {
-            if (e.PropertyName == nameof(Game.IsFavorite) || e.PropertyName == nameof(Game.IsInstalled) || e.PropertyName == nameof(Game.SortName))
+            if (e.PropertyName == nameof(StashGame.IsFavorite) || e.PropertyName == nameof(StashGame.IsInstalled) || e.PropertyName == nameof(StashGame.SortName))
             {
                 SqliteHelper.InsertOrUpdateLibraryEntry(e.Item);
-                if ((e.PropertyName == nameof(Game.IsFavorite) && (SelectedFilterOption == "Favorites" || SelectedFilterOption == "Not Favorites"))
-                    || (e.PropertyName == nameof(Game.IsInstalled) && (SelectedFilterOption == "Installed" || SelectedFilterOption == "Not Installed"))
-                    || (e.PropertyName == nameof(Game.SortName) && SelectedSortOption == "Name"))
+                if ((e.PropertyName == nameof(StashGame.IsFavorite) && (SelectedFilterOption == "Favorites" || SelectedFilterOption == "Not Favorites"))
+                    || (e.PropertyName == nameof(StashGame.IsInstalled) && (SelectedFilterOption == "Installed" || SelectedFilterOption == "Not Installed"))
+                    || (e.PropertyName == nameof(StashGame.SortName) && SelectedSortOption == "Name"))
                 {
                     SortedImportedGames.Refresh();
-                    if (e.PropertyName == nameof(Game.SortName) && SelectedSortOption == "Name")
+                    if (e.PropertyName == nameof(StashGame.SortName) && SelectedSortOption == "Name")
                         LoadAvailableLetters();
                 }
             }
@@ -625,7 +625,7 @@ namespace GameStash.MVVM.GUI.ViewModels
                     // Add the game to the ImportedGames collection
                     if (FoundFolders.Any(x => x.Folder == entry.Folder))
                     {
-                        IEnumerable<Game> foldersToRemove = FoundFolders.Where(x => x.Folder == entry.Folder);
+                        IEnumerable<StashGame> foldersToRemove = FoundFolders.Where(x => x.Folder == entry.Folder);
                         foreach (var folder in foldersToRemove)
                         {
                             FoundFolders.Remove(folder);
@@ -680,7 +680,7 @@ namespace GameStash.MVVM.GUI.ViewModels
 
         private void LoadAvailableLetters()
         {
-            var letters = SortedImportedGames.Cast<Game>()
+            var letters = SortedImportedGames.Cast<StashGame>()
                 // Select the first letter from SortName or Name, as a string
                 .Select(game => (string.IsNullOrEmpty(game.SortName) ? game.Name : game.SortName).GetFirstLetter<char>())
                 .Distinct()
@@ -705,22 +705,22 @@ namespace GameStash.MVVM.GUI.ViewModels
                 {
                     case "Name":
                         //SortedImportedGames.SortDescriptions.Add(new SortDescription(nameof(Game.SortName), SelectedSortDirection));
-                        collectionView.CustomSort = new NaturalStringPropertyComparer<Game>("SortName");
+                        collectionView.CustomSort = new NaturalStringPropertyComparer<StashGame>("SortName");
                         break;
                     case "Release Date":
-                        collectionView.SortDescriptions.Add(new SortDescription(nameof(Game.FirstReleaseDate), SelectedSortDirection));
+                        collectionView.SortDescriptions.Add(new SortDescription(nameof(StashGame.FirstReleaseDate), SelectedSortDirection));
                         break;
                     case "Rating":
-                        collectionView.SortDescriptions.Add(new SortDescription(nameof(Game.Rating), SelectedSortDirection));
+                        collectionView.SortDescriptions.Add(new SortDescription(nameof(StashGame.Rating), SelectedSortDirection));
                         break;
                     case "Date Added":
-                        collectionView.SortDescriptions.Add(new SortDescription(nameof(Game.DateAdded), SelectedSortDirection));
+                        collectionView.SortDescriptions.Add(new SortDescription(nameof(StashGame.DateAdded), SelectedSortDirection));
                         break;
                     case "Folder Size":
-                        collectionView.SortDescriptions.Add(new SortDescription(nameof(Game.FolderDiskSpaceBytes), SelectedSortDirection));
+                        collectionView.SortDescriptions.Add(new SortDescription(nameof(StashGame.FolderDiskSpaceBytes), SelectedSortDirection));
                         break;
                     default:
-                        collectionView.CustomSort = new NaturalStringPropertyComparer<Game>("SortName");
+                        collectionView.CustomSort = new NaturalStringPropertyComparer<StashGame>("SortName");
                         break;
                 }
 
@@ -739,7 +739,7 @@ namespace GameStash.MVVM.GUI.ViewModels
 
         private bool FilterPredicate(object obj)
         {
-            if (obj is not Game game) return false;
+            if (obj is not StashGame game) return false;
 
             return SelectedFilterOption switch
             {
@@ -792,12 +792,12 @@ namespace GameStash.MVVM.GUI.ViewModels
         private void RemoveRootFolder(RootFolder folder)
         {
             RootFolders.Remove(folder);
-            IEnumerable<Game> gamesToRemove = LocalGamesLibrary.Where(g => g.RootFolder == folder.Path);
+            IEnumerable<StashGame> gamesToRemove = LocalGamesLibrary.Where(g => g.RootFolder == folder.Path);
             foreach (var game in gamesToRemove)
             {
                 LocalGamesLibrary.Remove(game);
             }
-            IEnumerable<Game> foldersToRemove = FoundFolders.Where(g => g.RootFolder == folder.Path);
+            IEnumerable<StashGame> foldersToRemove = FoundFolders.Where(g => g.RootFolder == folder.Path);
             foreach (var folderToRemove in foldersToRemove)
             {
                 FoundFolders.Remove(folderToRemove);

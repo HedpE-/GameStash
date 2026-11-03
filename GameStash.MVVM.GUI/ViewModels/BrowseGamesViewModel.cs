@@ -97,7 +97,7 @@ namespace GameStash.MVVM.GUI.ViewModels
                     settings = await SqliteHelper.GetSettingsAsync();
 
                 var igdbClient = new IgdbClient(settings.IGDB_Client_ID, settings.IGDB_Secret);
-                var results = await igdbClient.QueryAsync<Game>(Endpoints.Games, query: $"fields {Core.Models.Game.FullQueryFields}; search \"{query}\"; limit 500;");
+                var results = await igdbClient.QueryAsync<Game>(Endpoints.Games, query: $"fields {Core.Models.StashGame.FullQueryFields}; search \"{query}\"; limit 500;");
 
                 SearchResults = new ObservableCollection<Game>(results);
                 CurrentSearchQuery = query;

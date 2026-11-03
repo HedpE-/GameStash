@@ -123,7 +123,6 @@ namespace GameStash.Core.Services
             {
                 return new Settings
                 {
-                    RootFolders = reader["root_folders"]?.ToString(),
                     IGDB_Client_ID = reader["igdb_client_id"]?.ToString(),
                     IGDB_Secret = reader["igdb_secret"]?.ToString()
                 };
@@ -132,9 +131,9 @@ namespace GameStash.Core.Services
             return null;
         }
 
-        public static async Task<List<Game>> GetLibraryAsync()
+        public static async Task<List<StashGame>> GetLibraryAsync()
         {
-            var libraryEntries = new List<Game>();
+            var libraryEntries = new List<StashGame>();
 
             await using var connection = new NpgsqlConnection(_connectionString);
             await connection.OpenAsync();
@@ -156,10 +155,10 @@ namespace GameStash.Core.Services
                     }
                 }
 
-                var entry = new Game
+                var entry = new StashGame
                 {
                     Id = Convert.ToInt64(reader["igdb_id"]),
-                    Type = reader["type"]?.ToString(),
+                    PackageType = reader["type"]?.ToString(),
                     Folder = reader["folder"]?.ToString(),
                     RootFolder = reader["root_folder"]?.ToString(),
                     Name = reader["name"]?.ToString(),
@@ -199,7 +198,7 @@ namespace GameStash.Core.Services
         /// <summary>
         /// Inserts or updates a library game record using PostgreSQL native atomic upsert (ON CONFLICT).
         /// </summary>
-        public static void InsertOrUpdateLibraryEntry(Game game)
+        public static void InsertOrUpdateLibraryEntry(StashGame game)
         {
             using var connection = new NpgsqlConnection(_connectionString);
             connection.Open();
@@ -220,7 +219,7 @@ namespace GameStash.Core.Services
             using var command = new NpgsqlCommand(upsertQuery, connection);
 
             command.Parameters.AddWithValue("@igdb_id", game.Id ?? 0);
-            command.Parameters.AddWithValue("@type", (object?)game.Type ?? DBNull.Value);
+            command.Parameters.AddWithValue("@type", (object?)game.PackageType ?? DBNull.Value);
             command.Parameters.AddWithValue("@folder", (object?)game.Folder ?? DBNull.Value);
             command.Parameters.AddWithValue("@root_folder", (object?)game.RootFolder ?? DBNull.Value);
             command.Parameters.AddWithValue("@name", (object?)game.Name ?? DBNull.Value);
@@ -234,7 +233,7 @@ namespace GameStash.Core.Services
             command.ExecuteNonQuery();
         }
 
-        public static void RemoveEntryFromLibrary(Game game)
+        public static void RemoveEntryFromLibrary(StashGame game)
         {
             if (!game.Id.HasValue) return;
 

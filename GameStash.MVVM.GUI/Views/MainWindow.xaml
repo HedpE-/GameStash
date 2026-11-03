@@ -34,7 +34,7 @@
             </StackPanel>
         </HierarchicalDataTemplate>
 
-        <DataTemplate DataType="{x:Type coreModels:Game}">
+        <DataTemplate DataType="{x:Type coreModels:StashGame}">
             <localViews:LibraryGameDetailsView />
         </DataTemplate>
 
