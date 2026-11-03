@@ -28,13 +28,18 @@ pipeline {
         stage('Install .NET 9 SDK') {
             steps {
                 script {
-                    echo "A descarregar o script de instalação oficial do .NET (v1)..."
-                    // CORREÇÃO: URL exata do script bash puro, evitando o download do HTML do site
-                    sh 'curl -sSL https://dot.net -o dotnet-install.sh'
+                    echo "A expurgar lixo de cache antiga..."
+                    // Força a remoção de qualquer ficheiro corrompido para garantir um download limpo
+                    sh 'rm -f dotnet-install.sh'
+                    
+                    echo "A descarregar o script de instalação oficial da Microsoft..."
+                    // Descarrega o script de bash cru utilizando a diretoria direta da CDN
+                    sh 'curl -sSL https://microsoft.com -o dotnet-install.sh'
                     sh 'chmod +x dotnet-install.sh'
                     
                     echo "A instalar o .NET 9 SDK na diretoria local..."
-                    // CORREÇÃO: Aspas e chamada explícita via bash para neutralizar os espaços no nome do Workspace
+                    // CORREÇÃO: Aspas de bloco no shell ('') com escape de aspas duplas na variável
+                    // Isto impede que o Linux corte o caminho no espaço de "Release Pipeline"
                     sh 'bash ./dotnet-install.sh --version latest --channel 9.0 --install-dir "${DOTNET_ROOT}"'
                 }
             }
