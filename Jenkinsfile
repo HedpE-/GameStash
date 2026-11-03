@@ -8,7 +8,6 @@ pipeline {
     stages {
         stage('Wipe Workspace') {
             steps {
-                // Garante um diretório de build totalmente limpo
                 cleanWs()
             }
         }
@@ -19,23 +18,24 @@ pipeline {
                     $class: 'GitSCM', 
                     branches: [[name: '*/main']], 
                     extensions: [[$class: 'CleanBeforeCheckout']], 
-                    userRemoteConfigs: [[url: 'https://github.com']]
+                    userRemoteConfigs: [[url: 'https://github.com/HedpE-/GameStash']]
                 ])
             }
         }
 
         stage('Verify .NET Version') {
             steps {
-                // Valida se o comando .NET está acessível globalmente
                 sh 'dotnet --version'
             }
         }
 
         stage('Restore & Build Release') {
             steps {
-                // Restaura as dependências NuGet e compila o projeto Web em modo de produção
-                sh 'dotnet restore GameStash.slnx'
-                sh 'dotnet publish GameStash.Web.GUI/GameStash.Web.GUI.csproj -c Release -o ./publish_output'
+                // Restaura explicitamente os pacotes direcionados ao ecossistema Windows
+                sh 'dotnet restore GameStash.slnx -r win-x64'
+                
+                // AJUSTADO: Força o nome do executável para GameStash (.exe é anexado automaticamente pelo compilador no Runtime win-x64)
+                sh 'dotnet publish GameStash.Web.GUI/GameStash.Web.GUI.csproj -c Release -r win-x64 --self-contained false -p:AssemblyName=GameStash -o ./publish_output'
             }
         }
 
