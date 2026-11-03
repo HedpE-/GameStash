@@ -1,31 +1,14 @@
 pipeline {
-    agent {
-        docker {
-            image '://microsoft.com'
-            args '-v nuget-cache:/root/.nuget/packages'
-        }
-    }
+    agent any 
 
     environment {
         DEPLOY_PATH = '/app/deploy'
     }
 
     stages {
-        // Passo executado antes de qualquer validação para libertar o Socket
-        stage('Fix Docker Permissions') {
-            agent any // Corre diretamente no host do Jenkins
-            steps {
-                script {
-                    echo "A corrigir permissões do socket do Docker..."
-                    // Altera as permissões diretamente usando o CLI do Jenkins
-                    sh 'chmod 666 /var/run/docker.sock || true'
-                    sh 'chmod +x /usr/bin/docker || true'
-                }
-            }
-        }
-
         stage('Wipe Workspace') {
             steps {
+                // Garante um diretório de build totalmente limpo
                 cleanWs()
             }
         }
@@ -43,12 +26,14 @@ pipeline {
 
         stage('Verify .NET Version') {
             steps {
+                // Valida se o comando .NET está acessível globalmente
                 sh 'dotnet --version'
             }
         }
 
         stage('Restore & Build Release') {
             steps {
+                // Restaura as dependências NuGet e compila o projeto Web em modo de produção
                 sh 'dotnet restore GameStash.slnx'
                 sh 'dotnet publish GameStash.Web.GUI/GameStash.Web.GUI.csproj -c Release -o ./publish_output'
             }
@@ -60,9 +45,18 @@ pipeline {
                     echo "Deploying release to target folder: ${env.DEPLOY_PATH}"
                     sh "mkdir -p ${env.DEPLOY_PATH}"
                     sh "cp -r ./publish_output/* ${env.DEPLOY_PATH}/"
-                    echo "Deployment completed!"
+                    echo "Deployment completed successfully!"
                 }
             }
+        }
+    }
+
+    post {
+        success {
+            echo 'Pipeline executed successfully! GameStash built and deployed.'
+        }
+        failure {
+            echo 'Pipeline failed. Check the compilation logs above.'
         }
     }
 }
