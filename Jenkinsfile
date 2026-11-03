@@ -2,9 +2,9 @@ pipeline {
     // Usa diretamente um contentor oficial da Microsoft com o .NET SDK instalado
     agent {
         docker {
-            image 'mcr.microsoft.com/dotnet/sdk:8.0'
+            image 'mcr.microsoft.com/dotnet/sdk:9.0'
             // Permite persistir o cache do NuGet entre builds para ser mais rápido
-            args '-v maven-m2:/root/.nuget/packages' 
+            args '-v /var/run/docker.sock:/var/run/docker.sock'
         }
     }
 
