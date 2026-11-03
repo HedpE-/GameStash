@@ -1,24 +1,124 @@
 ﻿/* ==========================================================================
-   SETTINGS VIEW STYLES (Modular Component)
+   SETTINGS VIEW STYLES
    ========================================================================== */
+
+.settings-container {
+    width: 100%;
+    min-width: 650px; /* LIMITE MÍNIMO: abaixo disto ativa a barra de scroll na view */
+    margin: 0;
+    padding: 10px 0 40px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 25px;
+    box-sizing: border-box;
+}
+
+.settings-header {
+    margin-bottom: 5px;
+}
+
+    .settings-header h1 {
+        font-size: 26px;
+        font-weight: 700;
+        color: var(--text-main, #ffffff);
+        margin: 0 0 6px 0;
+    }
+
+.settings-subtitle {
+    font-size: 14px;
+    color: var(--text-muted, #9ca3af);
+    margin: 0;
+}
+
+/* 2. Regra base elástica dos cards */
 .settings-card {
-    background-color: var(--bg-sidebar);
-    border: 1px solid var(--border-color);
-    padding: 30px;
-    border-radius: 8px;
-    max-width: 700px;
-    margin-bottom: 25px;
+    background-color: var(--bg-sidebar, #1a1a1a);
+    border: 1px solid var(--border-color, #2e2e2e);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+    box-sizing: border-box;
+    width: 100%;
+    min-width: 650px; /* Garante que os cards nunca encolhem abaixo do mínimo */
+    transition: width 0.15s ease, max-width 0.15s ease;
+}
+
+    /* PAINEL IGDB: Fluido entre 650px (mínimo) e 750px (máximo) */
+    .settings-card.compact-card {
+        width: 100%;
+        max-width: 60px;
+    }
+
+    /* PAINEL ROOT FOLDERS: Totalmente fluido entre 650px (mínimo) e 1450px (máximo do ecrã) */
+    .settings-card.wide-card {
+        width: 100%;
+        max-width: 800px;
+    }
+
+.card-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid var(--border-color, #2e2e2e);
+    background-color: rgba(255, 255, 255, 0.015);
+}
+
+.card-title-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 6px;
+}
+
+    .card-title-group h2 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-main, #ffffff);
+        margin: 0;
+    }
+
+.card-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: rgba(139, 92, 246, 0.2);
+    color: var(--primary-purple, #a855f7);
+    border: 1px solid rgba(139, 92, 246, 0.35);
+}
+
+.card-description {
+    font-size: 13px;
+    color: var(--text-muted, #9ca3af);
+    margin: 0;
+}
+
+.card-body {
+    padding: 24px;
+}
+
+/* Form Controls */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+}
+
+@media (max-width: 640px) {
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
 }
 
 .form-group {
-    margin-bottom: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
     .form-group label {
-        display: block;
-        font-size: 13px;
-        color: var(--text-muted);
-        margin-bottom: 8px;
+        font-size: 12px;
+        color: var(--text-muted, #9ca3af);
         font-weight: 600;
         text-transform: uppercase;
         letter-spacing: 0.5px;
@@ -26,45 +126,330 @@
 
     .form-group input {
         width: 100%;
-        padding: 12px;
-        background-color: var(--input-bg);
-        border: 1px solid var(--border-color);
-        border-radius: 4px;
-        color: var(--text-main);
+        padding: 10px 14px;
+        background-color: var(--input-bg, #111111);
+        border: 1px solid var(--border-color, #2e2e2e);
+        border-radius: 6px;
+        color: var(--text-main, #ffffff);
         font-size: 14px;
-        transition: border 0.2s;
+        outline: none;
+        transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        box-sizing: border-box;
     }
 
         .form-group input:focus {
-            border-color: var(--primary-purple);
-            outline: none;
+            border-color: var(--primary-purple, #a855f7);
+            box-shadow: 0 0 0 3px rgba(168, 85, 247, 0.15);
         }
 
-.btn {
-    background-color: var(--primary-purple);
-    color: white;
-    padding: 12px 24px;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 14px;
-    transition: background 0.2s;
+.form-actions {
+    margin-top: 18px;
+    display: flex;
+    justify-content: flex-end;
 }
 
-    .btn:hover {
-        background-color: #6b3bc4;
+/* Action Bars */
+.add-folder-bar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.input-with-icon {
+    position: relative;
+    flex: 1;
+    min-width: 260px;
+}
+
+    .input-with-icon .input-icon {
+        position: absolute;
+        left: 12px;
+        top: 50%;
+        transform: translateY(-50%);
+        color: var(--text-muted, #9ca3af);
+        pointer-events: none;
     }
 
-.folder-tag {
-    display: inline-block;
-    background-color: #2b2b2b;
-    padding: 8px 14px;
-    border-radius: 4px;
+    .input-with-icon input {
+        width: 100%;
+        padding: 10px 14px 10px 38px;
+        background-color: var(--input-bg, #111111);
+        border: 1px solid var(--border-color, #2e2e2e);
+        border-radius: 6px;
+        color: var(--text-main, #ffffff);
+        font-size: 13px;
+        outline: none;
+        box-sizing: border-box;
+        transition: border-color 0.15s ease;
+    }
+
+        .input-with-icon input:focus {
+            border-color: var(--primary-purple, #a855f7);
+        }
+
+.folder-header-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Buttons */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 10px 18px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
     font-size: 13px;
-    margin-right: 10px;
-    margin-top: 10px;
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    font-family: monospace;
+    border: none;
+    transition: background-color 0.15s ease, transform 0.05s ease;
+    white-space: nowrap;
+}
+
+    .btn:active {
+        transform: scale(0.98);
+    }
+
+.btn-primary {
+    background-color: var(--primary-purple, #7c3aed);
+    color: #ffffff;
+}
+
+    .btn-primary:hover {
+        background-color: #6d28d9;
+    }
+
+.btn-secondary {
+    background-color: #2e2e2e;
+    color: #e5e7eb;
+    border: 1px solid var(--border-color, #3d3d3d);
+}
+
+    .btn-secondary:hover {
+        background-color: #3d3d3d;
+    }
+
+.btn-icon {
+    padding: 6px 12px;
+    font-size: 12px;
+    border-radius: 5px;
+    border: none;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease;
+}
+
+.btn-rescan {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+    .btn-rescan:hover {
+        background-color: rgba(59, 130, 246, 0.25);
+    }
+
+.btn-danger {
+    background-color: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+    .btn-danger:hover {
+        background-color: rgba(239, 68, 68, 0.25);
+    }
+
+/* ==========================================================================
+   MONITORED ROOT FOLDERS CARDS (Expanded & Thicker Layout)
+   ========================================================================== */
+.root-folders-list {
+    display: flex;
+    flex-direction: column;
+    gap: 18px; /* More separation between folder cards */
+}
+
+.root-folder-card {
+    background: #151515;
+    border: 1px solid var(--border-color, #2a2a2a);
+    border-radius: 10px;
+    padding: 24px 26px; /* Substantially increased padding for thickness */
+    min-height: 140px; /* Guarantees solid vertical volume */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    gap: 18px;
+    transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+}
+
+    .root-folder-card:hover {
+        border-color: #3e3e3e;
+        box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+    }
+
+.root-folder-main {
+    display: flex;
+    justify-content: space-between;
+    align-items: center; /* Aligns path info with the action buttons */
+    gap: 20px;
+}
+
+.root-folder-left {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    min-width: 0;
+    flex: 1;
+}
+
+.root-folder-path {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 15px; /* Slightly larger, more readable path */
+    font-weight: 700;
+    color: #ffffff;
+    word-break: break-all;
+    line-height: 1.4;
+}
+
+.root-folder-badges {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.badge-tag {
+    font-size: 12px;
+    font-weight: 600;
+    padding: 5px 12px; /* Thicker badge */
+    border-radius: 5px;
+    background-color: #222222;
+    color: #9ca3af;
+    border: 1px solid #333333;
+}
+
+    .badge-tag.highlight {
+        background-color: rgba(16, 185, 129, 0.12);
+        color: #34d399;
+        border-color: rgba(16, 185, 129, 0.35);
+    }
+
+.folder-actions {
+    display: flex;
+    gap: 10px;
+    flex-shrink: 0;
+}
+
+/* Larger, more tactile buttons inside each card */
+.root-folder-card .btn-icon {
+    padding: 9px 18px;
+    font-size: 13px;
+    border-radius: 6px;
+    font-weight: 600;
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+/* Disk Usage Bar & Details - Doubled Height & Spacing */
+.disk-storage-section {
+    background: #0c0c0c;
+    border-radius: 8px;
+    padding: 14px 18px; /* Taller inner padding */
+    border: 1px solid #202020;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.storage-labels {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-muted, #9ca3af);
+}
+
+.storage-usage-text strong {
+    color: #f3f4f6;
+    font-weight: 600;
+}
+
+.storage-percent {
+    font-size: 13px;
+    font-weight: 700;
+    color: #e5e7eb;
+}
+
+/* Doubled track height from 6px to 12px */
+.storage-progress-track {
+    height: 12px;
+    width: 100%;
+    background-color: #1a1a1a;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5);
+}
+
+.storage-progress-fill {
+    height: 100%;
+    border-radius: 6px;
+    background-color: #3b82f6;
+    transition: width 0.3s ease;
+}
+
+    .storage-progress-fill.fill-warning {
+        background-color: #f59e0b;
+    }
+
+    .storage-progress-fill.fill-danger {
+        background-color: #ef4444;
+    }
+
+/* Scanning Badge */
+.badge-tag.scanning {
+    background-color: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border-color: rgba(59, 130, 246, 0.35);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 600;
+    padding: 5px 12px;
+}
+
+.spinner-small {
+    width: 13px;
+    height: 13px;
+    border: 2px solid currentColor;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    display: inline-block;
+}
+
+.loading-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font-style: normal;
+}
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid #3b82f6;
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
 }
