@@ -1,24 +1,30 @@
 pipeline {
-    // Usa diretamente um contentor oficial da Microsoft com o .NET SDK instalado
     agent {
         docker {
             image 'mcr.microsoft.com/dotnet/sdk:9.0'
-            // Permite persistir o cache do NuGet entre builds para ser mais rápido
-            args '-v /var/run/docker.sock:/var/run/docker.sock'
+            // CORREÇÃO: Cria e mapeia um volume real para reutilizar a cache de pacotes do NuGet
+            args '-v nuget-cache:/root/.nuget/packages'
         }
     }
 
     environment {
-        // Caminho do folder mount no contentor do Jenkins onde a release será colocada
         DEPLOY_PATH = '/app/deploy'
     }
 
     stages {
+        stage('Wipe Workspace') {
+            steps {
+                // Garante que o folder está limpo antes de tentar clonar
+                cleanWs()
+            }
+        }
+
         stage('Checkout Code') {
             steps {
                 checkout([
                     $class: 'GitSCM', 
                     branches: [[name: '*/main']], 
+                    extensions: [[$class: 'CleanBeforeCheckout']], // Força limpeza do Git
                     userRemoteConfigs: [[url: 'https://github.com/HedpE-/GameStash.git']]
                 ])
             }
@@ -32,7 +38,8 @@ pipeline {
 
         stage('Restore & Build Release') {
             steps {
-                // Compila a aplicação Web em modo Release
+                // Executa o restauro explícito aproveitando o volume de cache criado acima
+                sh 'dotnet restore GameStash.slnx'
                 sh 'dotnet publish GameStash.Web.GUI/GameStash.Web.GUI.csproj -c Release -o ./publish_output'
             }
         }
@@ -41,13 +48,8 @@ pipeline {
             steps {
                 script {
                     echo "Deploying release to target folder: ${env.DEPLOY_PATH}"
-                    
-                    // Cria a pasta de destino caso não exista
                     sh "mkdir -p ${env.DEPLOY_PATH}"
-                    
-                    // Copia os ficheiros compilados para o volume mapeado
                     sh "cp -r ./publish_output/* ${env.DEPLOY_PATH}/"
-                    
                     echo "Deployment completed and files successfully written!"
                 }
             }
