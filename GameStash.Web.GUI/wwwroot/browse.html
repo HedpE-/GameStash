@@ -1,6 +1,6 @@
 ﻿<div class="browse-container">
     <!-- Header -->
-    <h1 class="browse-header">Browse Games</h1>
+    <h1 class="view-title-main">Browse Games</h1>
 
     <!-- Search Controls Bar -->
     <div class="search-bar-row">
@@ -22,13 +22,18 @@
         </button>
     </div>
 
-    <!-- Results Meta & Sort Actions Toolbar -->
+    <!-- Results Meta & Actions Toolbar -->
     <div id="browse-meta-toolbar" class="results-toolbar" style="display: none;">
         <div class="results-summary">
-            The search for '<strong id="browse-query-label"></strong>' returned <strong id="browse-count-label">0</strong> results.
+            The search for '<strong id="browse-query-label"></strong>' returned <strong id="browse-count-label">0</strong> results<span id="browse-filtered-summary">.</span>
         </div>
 
         <div class="toolbar-actions">
+            <!-- Game Type Filter Combobox -->
+            <select id="browse-gametype-filter" class="browse-select-filter" title="Filter by Game Type">
+                <option value="all">All Game Types</option>
+            </select>
+
             <!-- Sort Dropdown Trigger -->
             <div class="dropdown-container">
                 <button type="button" id="browse-sort-toggle" class="toolbar-dropdown-btn" title="Sort By">

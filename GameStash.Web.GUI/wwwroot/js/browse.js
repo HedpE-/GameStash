@@ -4,6 +4,7 @@ let currentSearchResults = [];
 let currentSearchQuery = '';
 let selectedSortOption = 'Name'; // 'Name' | 'ReleaseDate' | 'Rating'
 let sortDirection = 'asc'; // 'asc' | 'desc'
+let selectedGameType = 'all';
 
 /**
  * Initializes the Browse Games view into the workspace.
@@ -27,6 +28,7 @@ function setupBrowseEvents() {
     const clearResultsBtn = document.getElementById('browse-clear-results-btn');
     const sortToggle = document.getElementById('browse-sort-toggle');
     const sortMenu = document.getElementById('browse-sort-menu');
+    const gameTypeFilter = document.getElementById('browse-gametype-filter');
 
     // Enter key triggers search
     input?.addEventListener('keydown', (e) => {
@@ -59,11 +61,12 @@ function setupBrowseEvents() {
         executeSearch();
     });
 
-    // Main clear button: resets input, state, and results list
+    // Main clear button: resets input, state, filter, and results list
     clearResultsBtn?.addEventListener('click', (e) => {
         e.preventDefault();
         currentSearchResults = [];
         currentSearchQuery = '';
+        selectedGameType = 'all';
 
         if (input) {
             input.value = '';
@@ -72,17 +75,28 @@ function setupBrowseEvents() {
         if (clearInputBtn) {
             clearInputBtn.style.display = 'none';
         }
+        if (gameTypeFilter) {
+            gameTypeFilter.innerHTML = '<option value="all">All Game Types</option>';
+        }
 
         const toolbar = document.getElementById('browse-meta-toolbar');
         const resultsList = document.getElementById('browse-results-list');
         const loader = document.getElementById('browse-loading-indicator');
+        const filteredSummary = document.getElementById('browse-filtered-summary');
 
         if (toolbar) toolbar.style.display = 'none';
         if (loader) loader.style.display = 'none';
+        if (filteredSummary) filteredSummary.innerHTML = '.';
         if (resultsList) {
             resultsList.style.display = 'none';
             resultsList.innerHTML = '';
         }
+    });
+
+    // Game Type combobox filter change
+    gameTypeFilter?.addEventListener('change', (e) => {
+        selectedGameType = e.target.value;
+        sortAndRenderResults();
     });
 
     // Sort Dropdown toggle
@@ -142,12 +156,16 @@ async function executeSearch() {
 
         currentSearchResults = await response.json();
         currentSearchQuery = query;
+        selectedGameType = 'all';
 
         const queryLabel = document.getElementById('browse-query-label');
         const countLabel = document.getElementById('browse-count-label');
 
         if (queryLabel) queryLabel.innerText = query;
         if (countLabel) countLabel.innerText = currentSearchResults.length;
+
+        // Populate the Game Type filter dropdown from returned results
+        populateGameTypeFilter(currentSearchResults);
 
         if (toolbar) toolbar.style.display = 'flex';
         sortAndRenderResults();
@@ -160,6 +178,36 @@ async function executeSearch() {
     } finally {
         if (loader) loader.style.display = 'none';
     }
+}
+
+/**
+ * Extracts distinct game types from search results and populates the combobox.
+ * @param {Array} games - The array of retrieved search results.
+ */
+function populateGameTypeFilter(games) {
+    const filterSelect = document.getElementById('browse-gametype-filter');
+    if (!filterSelect) return;
+
+    // Collect distinct, non-empty game types
+    const gameTypes = new Set();
+    games.forEach(g => {
+        const type = g.GameType || g.gameType;
+        if (type && type.trim()) {
+            gameTypes.add(type.trim());
+        }
+    });
+
+    const sortedTypes = Array.from(gameTypes).sort((a, b) => a.localeCompare(b));
+
+    filterSelect.innerHTML = '<option value="all">All Game Types</option>';
+    sortedTypes.forEach(type => {
+        const option = document.createElement('option');
+        option.value = type;
+        option.textContent = type;
+        filterSelect.appendChild(option);
+    });
+
+    filterSelect.value = 'all';
 }
 
 function updateSortUI() {
@@ -182,15 +230,42 @@ function updateSortUI() {
 
 function sortAndRenderResults() {
     const resultsContainer = document.getElementById('browse-results-list');
+    const filteredSummary = document.getElementById('browse-filtered-summary');
     if (!resultsContainer) return;
 
     if (!currentSearchResults || currentSearchResults.length === 0) {
         resultsContainer.innerHTML = `<p class="loading-text">No games found matching your search.</p>`;
         resultsContainer.style.display = 'block';
+        if (filteredSummary) filteredSummary.innerHTML = '.';
         return;
     }
 
-    currentSearchResults.sort((a, b) => {
+    // 1. Filter by Game Type
+    let filteredResults = currentSearchResults;
+    if (selectedGameType !== 'all') {
+        filteredResults = currentSearchResults.filter(g => {
+            const type = (g.GameType || g.gameType || '').trim();
+            return type.toLowerCase() === selectedGameType.toLowerCase();
+        });
+    }
+
+    // 2. Update the filtered summary text dynamically
+    if (filteredSummary) {
+        if (selectedGameType !== 'all') {
+            filteredSummary.innerHTML = `, filtered <strong>${filteredResults.length}</strong> results.`;
+        } else {
+            filteredSummary.innerHTML = '.';
+        }
+    }
+
+    if (filteredResults.length === 0) {
+        resultsContainer.innerHTML = `<p class="loading-text">No games found matching the selected game type.</p>`;
+        resultsContainer.style.display = 'block';
+        return;
+    }
+
+    // 3. Sort the filtered subset
+    const sorted = [...filteredResults].sort((a, b) => {
         let valA, valB;
         if (selectedSortOption === 'ReleaseDate') {
             valA = a.RawReleaseDate ? new Date(a.RawReleaseDate).getTime() : 0;
@@ -208,15 +283,15 @@ function sortAndRenderResults() {
         return 0;
     });
 
-    renderList();
+    renderList(sorted);
 }
 
-function renderList() {
+function renderList(games) {
     const container = document.getElementById('browse-results-list');
     if (!container) return;
     container.innerHTML = '';
 
-    currentSearchResults.forEach(game => {
+    games.forEach(game => {
         const row = document.createElement('div');
         row.className = 'game-row-item';
 
@@ -240,7 +315,7 @@ function renderList() {
                     <div class="stars-fill" style="width: ${ratingPercentage}%;">★★★★★</div>
                 </div>
             </div>
-            <div class="game-row-chip">${game.Category}</div>
+            <div class="game-row-chip">${game.GameType}</div>
         `;
 
         // Click navigates straight into the Game Details modal

@@ -93,6 +93,10 @@ async function checkGlobalScanningState() {
         const oldLoader = document.querySelector('.view-loading-indicator');
         if (oldLoader) oldLoader.remove();
 
+        // FIX CRÍTICO: Remove o aviso antigo se ele já existir em transições de ecrã anteriores
+        const existingWarning = document.querySelector('.import-empty-warning-box');
+        if (existingWarning) existingWarning.remove();
+
         if (foundFolders.length === 0 && !globalImportPollingTimer) {
             if (tableWrapper) tableWrapper.style.display = 'none';
             if (footerBar) footerBar.style.display = 'none';
@@ -112,6 +116,15 @@ async function checkGlobalScanningState() {
         const response = await fetch('/api/folders');
         if (!response.ok) return;
         const folders = await response.json();
+
+        // INTERCEPTOR: If no root folders are monitored, halt pipeline and inject warning screen
+        if (!folders || folders.length === 0) {
+            const tempLoader = document.querySelector('.view-loading-indicator');
+            if (tempLoader) tempLoader.remove();
+
+            renderImportFoldersWarning();
+            return;
+        }
 
         const isAnyScanning = folders.some(f => f.IsImportingFolders === true || f.isImportingFolders === true);
 
@@ -298,6 +311,7 @@ function setupEventListeners() {
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(item.Folder)
                 });
+                let resData = await res.json();
 
                 if (res.ok) {
                     successCount++;
@@ -305,10 +319,12 @@ function setupEventListeners() {
                     renderTable();
                 } else {
                     failCount++;
-                    console.error(`Failed to import: ${item.Folder} (Status ${res.status})`);
+                    console.error(`Failed to import: ${item.Folder} (Status ${res.status})\n${resData.Message}`);
+                    showError(`Failed to import: ${item.Folder} (Status ${res.status})\n${resData.Message}`);
                 }
             } catch (err) {
                 console.error(`Error importing folder: ${item.Folder}`, err);
+                showError(`Error importing folder: ${item.Folder}\n${err}`);
                 failCount++;
             }
         }
@@ -501,21 +517,40 @@ function renderTable() {
 
                 item.addEventListener('click', async (e) => {
                     e.stopPropagation();
+
+                    // 1. Close the custom select menu dropdown view container
                     dropdown.classList.remove('open');
 
-                    folder.SelectedMatchId = match.Id;
+                    // 2. Persist BOTH the ID and the full IGDB metadata match object into the row state
+                    folder.SelectedMatchId = match.Id ?? match.id;
+                    folder.SelectedIgdbMatch = match; // Assures the full object is assigned to the row
+
+                    const url = `/api/folders/found/match/${match.Id ?? match.id}?folderPath=${encodeURIComponent(folder.Folder)}`;
+                    const res = await fetch(url, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(item.Folder)
+                    });
+
+                    // 3. Update local row selection inputs and active styling states
                     folder.IsSelected = true;
                     checkbox.checked = true;
                     row.classList.add('selected-row');
 
-                    trigger.title = `${match.Id}. ${match.Name}`;
+                    // 4. Force update on the custom combobox trigger labels using the verified match references
+                    trigger.title = `${match.Id ?? match.id}. ${match.Name || match.name}`;
                     trigger.innerHTML = renderTriggerContent(match);
 
+                    // 5. Sync active highlights across dropdown list nodes
                     menu.querySelectorAll('.match-dropdown-item').forEach(el => el.classList.remove('selected'));
                     item.classList.add('selected');
 
+                    // 6. Refresh interface control variables and force table re-render bounds
                     updateImportButtonState();
                     updateMatchSelectedButtonState();
+
+                    // Rebuild table to make sure the row selections remain perfectly anchored in memory
+                    renderTable();
                 });
 
                 menu.appendChild(item);
@@ -636,6 +671,44 @@ function renderTable() {
         }
 
         container.appendChild(matchBtn);
+        // Create Ignore Button
+        const ignoreBtn = document.createElement('button');
+        ignoreBtn.type = 'button';
+        ignoreBtn.className = 'ignore-btn';
+        ignoreBtn.title = 'Ignore this folder and all subfolders';
+        ignoreBtn.innerHTML = '🚫'; // or '🗑️' / '✕'
+
+        ignoreBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+
+            const confirmed = confirm(
+                `By ignoring this folder ('${folder.Folder}'), all subfolders will also be ignored.\n\nAre you sure you want to proceed?`
+            );
+
+            if (!confirmed) return;
+
+            try {
+                const url = `/api/folders/found?folderPath=${encodeURIComponent(folder.Folder)}`;
+                const res = await fetch(url, {
+                    method: 'DELETE'
+                });
+
+                if (res.ok) {
+                    showSuccess("Folder and its subfolders ignored successfully.");
+                    foundFolders = foundFolders.filter(f => f.Folder !== folder.Folder);
+                    renderTable();
+                } else {
+                    const errData = await res.json().catch(() => null);
+                    showError(errData?.Message || `Failed to ignore folder (HTTP ${res.status}).`);
+                }
+            } catch (err) {
+                console.error("Network error while trying to ignore folder:", err);
+                showError("Network error while trying to ignore folder.");
+            }
+        });
+
+        container.appendChild(ignoreBtn);
+
         matchTd.appendChild(container);
         row.appendChild(matchTd);
         tbody.appendChild(row);
@@ -687,6 +760,43 @@ function getReleaseDateInfo(rawDate) {
         text: displayText || 'TBD',
         cssClass: isOlderThan10Years ? 'date-older' : 'date-newer'
     };
+}
+
+/**
+ * Renders a clean centered empty state warning panel inside the import view context.
+ */
+function renderImportFoldersWarning() {
+    const container = document.querySelector('.import-container');
+    const tableWrapper = document.querySelector('.import-table-wrapper');
+    const footerBar = document.querySelector('.import-footer-bar');
+    const checkboxBar = document.querySelector('.selection-checkboxes-bar');
+
+    // Hide UI layout grids that shouldn't display text metrics
+    if (tableWrapper) tableWrapper.style.display = 'none';
+    if (footerBar) footerBar.style.display = 'none';
+    if (checkboxBar) checkboxBar.style.display = 'none';
+
+    // Duplicate cleanup assurance
+    const existingWarning = document.querySelector('.import-empty-warning-box');
+    if (existingWarning) existingWarning.remove();
+
+    const warningBox = document.createElement('div');
+    warningBox.className = 'import-empty-warning-box';
+    warningBox.innerHTML = `
+        <div class="warning-icon">📂</div>
+        <h2>No Monitored Folders Found</h2>
+        <p>The system cannot search for local unimported games because no root directories are currently monitored.</p>
+        <p class="warning-subtext">Please head over to the <strong>Global Settings</strong> menu to append a valid file path and synchronize your workspace.</p>
+        <button class="nav-to-settings-btn" id="import-warn-redirect-btn">Go to Settings</button>
+    `;
+
+    if (container) {
+        container.appendChild(warningBox);
+    }
+
+    document.getElementById('import-warn-redirect-btn')?.addEventListener('click', () => {
+        import('./router.js').then(m => m.navigateTo('settings'));
+    });
 }
 
 function renderRatingBadge(rating) {

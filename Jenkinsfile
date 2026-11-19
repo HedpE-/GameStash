@@ -3,7 +3,7 @@ pipeline {
 
     environment {
         DEPLOY_PATH = '/app/deploy'
-        // Define uma diretoria local no workspace para isolar o SDK do .NET
+        // Define a local directory in the workspace to isolate the .NET SDK
         DOTNET_ROOT = "${WORKSPACE}/.dotnet"
     }
 
@@ -28,18 +28,18 @@ pipeline {
         stage('Install .NET 9 SDK') {
             steps {
                 script {
-                    echo "A expurgar lixo de cache antiga..."
-                    // Força a remoção de qualquer ficheiro corrompido para garantir um download limpo
+                    echo "Purging old cache files..."
+                    // Force removal of any corrupted file to ensure a clean download
                     sh 'rm -f dotnet-install.sh'
                     
-                    echo "A descarregar o script de instalação oficial da Microsoft..."
-                    // Descarrega o script de bash cru utilizando a diretoria direta da CDN
-                    sh 'curl -sSL https://microsoft.com -o dotnet-install.sh'
+                    echo "Downloading official Microsoft installation script..."
+                    // Download the raw bash script using the direct CDN directory
+                    sh 'curl -sSL https://dot.net -o dotnet-install.sh'
                     sh 'chmod +x dotnet-install.sh'
                     
-                    echo "A instalar o .NET 9 SDK na diretoria local..."
-                    // CORREÇÃO: Aspas de bloco no shell ('') com escape de aspas duplas na variável
-                    // Isto impede que o Linux corte o caminho no espaço de "Release Pipeline"
+                    echo "Installing .NET 9 SDK into local directory..."
+                    // FIX: Single-quoted shell block ('') with double quotes around the variable
+                    // This prevents Linux from splitting the path at the space in "Release Pipeline"
                     sh 'bash ./dotnet-install.sh --version latest --channel 9.0 --install-dir "${DOTNET_ROOT}"'
                 }
             }
@@ -47,7 +47,7 @@ pipeline {
 
         stage('Verify .NET Version') {
             steps {
-                // Injeta dinamicamente os binários locais no PATH apenas para o escopo desta execução
+                // Dynamically inject local binaries into PATH for this execution scope only
                 withEnv(["PATH+DOTNET=${env.DOTNET_ROOT}"]) {
                     sh 'dotnet --version'
                 }
@@ -57,10 +57,10 @@ pipeline {
         stage('Restore & Build Release') {
             steps {
                 withEnv(["PATH+DOTNET=${env.DOTNET_ROOT}"]) {
-                    echo "A restaurar as dependências da solução..."
+                    echo "Restoring solution dependencies..."
                     sh 'dotnet restore GameStash.slnx -r linux-x64'
                     
-                    echo "A compilar a Web GUI com o nome customizado..."
+                    echo "Publishing Web GUI with custom assembly name..."
                     sh 'dotnet publish GameStash.Web.GUI/GameStash.Web.GUI.csproj -c Release -r linux-x64 --self-contained false -p:AssemblyName=GameStash -o ./publish_output'
                 }
             }

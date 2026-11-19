@@ -1,12 +1,11 @@
 ﻿/* ==========================================================================
    SETTINGS VIEW STYLES
    ========================================================================== */
-
 .settings-container {
     width: 100%;
     min-width: 650px; /* LIMITE MÍNIMO: abaixo disto ativa a barra de scroll na view */
     margin: 0;
-    padding: 10px 0 40px 0;
+    padding: 10px 25px 40px 25px;
     display: flex;
     flex-direction: column;
     gap: 25px;
@@ -16,13 +15,6 @@
 .settings-header {
     margin-bottom: 5px;
 }
-
-    .settings-header h1 {
-        font-size: 26px;
-        font-weight: 700;
-        color: var(--text-main, #ffffff);
-        margin: 0 0 6px 0;
-    }
 
 .settings-subtitle {
     font-size: 14px;
@@ -54,6 +46,54 @@
         width: 100%;
         max-width: 800px;
     }
+
+/* ==========================================================================
+   DYNAMIC SETTINGS API STATUS LABEL
+   ========================================================================== */
+.api-status-label {
+    margin-top: 5px;
+    margin-bottom: 5px;
+    padding: 12px 16px;
+    font-size: 13px;
+    border-radius: 6px;
+    line-height: 1.5;
+    transition: all 0.2s ease-in-out;
+    box-sizing: border-box;
+}
+
+    .api-status-label.status-success {
+        background: rgba(16, 185, 129, 0.06);
+        color: #34d399;
+        border: 1px solid rgba(16, 185, 129, 0.15);
+    }
+
+    .api-status-label.status-missing {
+        background: rgba(124, 58, 237, 0.04);
+        color: var(--primary-purple, #a855f7);
+        border: 1px dashed rgba(124, 58, 237, 0.3);
+        font-weight: 500;
+    }
+
+    .api-status-label.status-error {
+        background: rgba(239, 68, 68, 0.06);
+        color: #f87171;
+        border: 1px solid rgba(239, 68, 68, 0.15);
+    }
+
+/* Monospace layout for technical Twitch authentication stack strings */
+.api-raw-error {
+    display: block;
+    margin-top: 8px;
+    padding: 10px;
+    background: #111111;
+    border: 1px solid var(--border-color, #2e2e2e);
+    border-radius: 4px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 12px;
+    color: #fca5a5;
+    white-space: pre-wrap;
+    word-break: break-all;
+}
 
 .card-header {
     padding: 20px 24px;
@@ -153,7 +193,7 @@
     display: flex;
     gap: 10px;
     margin-bottom: 20px;
-    flex-wrap: wrap;
+    align-items: center;
 }
 
 .input-with-icon {
@@ -453,3 +493,151 @@
         transform: rotate(360deg);
     }
 }
+
+/* ==========================================================================
+   CARD HEADER TOP & HELP BUTTON
+   ========================================================================== */
+.card-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+    .card-header-top h2 {
+        margin: 0;
+    }
+
+    /* Adjust button sizing inside card header */
+    .card-header-top .btn {
+        padding: 6px 14px;
+        font-size: 12px;
+    }
+
+.help-btn {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-color, #2e2e2e);
+    color: var(--text-muted, #9ca3af);
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 13px;
+    font-weight: 700;
+    transition: all 0.2s ease;
+    padding: 0;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+    .help-btn:hover {
+        background: rgba(139, 92, 246, 0.2);
+        border-color: var(--primary-purple, #a855f7);
+        color: #ffffff;
+        transform: scale(1.1);
+    }
+
+/* ==========================================================================
+   SETTINGS HELP MODAL
+   ========================================================================== */
+.help-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 10050;
+}
+
+    .help-modal-overlay.active {
+        display: flex;
+    }
+
+.help-dialog-card {
+    background: #12121c;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 24px 28px;
+    width: 540px;
+    max-width: 90vw;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), 0 0 30px rgba(138, 70, 255, 0.15);
+    box-sizing: border-box;
+}
+
+.help-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+    .help-modal-header h3 {
+        margin: 0;
+        font-size: 18px;
+        font-weight: 700;
+        color: #fff;
+    }
+
+.help-modal-close-icon {
+    background: transparent;
+    border: none;
+    color: #9ca3af;
+    font-size: 16px;
+    cursor: pointer;
+    padding: 4px;
+    transition: color 0.15s ease;
+}
+
+    .help-modal-close-icon:hover {
+        color: #fff;
+    }
+
+.help-modal-body {
+    font-size: 13px;
+    line-height: 1.6;
+    color: #d1d5db;
+}
+
+    .help-modal-body h4 {
+        color: var(--text-main, #ffffff);
+        margin: 14px 0 6px 0;
+        font-size: 14px;
+    }
+
+    .help-modal-body ol {
+        padding-left: 20px;
+        margin: 8px 0 14px 0;
+    }
+
+    .help-modal-body li {
+        margin-bottom: 8px;
+    }
+
+    .help-modal-body a {
+        color: var(--primary-purple, #a855f7);
+        text-decoration: underline;
+    }
+
+        .help-modal-body a:hover {
+            color: #c084fc;
+        }
+
+    .help-modal-body code {
+        background: #1e1e24;
+        padding: 2px 6px;
+        border-radius: 4px;
+        color: #34d399;
+        font-size: 12px;
+    }

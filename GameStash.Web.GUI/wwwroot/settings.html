@@ -1,15 +1,18 @@
 ﻿<div class="settings-container">
     <div class="settings-header">
-        <h1>Global Settings</h1>
+        <h1 class="view-title-main">Global Settings</h1>
         <p class="settings-subtitle">Manage IGDB API connectivity and configure storage directories for installer scans.</p>
     </div>
 
-    <!-- IGDB API Credentials Card (Compacto) -->
+    <!-- IGDB API Credentials Card -->
     <div class="settings-card compact-card">
         <div class="card-header">
-            <div class="card-title-group">
-                <span class="card-badge">API</span>
-                <h2>IGDB Integration</h2>
+            <div class="card-header-top">
+                <div class="card-title-group">
+                    <span class="card-badge">API</span>
+                    <h2>IGDB Integration</h2>
+                </div>
+                <button type="button" class="help-btn" data-help="igdb" title="How to obtain API access">?</button>
             </div>
             <p class="card-description">Twitch developer credentials required to fetch covers, screenshots, and game metadata.</p>
         </div>
@@ -25,18 +28,124 @@
                     <input type="password" id="secret-input" placeholder="••••••••••••••••••••••••••••••" autocomplete="off">
                 </div>
             </div>
+            <div id="settings-api-status" class="api-status-label"></div>
             <div class="form-actions">
-                <button class="btn btn-primary" id="save-credentials-btn">Save Credentials</button>
+                <button class="btn btn-primary" id="save-igdb-credentials-btn">Save Credentials</button>
             </div>
         </div>
     </div>
 
-    <!-- Monitored Root Folders Card (Largo / Dobro da largura) -->
+    <!-- Steam API Credentials Card -->
+    <div class="settings-card compact-card">
+        <div class="card-header">
+            <div class="card-header-top">
+                <div class="card-title-group">
+                    <span class="card-badge">STEAM</span>
+                    <h2>Steam Integration</h2>
+                </div>
+                <button type="button" class="help-btn" data-help="steam" title="How to obtain API access">?</button>
+            </div>
+            <p class="card-description">Steam Web API credentials required to fetch your owned games library and play statistics.</p>
+        </div>
+
+        <div class="card-body">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="steam-id-input">SteamID64</label>
+                    <input type="text" id="steam-id-input" placeholder="e.g. 76561198012345678" autocomplete="off">
+                </div>
+                <div class="form-group">
+                    <label for="steam-api-key-input">Steam Web API Key</label>
+                    <input type="password" id="steam-api-key-input" placeholder="32-character hexadecimal key..." autocomplete="off">
+                </div>
+            </div>
+            <div id="settings-steam-api-status" class="api-status-label"></div>
+            <div class="form-actions">
+                <button class="btn btn-primary" id="save-steam-credentials-btn">Save Steam Credentials</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Epic Games API Credentials Card -->
+    <div class="settings-card compact-card">
+        <div class="card-header">
+            <div class="card-header-top">
+                <div class="card-title-group">
+                    <span class="card-badge">EPIC</span>
+                    <h2>Epic Games Integration</h2>
+                </div>
+                <button type="button" class="help-btn" data-help="epic" title="How to connect Epic Games">?</button>
+            </div>
+            <p class="card-description">Authenticate via official Epic Games OAuth2 login to synchronize your owned library.</p>
+        </div>
+
+        <div class="card-body">
+            <div class="form-group">
+                <label for="epic-auth-code-input">Epic Authorization Code or JSON</label>
+                <input type="text" id="epic-auth-code-input" placeholder="Paste authorizationCode or full JSON response..." autocomplete="off">
+            </div>
+
+            <div id="settings-epic-api-status" class="api-status-label status-missing" style="margin-top: 16px;">
+                ⚪ Configuration required. Click "1. Open Epic Login" and paste the authorization code above.
+            </div>
+
+            <div class="form-actions" style="gap: 10px;">
+                <a href="#"
+                   id="open-epic-login-btn"
+                   target="_blank"
+                   rel="noopener noreferrer"
+                   class="btn btn-secondary">
+                    1. Open Epic Login
+                </a>
+                <button type="button" id="save-epic-credentials-btn" class="btn btn-primary">
+                    2. Authenticate Epic
+                </button>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- GOG Galaxy API Credentials Card -->
+    <div class="settings-card compact-card">
+        <div class="card-header">
+            <div class="card-header-top">
+                <div class="card-title-group">
+                    <span class="card-badge" style="color:#d946ef; border-color:rgba(217,70,239,0.35); background:rgba(217,70,239,0.15);">GOG</span>
+                    <h2>GOG.com Integration</h2>
+                </div>
+                <button type="button" class="help-btn" data-help="gog" title="How to obtain API access">?</button>
+            </div>
+            <p class="card-description">Authenticate via official GOG Galaxy login to synchronize your owned DRM-free catalog.</p>
+        </div>
+
+        <div class="card-body">
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-group">
+                    <label for="gog-auth-code-input">GOG Login Code or Redirect URL</label>
+                    <input type="text" id="gog-auth-code-input" placeholder="Paste login code or full on_login_success URL..." autocomplete="off">
+                </div>
+            </div>
+            <div id="settings-gog-api-status" class="api-status-label"></div>
+            <div class="form-actions" style="gap: 10px;">
+                <a href="https://auth.gog.com/auth?client_id=46899977096215655&redirect_uri=https%3A%2F%2Fembed.gog.com%2Fon_login_success%3Forigin%3Dclient&response_type=code&layout=client2"
+                   target="_blank" rel="noopener noreferrer" class="btn btn-secondary" id="gog-open-login-btn">
+                    1. Open GOG Login
+                </a>
+                <button class="btn btn-primary" id="save-gog-credentials-btn">2. Authenticate GOG</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monitored Root Folders Card -->
     <div class="settings-card wide-card">
         <div class="card-header">
-            <div class="card-title-group">
-                <span class="card-badge">Storage</span>
-                <h2>Monitored Root Folders</h2>
+            <div class="card-header-top">
+                <div class="card-title-group">
+                    <span class="card-badge">Storage</span>
+                    <h2>Monitored Root Folders</h2>
+                </div>
+                <!-- Rescan All moved to top-right header -->
+                <button id="rescan-all-btn" class="btn btn-secondary" style="display: none;">↻ Rescan All</button>
             </div>
             <p class="card-description">Directory locations scanned periodically for game installers and archive payloads.</p>
         </div>
@@ -45,10 +154,13 @@
             <div class="add-folder-bar">
                 <div class="input-with-icon">
                     <span class="input-icon">📂</span>
-                    <input type="text" id="new-folder-input" placeholder="e.g. D:\Games\Installers" />
+                    <input type="text" id="new-folder-input" placeholder="e.g. D:\Games\Installers" autocomplete="off" />
                 </div>
+                <!-- Hidden native folder input tailored for Chromium / WebView2 absolute path exposure -->
+                <input type="file" id="native-folder-picker" webkitdirectory style="display: none;" />
+
+                <button id="browse-folder-btn" class="btn btn-secondary" title="Browse folder on disk">Browse...</button>
                 <button id="add-folder-btn" class="btn btn-primary">+ Add Folder</button>
-                <button id="rescan-all-btn" class="btn btn-secondary">↻ Rescan All</button>
             </div>
 
             <!-- List of Monitored Root Folders -->
@@ -58,6 +170,20 @@
                     <span>Loading storage directories...</span>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- API Access Help Modal -->
+<div id="settings-help-modal" class="help-modal-overlay">
+    <div class="help-dialog-card">
+        <div class="help-modal-header">
+            <h3 id="help-modal-title">API Access Instructions</h3>
+            <button type="button" class="help-modal-close-icon" id="help-modal-close-icon" title="Close">✕</button>
+        </div>
+        <div id="help-modal-body" class="help-modal-body"></div>
+        <div class="modal-actions" style="display:flex; justify-content:flex-end; margin-top:20px;">
+            <button type="button" class="btn btn-secondary" id="help-modal-close-btn">Close</button>
         </div>
     </div>
 </div>

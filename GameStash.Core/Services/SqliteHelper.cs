@@ -162,7 +162,7 @@ namespace GameStash.Core.Services
                     {
                         while (await reader.ReadAsync()) // Loop through all rows
                         {
-                            var entry = new StashGame
+                            var entry = new LocalStashGame
                             {
                                 Id = long.Parse(reader["IGDB_Id"].ToString()),
                                 PackageType = reader["Type"]?.ToString(),
@@ -209,7 +209,7 @@ namespace GameStash.Core.Services
             });
         }
 
-        public static void InsertOrUpdateLibraryEntry(StashGame game)
+        public static void InsertOrUpdateLibraryEntry(LocalStashGame game)
         {
             using (var connection = new SqliteConnection($"Data Source={DbFilePath};"))
             {

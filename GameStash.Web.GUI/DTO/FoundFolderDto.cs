@@ -15,25 +15,47 @@ namespace GameStash.Web.GUI.DTO
         public string Type { get; set; } = string.Empty;
         public bool IsSelected { get; set; }
         public bool IsLoadingIgdbMatches { get; set; }
+        //private long? _selectedMatchId;
         public long? SelectedMatchId { get; set; }
+        //{
+        //    get => _selectedMatchId;
+        //    set
+        //    {
+        //        if (_selectedMatchId != value)
+        //        {
+        //            _selectedMatchId = value;
+        //            if (value.HasValue && value > 0)
+        //            {
+        //                _game.IgdbSelectedMatch = _game.IgdbMatches.FirstOrDefault(m => m.Id == value);
+        //                _game.IsIgdbMatched = _game.IgdbSelectedMatch != null;
+        //                _game.IsSelected = _game.IgdbSelectedMatch != null;
+        //                IsSelected = _game.IgdbSelectedMatch != null;
+        //            }
+        //        }
+        //    }
+        //}
         public List<IgdbMatchOptionDto> IgdbMatches { get; set; } = new();
+        private StashGame _game;
 
-        public static FoundFolderDto FromModel(StashGame game)
+        private FoundFolderDto(LocalStashGame game)
         {
-            return new FoundFolderDto
-            {
-                Folder = game.Folder ?? string.Empty,
-                RootFolder = game.RootFolder ?? string.Empty,
-                MatchName = game.MatchName ?? game.SortName ?? game.Name ?? string.Empty,
-                Type = game.PackageType ?? "PC",
-                IsSelected = game.IsSelected,
-                IsLoadingIgdbMatches = game.IsLoadingIgdbMatches,
-                SelectedMatchId = game.IgdbSelectedMatch?.Id,
-                IgdbMatches = (game.IgdbMatches ?? Enumerable.Empty<Game>())
-                    .Where(m => m.Id.HasValue)
-                    .Select(m => IgdbMatchOptionDto.FromModel(m))
-                    .ToList()
-            };
+            _game = game;
+            Folder = game.Folder ?? string.Empty;
+            RootFolder = game.RootFolder ?? string.Empty;
+            MatchName = game.MatchName ?? game.SortName ?? game.Name ?? string.Empty;
+            Type = game.PackageType ?? "PC";
+            IsSelected = game.IsSelected || game.IsIgdbMatched;
+            IsLoadingIgdbMatches = game.IsLoadingIgdbMatches;
+            SelectedMatchId = game.IgdbSelectedMatch?.Id;
+            IgdbMatches = (game.IgdbMatches ?? Enumerable.Empty<Game>())
+                .Where(m => m.Id.HasValue)
+                .Select(m => IgdbMatchOptionDto.FromModel(m))
+                .ToList();
+        }
+
+        public static FoundFolderDto FromModel(LocalStashGame game)
+        {
+            return new FoundFolderDto(game);
         }
     }
 }

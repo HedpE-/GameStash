@@ -1,0 +1,350 @@
+﻿/* ==========================================================================
+   GAMESTASH - GAME CARD COMPONENT CORE (HIGH-FIDELITY GAMING LAYOUT)
+   ========================================================================== */
+
+/* Card Frame Structural Container */
+@import url('gamecard.css');
+.game-card-container {
+    width: var(--card-w, 160px);
+    display: flex;
+    flex-direction: column;
+    cursor: pointer;
+    user-select: none;
+    position: relative;
+    /* IMPEDE cortes estruturais externos */
+    overflow: visible !important; 
+}
+
+    .game-card-container:has(.game-card-context-menu[style*="display: flex"]) .game-card-overlay {
+        z-index: 40 !important;
+    }
+
+    /* Hover Elevation & Cyberpunk Glow Micro-interactions */
+    .game-card-container:hover .game-card-frame {
+        transform: translateY(-6px);
+        border-color: var(--primary-purple, #8a46ff);
+        box-shadow: 0 12px 28px rgba(138, 70, 255, 0.25), 0 0 15px var(--primary-purple-glow, rgba(138, 70, 255, 0.4));
+    }
+
+    .game-card-container:has(.game-card-favorite-btn.active) .game-card-overlay {
+        opacity: 1 !important;
+        background: transparent !important; /* Remove o gradiente escuro de fundo quando não há hover */
+        pointer-events: none; /* Evita bloquear cliques na capa do jogo */
+    }
+
+    /* Quando o utilizador passa o rato no card que JÁ é favorito, 
+   reabilita o gradiente cinematográfico de fundo e os eventos do overlay */
+    .game-card-container:has(.game-card-favorite-btn.active):hover .game-card-overlay {
+        background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.85) 100%) !important;
+        pointer-events: auto;
+    }
+
+    /* Esconde o botão de menu por padrão se o overlay estiver visível apenas por causa do favorito ativo */
+    .game-card-container:has(.game-card-favorite-btn.active) .game-card-menu-btn {
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+    }
+
+    /* Mostra o botão de menu normalmente quando o rato entra no card */
+    .game-card-container:hover .game-card-menu-btn {
+        opacity: 1;
+        pointer-events: auto !important;
+    }
+
+.game-card-menu-btn-wrapper {
+    position: absolute !important;
+    bottom: 12px !important;
+    right: 12px !important;
+    top: auto !important; /* Limpa qualquer herança indesejada */
+    left: auto !important; /* Limpa qualquer herança indesejada */
+    pointer-events: auto !important;
+    display: flex !important;
+    z-index: 26 !important; /* Coloca o botão à frente da camada de blur */
+}
+
+/* 160x220 WPF-Aligned Cover Frame */
+.game-card-frame {
+    width: var(--card-w, 160px);
+    height: var(--card-h, 220px);
+    border-radius: 6px;
+    background-size: cover;
+    background-position: center;
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.07));
+    position: relative;
+    overflow: hidden;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Cinematic Gradient Overlay */
+.game-card-overlay {
+    position: absolute !important;
+    inset: 0 !important;
+    background: linear-gradient(to bottom, rgba(0, 0, 0, 0.3) 0%, rgba(0, 0, 0, 0.85) 100%);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 12px;
+    z-index: 15;
+    pointer-events: none;
+}
+
+.game-card-container:hover .game-card-overlay {
+    opacity: 1;
+}
+
+/* ==========================================================================
+   GAMESTASH - CYBERPUNK HEART TO BROKEN-HEART OVERRIDES
+   ========================================================================== */
+.game-card-favorite-btn {
+    /* Força o posicionamento absoluto ancorado ao topo esquerdo da moldura */
+    position: absolute !important;
+    top: 0px;
+    left: 0px;
+    background: transparent !important;
+    border: none !important;
+    backdrop-filter: none !important;
+    box-shadow: none !important;
+    outline: none !important;
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    pointer-events: auto !important;
+    z-index: 25; /* Garante que fica acima de qualquer camada de blur */
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+    /* Mantém os SVGs perfeitamente centralizados dentro da área de 48px */
+    .game-card-favorite-btn svg {
+        position: absolute;
+        inset: auto;
+        width: 26px;
+        height: 26px;
+        transform-origin: center;
+        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease;
+    }
+
+    /* Garante que o botão de favoritos ativo permite cliques mesmo sem o hover geral do card */
+    .game-card-favorite-btn.active {
+        pointer-events: auto !important;
+    }
+
+    /* ==========================================
+       ESTADO OFF: Coração Partido (Outline Cinzento)
+       ========================================== */
+    .game-card-favorite-btn:not(.active) .heart-icon-broken {
+        color: #9ca3af; /* Cinzento Outline */
+        opacity: 1;
+        transform: rotate(0deg) scale(1);
+    }
+
+    /* Esconde o coração cheio enquanto estiver OFF */
+    .game-card-favorite-btn:not(.active) .heart-icon-full {
+        opacity: 0;
+        transform: rotate(-45deg) scale(0.5);
+    }
+
+    /* Micro-interação de hover quando está desligado */
+    .game-card-favorite-btn:not(.active):hover {
+        transform: scale(1.15);
+    }
+
+        .game-card-favorite-btn:not(.active):hover .heart-icon-broken {
+            color: #ff4a5a; /* Alerta a vermelho suave antes de clicar */
+            filter: drop-shadow(0 0 5px rgba(255, 74, 90, 0.4));
+        }
+
+    /* ==========================================
+       ESTADO ON: Coração Inteiro (Vermelho Preenchido)
+       ========================================== */
+    .game-card-favorite-btn.active .heart-icon-full {
+        color: #ff4a5a;
+        opacity: 1;
+        transform: rotate(0deg) scale(1);
+        filter: drop-shadow(0 0 8px rgba(255, 74, 90, 0.6)); /* Brilho neon gaming */
+    }
+
+    /* Esconde e roda o coração partido quando fica ON */
+    .game-card-favorite-btn.active .heart-icon-broken {
+        opacity: 0;
+        transform: rotate(45deg) scale(0.5);
+    }
+
+    /* Micro-interação de hover quando está ligado (Sinalizar que vai quebrar/desativar) */
+    .game-card-favorite-btn.active:hover {
+        transform: scale(1.15);
+    }
+
+        .game-card-favorite-btn.active:hover .heart-icon-full {
+            transform: scale(0.9) rotate(-10deg); /* Encolhe ligeiramente simulando o choque mecânico */
+        }
+
+.game-card-overlay > div[style*="position: relative"] {
+    position: absolute !important;
+    bottom: 12px; /* Margem da borda inferior do card */
+    right: 12px; /* Margem da borda direita do card */
+    align-self: unset !important; /* Desativa a regra antiga do flexbox */
+}
+
+.game-card-menu-btn {
+    background: rgba(15, 15, 20, 0.85) !important;
+    backdrop-filter: blur(4px);
+    border: 1.5px solid var(--primary-purple, #8a46ff) !important;
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary-purple, #8a46ff) !important;
+    font-size: 14px;
+    transition: all 0.2s ease-in-out;
+    pointer-events: auto !important;
+}
+
+    .game-card-menu-btn:hover {
+        background: rgba(15, 15, 20, 0.85) !important;
+        border-color: var(--primary-purple, #8a46ff) !important;
+        color: var(--primary-purple, #8a46ff) !important;
+        box-shadow: 0 0 10px rgba(138, 70, 255, 0.6);
+        transform: scale(1.05);
+    }
+
+.game-card-context-menu {
+    position: absolute;
+    bottom: 40px;
+    right: 0;
+    background: #14141f;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    display: none;
+    flex-direction: column;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+    overflow: hidden;
+    min-width: 130px;
+    backdrop-filter: blur(10px);
+    pointer-events: auto !important;
+    z-index: 50 !important;
+}
+
+    .game-card-context-menu button {
+        background: transparent;
+        border: none;
+        padding: 10px 14px;
+        color: var(--text-main, #f3f4f6);
+        text-align: left;
+        font-size: 13px;
+        font-weight: 500;
+        cursor: pointer;
+        transition: all 0.15s ease;
+    }
+
+        .game-card-context-menu button:hover {
+            background: rgba(138, 70, 255, 0.2);
+            color: #fff;
+        }
+
+        .game-card-context-menu button.danger:hover {
+            background: rgba(255, 74, 90, 0.2);
+            color: var(--danger-red, #ff4a5a);
+        }
+
+/* Typography Label Metadata Block */
+.game-card-text {
+    margin-top: 10px;
+    padding: 0 2px;
+}
+
+.game-card-title {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text-main, #f3f4f6);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: color 0.2s ease;
+}
+
+.game-card-container:hover .game-card-title {
+    color: var(--primary-purple, #8a46ff);
+}
+
+.game-card-meta {
+    font-size: 12px;
+    color: var(--text-muted, #9ca3af);
+    margin-top: 3px;
+    font-weight: 500;
+}
+
+.game-card-missing-blur {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(3px);
+    z-index: 5;
+    pointer-events: none;
+}
+
+/* O contentor do caixote do lixo agora é plano, atuando apenas como posicionador centralizado */
+.game-card-missing-overlay {
+    position: absolute;
+    inset: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: transparent !important;
+    border: none !important;
+    z-index: 20;
+    pointer-events: none;
+}
+
+.game-card-missing-delete-btn {
+    position: relative;
+    z-index: 30 !important;
+    pointer-events: auto !important;
+    background: transparent !important;
+    border: none !important;
+    outline: none !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    color: #ff4a5a !important;
+    width: 56px;
+    height: 56px;
+    padding: 0;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+    /* On hover: Brilho afiado no novo ícone */
+    .game-card-missing-delete-btn:hover {
+        transform: scale(1.12);
+        filter: drop-shadow(0 0 10px rgba(255, 74, 90, 0.95)) drop-shadow(0 0 20px rgba(255, 74, 90, 0.4));
+    }
+
+/* O overlay normal (Favoritos/Menu) opera em paralelo na camada 15, à frente do blur */
+.game-card-overlay {
+    z-index: 15 !important;
+}
+
+/* Mantém a elevação original, o contorno de 2px e o glow vermelho nítido na moldura exterior */
+.game-card-container:has(.game-card-missing-blur) .game-card-frame {
+    border: 2px solid #ff4a5a !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+.game-card-container:has(.game-card-missing-blur):hover .game-card-frame {
+    transform: translateY(-6px) !important;
+    border-color: #ff4a5a !important;
+    box-shadow: 0 12px 28px rgba(255, 74, 90, 0.1), 0 0 15px rgba(255, 74, 90, 0.25) !important;
+}

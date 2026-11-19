@@ -11,9 +11,9 @@ namespace GameStash.Core.Services
     public class GameIdentifier
     {
         // Método para identificar jogos e seus tipos a partir de caminhos de arquivo
-        public IEnumerable<StashGame> IdentifyGames(IEnumerable<string> files)
+        public IEnumerable<LocalStashGame> IdentifyGames(IEnumerable<string> files)
         {
-            ConcurrentBag<StashGame> identifiedGames = new ConcurrentBag<StashGame>();
+            ConcurrentBag<LocalStashGame> identifiedGames = new ConcurrentBag<LocalStashGame>();
 
             Parallel.ForEach(files, filePath =>
             {
@@ -122,7 +122,7 @@ namespace GameStash.Core.Services
                 // Se o nome do jogo foi identificado, adicioná-lo ao resultado
                 if (!string.IsNullOrEmpty(gameName))
                 {
-                    identifiedGames.Add(new StashGame
+                    identifiedGames.Add(new LocalStashGame
                     {
                         PackageType = repackType,
                         MatchName = gameName,
@@ -147,9 +147,9 @@ namespace GameStash.Core.Services
         }
 
         // Method to identify games and their types from file paths
-        public async Task<IEnumerable<StashGame>> IdentifyGamesAsync(IEnumerable<string> files)
+        public async Task<IEnumerable<LocalStashGame>> IdentifyGamesAsync(IEnumerable<string> files)
         {
-            ConcurrentBag<StashGame> identifiedGames = await Task.Run(() => new ConcurrentBag<StashGame>());
+            ConcurrentBag<LocalStashGame> identifiedGames = await Task.Run(() => new ConcurrentBag<LocalStashGame>());
 
             await Task.Run(() => Parallel.ForEach(files, filePath =>
             {
@@ -260,7 +260,7 @@ namespace GameStash.Core.Services
                 // Se o nome do jogo foi identificado, adicioná-lo ao resultado
                 if (!string.IsNullOrEmpty(gameName))
                 {
-                    identifiedGames.Add(new StashGame
+                    identifiedGames.Add(new LocalStashGame
                     {
                         PackageType = repackType,
                         MatchName = gameName,

@@ -131,3 +131,28 @@
 .nav-group-toggle-btn.expanded .sidebar-collapse-arrow {
     transform: rotate(180deg);
 }
+
+/* ==========================================================================
+   NAVBAR LOCKDOWN STATES (Credentials Validation Failure)
+   ========================================================================== */
+.nav-disabled {
+    opacity: 0.25 !important;
+    cursor: not-allowed !important;
+    pointer-events: auto !important; /* Kept active so the click event can bubble up and trigger the snackbar */
+    border-left-color: transparent !important;
+    background-color: transparent !important;
+    user-select: none;
+}
+
+    /* Neutralize hovering interactions when an entry is disabled */
+    .nav-disabled:hover {
+        color: var(--text-muted, #888888) !important;
+        background-color: transparent !important;
+        border-left-color: transparent !important;
+    }
+
+    /* Lock downstream sub-arrow visibility hooks if parent button is blocked */
+    .nav-disabled .sidebar-collapse-arrow {
+        color: #333333 !important;
+        transform: none !important;
+    }

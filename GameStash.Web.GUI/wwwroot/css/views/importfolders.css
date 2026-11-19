@@ -2,7 +2,7 @@
    IMPORT GAMES VIEW (WPF MATERIAL DESIGN REPLICATION)
    ========================================================================== */
 .import-container {
-    padding: 0;
+    padding: 10px 25px 40px 25px;
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -19,9 +19,13 @@
 }
 
 .import-title {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--primary-purple);
+    font-size: 32px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    background: linear-gradient(135deg, #ffffff 0%, #b5a2ff 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    margin: 0;
 }
 
 /* Toolbar */
@@ -210,7 +214,7 @@
 
     .import-table .col-matched-game {
         width: 42%;
-        min-width: 380px;
+        min-width: 420px;
     }
 
 /* Container de células com texto copiável */
@@ -695,4 +699,122 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+/* ==========================================================================
+   IMPORT VIEW MISSING ROOT FOLDERS EMPTY STATE WARNING
+   ========================================================================== */
+.import-empty-warning-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background-color: rgba(20, 20, 20, 0.4);
+    border: 1px dashed var(--primary-purple, #7c3aed);
+    border-radius: 8px;
+    padding: 50px 30px;
+    margin: 40px auto;
+    max-width: 600px;
+    box-sizing: border-box;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    animation: importFadeIn 0.2s ease-out;
+}
+
+    .import-empty-warning-box h2 {
+        color: var(--text-main, #ffffff);
+        font-size: 22px;
+        font-weight: 700;
+        margin: 0 0 12px 0;
+    }
+
+    .import-empty-warning-box p {
+        color: var(--text-muted, #9ca3af);
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 4px 0;
+    }
+
+    .import-empty-warning-box .warning-icon {
+        font-size: 44px;
+        margin-bottom: 16px;
+    }
+
+    .import-empty-warning-box .warning-subtext {
+        font-size: 12px;
+        color: #4b5563 !important;
+        margin-top: 16px;
+        border-top: 1px solid var(--border-color, #2e2e2e);
+        padding-top: 14px;
+        max-width: 90%;
+    }
+
+    .import-empty-warning-box .nav-to-settings-btn {
+        margin-top: 24px;
+        background: var(--primary-purple, #7c3aed);
+        color: white;
+        border: none;
+        padding: 10px 24px;
+        border-radius: 6px;
+        font-size: 13px;
+        font-weight: 600;
+        cursor: pointer;
+        white-space: nowrap;
+        transition: all 0.2s ease;
+        height: 38px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+        .import-empty-warning-box .nav-to-settings-btn:hover {
+            background: #9965f4;
+            box-shadow: 0 0 12px rgba(124, 58, 237, 0.3);
+            transform: translateY(-1px);
+        }
+
+@keyframes importFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.99);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+
+/* Ignore Single Button */
+.ignore-btn {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    color: var(--text-muted, #9ca3af);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0;
+    width: 28px;
+    height: 28px;
+    opacity: 0.5; /* Discreto por omissão */
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.2s ease, color 0.15s ease, transform 0.15s ease;
+    flex-shrink: 0;
+}
+
+/* Destaca o ícone ao passar o rato na linha */
+.import-table tr:hover .ignore-btn {
+    opacity: 0.8;
+}
+
+.ignore-btn:hover {
+    opacity: 1 !important;
+    color: #f87171; /* Vermelho aviso ao focar */
+    transform: scale(1.15);
+}
+
+.ignore-btn:active {
+    transform: scale(0.9);
 }

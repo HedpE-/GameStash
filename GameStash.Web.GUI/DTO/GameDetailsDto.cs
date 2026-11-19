@@ -3,11 +3,12 @@ using IgdbSharp.Enumerators;
 using IgdbSharp.Helpers;
 using IgdbSharp.Models;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace GameStash.Web.GUI.DTO
 {
-    public class GameDetaislDto
+    public class GameDetailsDto
     {
         public long Id { get; set; }
         public string Name { get; set; } = string.Empty;
@@ -26,14 +27,17 @@ namespace GameStash.Web.GUI.DTO
         public string Modes { get; set; } = "Not specified";
         public double Rating { get; set; }
         public int RatingCount { get; set; }
+        public long? FranchiseId { get; set; }
+        public string Franchise { get; set; }
+        public IEnumerable<long> FranchiseGamesIds { get; set; }
         public int DiskSpace { get; set; }
 
         public ScreenshotDto[] Screenshots { get; set; } = Array.Empty<ScreenshotDto>();
         public VideoDto[] Videos { get; set; } = Array.Empty<VideoDto>();
         public GameCardDto[] SimilarGames { get; set; } = Array.Empty<GameCardDto>();
 
-        protected GameDetaislDto() { }
-        protected GameDetaislDto(Game game)
+        protected GameDetailsDto() { }
+        protected GameDetailsDto(Game game)
         {
             Id = game.Id ?? 0;
             Name = game.Name ?? "Unknown Game";
@@ -75,6 +79,10 @@ namespace GameStash.Web.GUI.DTO
                 ? string.Join(", ", game.GameModes.Values.Select(m => m.Name))
                 : "Not specified";
 
+            FranchiseId = (game.Franchise?.Value ?? game.Franchises?.Values?.FirstOrDefault())?.Id;
+            Franchise = (game.Franchise?.Value ?? game.Franchises?.Values?.FirstOrDefault())?.Name;
+            FranchiseGamesIds = (game.Franchise?.Value ?? game.Franchises?.Values?.FirstOrDefault())?.Games?.Ids ?? Enumerable.Empty<long>();
+
             if (game.Screenshots?.Values != null)
             {
                 Screenshots = game.Screenshots.Values
@@ -110,14 +118,9 @@ namespace GameStash.Web.GUI.DTO
             }
         }
 
-        public static GameDetaislDto FromModel(Game game)
+        public static GameDetailsDto FromModel(Game game)
         {
-            var devCompany = game.InvolvedCompanies?.Values?
-                .FirstOrDefault(c => c.Developer == true)?.Company?.Value;
-
-            var devLogoImageId = devCompany?.Logo?.Value?.ImageId;
-
-            var dto = new GameDetaislDto(game);
+            var dto = new GameDetailsDto(game);
 
             return dto;
         }

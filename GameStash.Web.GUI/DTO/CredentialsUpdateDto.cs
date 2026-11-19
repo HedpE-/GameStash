@@ -2,7 +2,7 @@
 {
     public class CredentialsUpdateDto
     {
-        public string IgdbClientId { get; set; } = string.Empty;
-        public string IgdbSecret { get; set; } = string.Empty;
+        public string UserClientId { get; set; } = string.Empty;
+        public string Secret { get; set; } = string.Empty;
     }
 }

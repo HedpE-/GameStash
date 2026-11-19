@@ -3,7 +3,7 @@ using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace GameStash.Web.GUI.Helpers
+namespace GameStash.Core.Extensions
 {
     public static class ConcurrentBagExtensions
     {

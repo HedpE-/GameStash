@@ -1,0 +1,59 @@
+﻿<div class="playlist-view-container">
+
+    <!-- View Header Section -->
+    <div class="playlist-header">
+        <div>
+            <h1 class="view-title-main">Playlist & Recommendations</h1>
+            <p class="playlist-subtitle">Manage your active queue and explore algorithmic suggestions tailored to your taste.</p>
+        </div>
+        <div class="playlist-header-actions">
+            <button type="button" class="playlist-action-btn" id="playlist-refresh-btn" title="Recalculate recommendations">
+                <span>🔄</span> Refresh Queue
+            </button>
+        </div>
+    </div>
+
+    <!-- Strip 1: Games on Playlist -->
+    <div class="playlist-strip-section">
+        <div class="strip-header-row">
+            <div class="strip-title-group">
+                <span class="strip-icon">📋</span>
+                <h2>Active Playlist Queue</h2>
+                <span class="strip-badge-count" id="playlist-count-badge">0</span>
+            </div>
+            <span class="strip-caption">Games queued up for your upcoming play sessions</span>
+        </div>
+        <div id="playlist-games-strip" class="game-strip">
+            <p class="loading-text">Loading your playlist queue...</p>
+        </div>
+    </div>
+
+    <!-- Strip 2: Suggestions from Playlist -->
+    <div class="playlist-strip-section">
+        <div class="strip-header-row">
+            <div class="strip-title-group">
+                <span class="strip-icon">🎯</span>
+                <h2>Suggestions from Your Playlist</h2>
+            </div>
+            <span class="strip-caption">Unplayed stash games sharing themes, genres, and mechanics with your active queue</span>
+        </div>
+        <div id="playlist-suggestions-strip" class="game-strip">
+            <p class="loading-text">Analyzing playlist affinities...</p>
+        </div>
+    </div>
+
+    <!-- Strip 3: Suggestions from Stash Profile -->
+    <div class="playlist-strip-section">
+        <div class="strip-header-row">
+            <div class="strip-title-group">
+                <span class="strip-icon">⭐</span>
+                <h2>Suggestions from Your Stash</h2>
+            </div>
+            <span class="strip-caption">Top backlog matches calculated from your all-time favorites and highest ratings</span>
+        </div>
+        <div id="stash-suggestions-strip" class="game-strip">
+            <p class="loading-text">Calculating profile recommendations...</p>
+        </div>
+    </div>
+
+</div>

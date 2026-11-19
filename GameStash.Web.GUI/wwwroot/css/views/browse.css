@@ -8,13 +8,6 @@
     width: 100%;
 }
 
-.browse-header {
-    font-size: 28px;
-    font-weight: 700;
-    color: var(--primary-purple);
-    margin-bottom: 20px;
-}
-
 /* Search Row */
 .search-bar-row {
     display: flex;
@@ -262,3 +255,35 @@
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
+
+/* Toolbar Actions Layout */
+.toolbar-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* Game Type Filter Dropdown */
+.browse-select-filter {
+    background: rgba(37, 37, 37, 0.6);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    padding: 8px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 13px;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s, background-color 0.2s;
+}
+
+    .browse-select-filter:hover,
+    .browse-select-filter:focus {
+        border-color: var(--primary-purple);
+        background: rgba(45, 45, 45, 0.95);
+    }
+
+    .browse-select-filter option {
+        background: #1e1e24;
+        color: var(--text-main);
+    }

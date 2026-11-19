@@ -11,7 +11,7 @@ namespace GameStash.Web.GUI.Interfaces
         event Action? RootFoldersChanged;
 
         IReadOnlyList<RootFolder> RootFolders { get; }
-        IReadOnlyList<StashGame> FoundFolders { get; }
+        IReadOnlyList<LocalStashGame> FoundFolders { get; }
 
         Task InitializeAsync();
         Task AddRootFolderAsync(string path);
@@ -20,10 +20,11 @@ namespace GameStash.Web.GUI.Interfaces
         Task RefreshAllRootFoldersAsync();
 
         // Methods to encapsulate mutations on FoundFolders
-        void AddFoundFolder(StashGame game);
-        void AddFoundFolders(IEnumerable<StashGame> games);
+        void AddFoundFolder(LocalStashGame game);
+        void AddFoundFolders(IEnumerable<LocalStashGame> games);
         void RemoveFoundFolder(string folderPath);
         void RemoveFoundFolders(IEnumerable<string> folderPaths);
         void ClearFoundFolders();
+        void IgnoreFoundFolder(string folderPath);
     }
 }

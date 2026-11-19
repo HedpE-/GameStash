@@ -1,0 +1,48 @@
+﻿/* ==========================================================================
+   REUSABLE STAR RATING COMPONENT (Exact Single-Bar Overlay)
+   ========================================================================== */
+
+.star-rating-wrapper {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    font-size: 11px;
+    line-height: 1;
+    vertical-align: middle;
+}
+
+/* Crucial: Must be position: relative so .stars-fill overlays directly on top */
+.star-rating-box {
+    position: relative !important;
+    display: inline-block !important;
+    font-size: 11px;
+    line-height: 1;
+    letter-spacing: 1px;
+    user-select: none;
+    font-family: Times, 'Times New Roman', serif, sans-serif;
+}
+
+    .star-rating-box .stars-empty {
+        color: #444444;
+        display: inline-block;
+    }
+
+    /* Crucial: Must be position: absolute so it overlays .stars-empty instead of pushing next to it */
+    .star-rating-box .stars-fill {
+        color: #ffb300; /* Gold */
+        position: absolute !important;
+        top: 0;
+        left: 0;
+        white-space: nowrap;
+        overflow: hidden;
+        line-height: 1;
+        pointer-events: none;
+        transition: width 0.25s ease;
+    }
+
+.star-rating-val {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text-main, #f3f4f6);
+}

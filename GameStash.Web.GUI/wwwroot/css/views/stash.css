@@ -18,7 +18,7 @@
 }
 
 .stash-container {
-    padding: 24px 32px;
+    padding: 24px 0 0 32px !important; /* Mantém o recuo esquerdo e remove o direito */
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -29,8 +29,8 @@
     overflow: hidden;
 }
 
-/* 1. Cabeçalho Minimalista Fixo */
 .stash-fixed-header {
+    padding-right: 32px; /* Devolve a margem direita à linha de títulos e botões */
     flex-shrink: 0;
     z-index: 20;
     padding-bottom: 16px;
@@ -117,11 +117,11 @@
     flex: 1;
     min-height: 0;
     display: flex;
-    gap: 24px;
+    gap: 20px;
     align-items: flex-start;
-    overflow-y: auto;
+    overflow-y: auto !important;
     overflow-x: hidden;
-    padding: 20px 0 40px 0;
+    padding: 20px 16px 40px 0; /* Reduzido o padding direito para aproximar os elementos da borda */
 }
 
 /* Grelha Dinâmica Auto-ajustável */
@@ -133,185 +133,35 @@
     gap: 28px 20px;
 }
 
-/* 3. Stash Card de Alta Fidelidade (Premium) */
-.stash-card-container {
-    width: var(--card-w);
-    display: flex;
-    flex-direction: column;
-    cursor: pointer;
-    user-select: none;
-    position: relative;
-}
-
-.stash-card-frame {
-    width: var(--card-w);
-    height: var(--card-h);
-    border-radius: 12px;
-    background-size: cover;
-    background-position: center;
-    border: 1px solid var(--border-color);
-    position: relative;
-    overflow: hidden;
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
-    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-.stash-card-container:hover .stash-card-frame {
-    transform: translateY(-6px);
-    border-color: var(--primary-purple);
-    box-shadow: 0 12px 28px rgba(138, 70, 255, 0.25), 0 0 15px var(--primary-purple-glow);
-}
-
-/* Overlay Cinematográfico Inteligente */
-.stash-card-overlay {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom, rgba(0,0,0,0.3) 0%, rgba(0,0,0,0.85) 100%);
-    opacity: 0;
-    transition: opacity 0.25s ease;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    padding: 12px;
-}
-
-.stash-card-container:hover .stash-card-overlay {
-    opacity: 1;
-}
-
-/* Botões do Card */
-.stash-favorite-btn, .stash-menu-btn {
-    background: rgba(15, 15, 20, 0.85);
-    backdrop-filter: blur(4px);
-    border: 1px solid rgba(255,255,255,0.05);
-    width: 34px;
-    height: 34px;
-    border-radius: 8px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: #fff;
-    font-size: 14px;
-    transition: all 0.2s ease;
-}
-
-.stash-favorite-btn:hover {
-    transform: scale(1.1);
-    color: #ff4081;
-}
-.stash-favorite-btn.active {
-    color: #ff4081;
-    background: rgba(255, 64, 129, 0.15);
-    border-color: #ff4081;
-}
-
-.stash-menu-btn:hover {
-    background: var(--primary-purple);
-}
-
-/* Context Menu Premium */
-.stash-card-context-menu {
-    position: absolute;
-    bottom: 46px;
-    right: 0;
-    background: #14141f;
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 8px;
-    display: none;
-    flex-direction: column;
-    z-index: 30;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
-    overflow: hidden;
-    min-width: 130px;
-    backdrop-filter: blur(10px);
-}
-
-.stash-card-context-menu button {
-    background: transparent;
-    border: none;
-    padding: 10px 14px;
-    color: var(--text-main);
-    text-align: left;
-    font-size: 13px;
-    font-weight: 500;
-    cursor: pointer;
-    transition: all 0.15s ease;
-}
-
-.stash-card-context-menu button:hover {
-    background: rgba(138, 70, 255, 0.2);
-    color: #fff;
-}
-.stash-card-context-menu button.danger:hover {
-    background: rgba(255, 74, 90, 0.2);
-    color: var(--danger-red);
-}
-
-/* Texto Informativo */
-.stash-card-text {
-    margin-top: 10px;
-    padding: 0 2px;
-}
-
-.stash-game-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: var(--text-main);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    transition: color 0.2s ease;
-}
-
-.stash-card-container:hover .stash-game-title {
-    color: var(--primary-purple);
-}
-
-.stash-game-meta {
-    font-size: 12px;
-    color: var(--text-muted);
-    margin-top: 3px;
-    font-weight: 500;
-}
-
-/* Missing Folder State */
-.stash-missing-overlay {
-    position: absolute;
-    inset: 0;
-    background: rgba(255, 74, 90, 0.15);
-    backdrop-filter: blur(2px);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid var(--danger-red);
-    border-radius: 12px;
-}
-
 /* 4. Alphabet Jump Column */
 .stash-alphabet-bar {
     position: sticky;
     top: 0;
+    order: 2; /* Move a barra para depois da grelha de jogos (lado direito) */
     display: flex;
     flex-direction: column;
     gap: 4px;
-    background: rgba(18, 18, 26, 0.6);
+    background: rgba(18, 18, 26, 0.75); /* Ligeiramente mais opaco para legibilidade */
     backdrop-filter: blur(12px);
     border: 1px solid var(--border-color);
     padding: 8px 6px;
     border-radius: 10px;
     z-index: 10;
+    margin-right: 12px; /* Margem de segurança antes da calha física da scrollbar */
 }
 
+/* 3. Aumenta o tamanho da fonte em 2px e ajusta o botão para o texto caber */
 .alphabet-letter-btn {
     background: transparent;
     border: none;
     color: var(--text-muted);
-    font-size: 11px;
-    font-weight: 800;
+    /* Aumentado de 11px para 13px (+2px) */
+    font-size: 13px;
+    font-weight: 600;
     cursor: pointer;
-    width: 24px;
-    height: 24px;
+    /* Ajustado o tamanho da caixa de 24px para 26px para suportar a fonte maior sem quebrar */
+    width: 26px;
+    height: 26px;
     border-radius: 6px;
     display: flex;
     align-items: center;
@@ -426,7 +276,7 @@
 .stash-scroll-top-btn {
     position: absolute;
     bottom: 32px;
-    right: 32px;
+    right: 42px; /* Posição padrão encostada à direita */
     width: 46px;
     height: 46px;
     border-radius: 12px;
@@ -443,11 +293,105 @@
     opacity: 0;
     visibility: hidden;
     transform: translateY(10px);
-    transition: all 0.25s ease;
+    /* Força o deslizamento lateral suave (0.35s) e elástico se houver colisão */
+    transition: right 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.25s ease, opacity 0.25s ease;
 }
 
-.stash-scroll-top-btn.visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translateY(0);
+    .stash-scroll-top-btn.visible {
+        opacity: 1;
+        visibility: visible;
+        transform: translateY(0);
+    }
+
+.stash-scroll-top-btn.shifted-left {
+    right: 86px !important; /* Desvia suavemente para o lado esquerdo da barra */
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 15px rgba(138, 70, 255, 0.25);
+}
+
+@media (max-height: 650px) {
+    .stash-scroll-top-btn {
+        right: 86px !important; /* Empurra o botão +44px para a esquerda, limpando a alphabet bar */
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(138, 70, 255, 0.2); /* Brilho extra para destaque */
+    }
+}
+
+/* ==========================================================================
+   STASH EMPTY STATE / MISSING ROOT FOLDERS WARNING
+   ========================================================================== */
+.stash-empty-warning-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    background: var(--bg-surface);
+    border: 1px dashed var(--primary-purple);
+    border-radius: 12px;
+    padding: 50px 30px;
+    margin: 60px auto;
+    max-width: 580px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4), 0 0 20px rgba(138, 70, 255, 0.05);
+    box-sizing: border-box;
+    animation: fadeIn 0.25s ease-out;
+}
+
+    .stash-empty-warning-box h2 {
+        color: var(--text-main, #ffffff);
+        font-size: 22px;
+        font-weight: 800;
+        margin: 0 0 12px 0;
+    }
+
+    .stash-empty-warning-box p {
+        color: var(--text-muted, #9ca3af);
+        font-size: 14px;
+        line-height: 1.6;
+        margin: 4px 0;
+    }
+
+    .stash-empty-warning-box .warning-icon {
+        font-size: 44px;
+        margin-bottom: 18px;
+        filter: drop-shadow(0 0 8px var(--primary-purple-glow));
+    }
+
+    .stash-empty-warning-box .warning-subtext {
+        font-size: 12px;
+        color: #555566 !important;
+        margin-top: 16px;
+        border-top: 1px solid var(--border-color);
+        padding-top: 14px;
+        max-width: 90%;
+    }
+
+    .stash-empty-warning-box .nav-to-settings-btn {
+        margin-top: 24px;
+        padding: 11px 24px;
+        background: var(--primary-purple);
+        border: none;
+        color: #ffffff;
+        font-size: 13px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 700;
+        box-shadow: 0 4px 12px var(--primary-purple-glow);
+        transition: all 0.2s ease;
+    }
+
+        .stash-empty-warning-box .nav-to-settings-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(138, 70, 255, 0.5);
+            opacity: 0.95;
+        }
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.98);
+    }
+
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
 }

@@ -2,7 +2,6 @@
 using Common.Lib.Comparers;
 using Common.Lib.Extensions;
 using Common.Lib.HelperClasses;
-using Common.Lib.Managers;
 using MaterialDesignThemes.Wpf;
 using GameStash.Core.Models;
 using GameStash.Core.Services;
@@ -24,7 +23,7 @@ namespace GameStash.MVVM.GUI.ViewModels
     internal class MainViewModel : ObservableObject
     {
         private readonly string _databasePath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "GameStash", "gamestash.db");
-        private readonly List<FolderMonitorWithThrottle> _rootFolderWatchers;
+        //private readonly List<FolderMonitorWithThrottle> _rootFolderWatchers;
 
         // Global Snackbar MessageQueue
         private ISnackbarMessageQueue _messageQueue = new SnackbarMessageQueue(TimeSpan.FromSeconds(5));
@@ -538,7 +537,7 @@ namespace GameStash.MVVM.GUI.ViewModels
 
         public MainViewModel()
         {
-            _rootFolderWatchers = new List<FolderMonitorWithThrottle>();
+            //_rootFolderWatchers = new List<FolderMonitorWithThrottle>();
             RootFolders = new FastObservableCollection<RootFolder>();
             FoundFolders = new ObservableCollection<StashGame>();
             LocalGamesLibrary = new ObservableCollection<StashGame>();
@@ -592,7 +591,7 @@ namespace GameStash.MVVM.GUI.ViewModels
                 Igdb_Secret = settings.IGDB_Secret;
 
                 // Parse RootFolders into individual folder paths and create Folder objects
-                var rootFolders = settings.RootFolders?.Split(';') ?? new string[0];
+                var rootFolders = "".Split(';') ?? new string[0];
                 foreach (var folderPath in rootFolders)
                 {
                     if (!string.IsNullOrEmpty(folderPath))
@@ -780,11 +779,11 @@ namespace GameStash.MVVM.GUI.ViewModels
         {
             var rootFolder = new RootFolder(path);
             RootFolders.Add(rootFolder);
-            var watcher = new FolderMonitorWithThrottle(path);
-            watcher.FolderCreated += Watcher_FolderCreated;
-            watcher.FolderRenamed += Watcher_FolderRenamed;
-            watcher.FolderDeleted += Watcher_FolderDeleted;
-            _rootFolderWatchers.Add(watcher);
+            //var watcher = new FolderMonitorWithThrottle(path);
+            //watcher.FolderCreated += Watcher_FolderCreated;
+            //watcher.FolderRenamed += Watcher_FolderRenamed;
+            //watcher.FolderDeleted += Watcher_FolderDeleted;
+            //_rootFolderWatchers.Add(watcher);
             ImportGamesFromFolderAsync(rootFolder);
             UpdateRootFolderEntry();
         }
@@ -802,9 +801,9 @@ namespace GameStash.MVVM.GUI.ViewModels
             {
                 FoundFolders.Remove(folderToRemove);
             }
-            var watcher = _rootFolderWatchers.First(w => w.MonitoredPath == folder.Path);
-            watcher.StopMonitoring();
-            _rootFolderWatchers.Remove(watcher);
+            //var watcher = _rootFolderWatchers.First(w => w.MonitoredPath == folder.Path);
+            //watcher.StopMonitoring();
+            //_rootFolderWatchers.Remove(watcher);
             UpdateRootFolderEntry();
         }
 

@@ -1,12 +1,11 @@
-﻿using GameStash.Web.GUI.DTO;
+﻿using GameStash.Core.Models;
+using GameStash.Core.Services;
+using GameStash.Web.GUI.DTO;
 using GameStash.Web.GUI.Interfaces;
-using Microsoft.AspNetCore.Http;
+using IgdbSharp;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.Extensions.Configuration.UserSecrets;
 using System;
-using System.IO;
-using System.Linq;
-using System.Net;
+using System.Net.Http;
 using System.Threading.Tasks;
 
 namespace GameStash.Web.GUI.Controllers
@@ -20,19 +19,106 @@ namespace GameStash.Web.GUI.Controllers
         [HttpGet]
         public IActionResult GetSettings()
         {
-            var dto = new GlobalSettingsDto
-            {
-                IgdbClientId = _settingsService.IgdbClientId,
-                IgdbSecret = _settingsService.IgdbSecret
-            };
-            return Ok(dto);
+            var settings = _settingsService.GetCurrentSettings();
+            return Ok(settings);
         }
 
-        [HttpPut("credentials")]
-        public async Task<IActionResult> UpdateCredentials([FromBody] CredentialsUpdateDto request)
+        [HttpGet("{apiName}/status")]
+        public async Task<IActionResult> GetStatus([FromRoute] string apiName)
         {
-            await _settingsService.UpdateIgdbCredentialsAsync(request.IgdbClientId, request.IgdbSecret);
-            return NoContent();
+            switch (apiName.ToLower())
+            {
+                case "igdb":
+                    try
+                    {
+                        var igdbClient = await _settingsService.GetIgdbClient();
+                        await igdbClient.GetAuthenticationStatusAsync();
+                        return Ok(new { Success = true, Message = "IGDB connection operational." });
+                    }
+                    catch (Exception ex)
+                    {
+                        if (ex.Message.Contains("Twitch"))
+                            return BadRequest(new { Message = "IGDB credentials failed Twitch authentication." });
+
+                        return BadRequest(new { ex.Message });
+                    }
+                case "steam":
+                    try
+                    {
+                        var steamClient = _settingsService.GetSteamClient();
+                        await steamClient.GetAuthenticationStatusAsync();
+
+                        return Ok(new { Success = true, Message = "Steam integration is operational." });
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(new { Message = $"Failed to communicate with Steam servers: {ex.Message}" });
+                    }
+                case "epic":
+                    try
+                    {
+                        var epicClient = _settingsService.GetEpicClient();
+                        var userData = await epicClient.VerifySessionAsync();
+
+                        if (userData == null || string.IsNullOrWhiteSpace(userData.AccountId))
+                            return BadRequest(new { Message = "Epic Games session has expired or is not configured." });
+
+                        // Se os tokens foram renovados em segundo plano, persiste na base de dados
+                        await _settingsService.UpdateCredentialsAsync("epic", epicClient.RefreshToken!, epicClient.AccessToken!);
+
+                        return Ok(new { Success = true, Username = userData.DisplayName, userData.DisplayName });
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(new { Message = $"Epic Games verification error: {ex.Message}" });
+                    }
+
+                case "gog":
+                    try
+                    {
+                        var gogClient = _settingsService.GetGogClient();
+                        var userData = await gogClient.GetUserDataAsync();
+
+                        if (userData == null || !userData.IsLoggedIn)
+                            return BadRequest(new { Message = "GOG session has expired or is invalid." });
+
+                        // If tokens were refreshed in background, persist them using the standard UpdateCredentialsAsync
+                        await _settingsService.UpdateCredentialsAsync("gog", gogClient.RefreshToken!, gogClient.AccessToken!);
+
+                        return Ok(new { Success = true, Username = userData.Username });
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(new { Message = $"GOG verification error: {ex.Message}" });
+                    }
+                default:
+                    return BadRequest(new { Message = "Unsupported credentials type." });
+            }
+        }
+
+        [HttpGet("epic/clientid")]
+        public IActionResult GetEpicClientId()
+        {
+            return Ok(new
+            {
+                EpicClient.ClientId,
+                LoginUrl = $"https://epicgames.com/id/api/redirect?clientId={EpicClient.ClientId}&responseType=code"
+            });
+        }
+
+        [HttpPut("{apiName}/credentials")]
+        public async Task<IActionResult> UpdateCredentials([FromRoute] string apiName, [FromBody] CredentialsUpdateDto request)
+        {
+            try
+            {
+                await _settingsService.UpdateCredentialsAsync(apiName, request.UserClientId, request.Secret);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { ex.Message });
+            }
+
+            return Ok();
         }
     }
 }

@@ -5,10 +5,13 @@
 let isNavigating = false;
 
 import { loadSettings } from './settings.js';
-import { initImportFoldersView } from './importfolders.js';
 import { loadDashboard } from './dashboard.js';
-import { initLocalStashView } from './localstash.js';
 import { initBrowseView } from './browse.js';
+import { initLocalStashView } from './localstash.js';
+import { initImportFoldersView } from './importfolders.js';
+import { initPlaylistView } from './localstashplaylist.js';
+import { initSteamStashView } from './steamstash.js';
+import { initEpicStashView } from './epicstash.js';
 
 // Route dictionary mapping templates and view lifecycle initializers
 const routes = {
@@ -17,20 +20,21 @@ const routes = {
     'totalstash': { templateUrl: '/totalstash.html', init: null },
     'localstashhome': { templateUrl: '/localstashhome.html', init: null },
     'localstash': { templateUrl: '/localstash.html', init: initLocalStashView },
-    'localstashplaylist': { templateUrl: '/localstashplaylist.html', init: null },
+    'localstashplaylist': { templateUrl: '/localstashplaylist.html', init: initPlaylistView },
     'importfolders': { templateUrl: '/importfolders.html', init: initImportFoldersView },
-    'epicstash': { templateUrl: '/epicstash.html', init: null },
-    'steamstash': { templateUrl: '/steamstash.html', init: null },
+    'steamstash': { templateUrl: '/steamstash.html', init: initSteamStashView },
+    'epicstash': { templateUrl: '/epicstash.html', init: initEpicStashView },
+    'gogstash': { templateUrl: '/gogstash.html', init: null },
     'amazonstash': { templateUrl: '/amazonstash.html', init: null },
     'settings': { templateUrl: '/settings.html', init: loadSettings },
     'system': { templateUrl: '/system.html', init: null }
 };
 
 const routeAliases = {
-    'local-stash': 'localstash',
-    'importfromrootfolders': 'importfolders',
-    'import-folders': 'importfolders',
-    'globalsettings': 'settings'
+//     'local-stash': 'localstash',
+//     'importfromrootfolders': 'importfolders',
+//     'import-folders': 'importfolders',
+//     'globalsettings': 'settings'
 };
 
 function syncNavbarAccordionState(routeKey) {

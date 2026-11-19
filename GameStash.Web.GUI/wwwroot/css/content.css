@@ -1,15 +1,18 @@
 ﻿/* ==========================================================================
    CENTRAL STYLESHEET ORCHESTRATOR & CORE PIPELINE
    ========================================================================== */
-@import url('./snackbar.css');
 @import url('./pagination.css');
 @import url('./navbar.css');
+@import url('./starrating.css');
+@import url('./gamecard.css');
+@import url('./snackbar.css');
 @import url('views/settings.css');
 @import url('views/dashboard.css');
 @import url('views/gamedetails.css');
 @import url('views/browse.css');
 @import url('views/importfolders.css');
-@import url('views/localstash.css');
+@import url('views/stash.css');
+@import url('views/playlist.css');
 
 :root {
     --bg-dark: #121212;
@@ -28,6 +31,35 @@
     padding: 0;
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
 }
+
+.view-title-main {
+    font-size: 38px !important;
+    font-weight: 900 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 1px !important;
+    margin: 0 0 24px 0 !important;
+    display: inline-block !important;
+    position: relative !important;
+    background: linear-gradient(135deg, #ffffff 10%, #b5a2ff 60%, #00f2fe 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    /* TRANSPARÊNCIA */
+    color: transparent !important;
+    -webkit-text-fill-color: transparent !important;
+}
+
+    /* Linha de acento futurista cyberpunk */
+    .view-title-main::after {
+        content: '' !important;
+        position: absolute !important;
+        bottom: -6px !important;
+        left: 0 !important;
+        width: 45px !important;
+        height: 3px !important;
+        background: linear-gradient(90deg, #8a46ff, #00f2fe) !important;
+        border-radius: 2px !important;
+        box-shadow: 0 0 10px rgba(138, 70, 255, 0.8), 0 0 25px rgba(0, 242, 254, 0.5) !important;
+    }
 
 body {
     background-color: var(--bg-dark);
@@ -98,7 +130,7 @@ body {
 .content-area,
 .main-view-workspace {
     flex: 1;
-    padding: 20px 30px;
+    padding: 0px;
     display: flex;
     flex-direction: column;
     height: 100%;

@@ -62,8 +62,8 @@ namespace GameStash.Core.Models
         }
 
 
-        public IEnumerable<StashGame> _foundGames;
-        public IEnumerable<StashGame> FoundGames
+        public IEnumerable<LocalStashGame> _foundGames;
+        public IEnumerable<LocalStashGame> FoundGames
         {
             get => _foundGames;
             set

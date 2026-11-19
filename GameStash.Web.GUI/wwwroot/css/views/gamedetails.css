@@ -23,13 +23,35 @@
         pointer-events: auto;
     }
 
+    .modal-overlay.nested-modal {
+        z-index: 10050;
+        background-color: rgba(0, 0, 0, 0.75);
+        backdrop-filter: blur(8px);
+    }
+
+.nested-modal .modal-dialog-card {
+    background: #12121c;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 28px;
+    width: 420px;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.9), 0 0 30px rgba(138, 70, 255, 0.15);
+}
+
+    .nested-modal .modal-dialog-card h3 {
+        margin: 0 0 16px 0;
+        font-size: 20px;
+        font-weight: 800;
+        color: #fff;
+    }
+
 .modal-container {
-    background-color: var(--bg-card);
+    background-color: var(--bg-card, #12121a);
     width: 90%;
     max-width: 950px;
     height: 85vh;
     border-radius: 12px;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -37,7 +59,9 @@
     box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
 }
 
-/* Floating Actions Header Orchestrator */
+/* ==========================================================================
+   FLOATING ACTIONS HEADER ORCHESTRATOR
+   ========================================================================== */
 .modal-floating-actions-bar {
     position: absolute;
     top: 0;
@@ -47,87 +71,24 @@
     padding: 0 25px;
     display: flex;
     align-items: center;
-    background: linear-gradient(to bottom, var(--bg-card) 40%, rgba(30, 30, 30, 0) 100%);
+    background: linear-gradient(to bottom, var(--bg-card, #12121a) 40%, rgba(18, 18, 26, 0) 100%);
     z-index: 100;
     pointer-events: none;
+    box-sizing: border-box;
 }
 
-.modal-actions-right {
+/* --- Left Block: Navigation History Arrows --- */
+.modal-history-nav {
     display: flex;
     align-items: center;
     gap: 10px;
-    margin-left: auto;
     pointer-events: auto;
 }
 
-.history-nav-btn,
-.modal-favorite-btn,
-.modal-header-close {
-    pointer-events: auto;
-}
-
-/* History Back/Forward Navigation Buttons */
 .history-nav-btn {
     background: rgba(37, 37, 37, 0.85);
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
-    font-size: 21px;
-    font-weight: bold;
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: none;
-    align-items: center;
-    justify-content: center;
-    line-height: 1;
-    padding: 0 0 3px 0;
-    backdrop-filter: blur(4px);
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-    .history-nav-btn:hover {
-        background-color: var(--primary-purple);
-        border-color: var(--primary-purple);
-        color: white;
-    }
-
-/* Favorite Toggle Button in Floating Bar */
-.modal-favorite-btn {
-    background: rgba(37, 37, 37, 0.85);
-    border: 1px solid var(--border-color);
-    color: var(--text-muted);
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-}
-
-    .modal-favorite-btn:hover {
-        color: #ff5252;
-        transform: scale(1.1);
-    }
-
-    .modal-favorite-btn.active {
-        color: #ff5252;
-    }
-
-        .modal-favorite-btn.active svg {
-            fill: #ff5252;
-        }
-
-/* Modal Close Button */
-.modal-header-close {
-    background: rgba(37, 37, 37, 0.85);
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.07));
+    color: var(--text-main, #f3f4f6);
     font-size: 16px;
     font-weight: bold;
     width: 36px;
@@ -137,44 +98,242 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    line-height: 1;
-    padding: 0;
     backdrop-filter: blur(4px);
     transition: all 0.2s ease;
     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
-    margin-right: 15px;
+    /* Preserves fixed flex slot dimensions when hidden */
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+}
+
+    .history-nav-btn.is-visible {
+        visibility: visible;
+        opacity: 1;
+        pointer-events: auto;
+    }
+
+    .history-nav-btn:hover {
+        background-color: var(--primary-purple, #8a46ff);
+        border-color: var(--primary-purple, #8a46ff);
+        color: #ffffff;
+    }
+
+/* --- Right Block: Action Controls --- */
+.modal-actions-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+    pointer-events: auto;
+}
+
+/* Shared Circular Top Action Buttons Base */
+.modal-playlist-btn,
+.modal-favorite-btn,
+.modal-header-close {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(37, 37, 37, 0.85);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.07));
+    color: var(--text-muted, #9ca3af);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    margin: 0;
+    position: relative;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.2s, border-color 0.2s, color 0.2s;
+}
+
+    /* ==========================================================================
+   PLAYLIST TOGGLE BUTTON (Outline Off / Solid Filled On)
+   ========================================================================== */
+    .modal-playlist-btn svg {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        transform-origin: center;
+        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease, color 0.2s ease;
+    }
+
+    /* --- OFF State: Outlined Icon --- */
+    .modal-playlist-btn:not(.active) .playlist-icon-off {
+        color: var(--text-muted, #9ca3af);
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .modal-playlist-btn:not(.active) .playlist-icon-on {
+        opacity: 0;
+        transform: scale(0.5);
+        pointer-events: none;
+    }
+
+    .modal-playlist-btn:not(.active):hover {
+        transform: scale(1.1);
+        background: rgba(50, 50, 50, 0.9);
+    }
+
+        .modal-playlist-btn:not(.active):hover .playlist-icon-off {
+            color: #f59e0b;
+            filter: drop-shadow(0 0 5px rgba(245, 158, 11, 0.4));
+        }
+
+    /* --- ON State: Solid Filled Icon --- */
+    .modal-playlist-btn.active {
+        border-color: rgba(245, 158, 11, 0.4);
+        background: rgba(245, 158, 11, 0.08);
+    }
+
+        .modal-playlist-btn.active .playlist-icon-on {
+            color: #f59e0b;
+            opacity: 1;
+            transform: scale(1);
+            filter: drop-shadow(0 0 6px rgba(245, 158, 11, 0.5));
+        }
+
+        .modal-playlist-btn.active .playlist-icon-off {
+            opacity: 0;
+            transform: scale(0.5);
+            pointer-events: none;
+        }
+
+        .modal-playlist-btn.active:hover {
+            transform: scale(1.1);
+        }
+
+            .modal-playlist-btn.active:hover .playlist-icon-on {
+                transform: scale(0.95);
+            }
+
+    /* ==========================================================================
+   FAVORITE TOGGLE BUTTON (Broken Outline Off / Solid Filled On)
+   ========================================================================== */
+    .modal-favorite-btn svg {
+        position: absolute;
+        width: 20px;
+        height: 20px;
+        transform-origin: center;
+        transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s ease, color 0.2s ease;
+    }
+
+    /* --- OFF State: Gray Broken Heart Outline --- */
+    .modal-favorite-btn:not(.active) .heart-icon-broken {
+        color: var(--text-muted, #9ca3af);
+        opacity: 1;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        transform: scale(1);
+    }
+
+    .modal-favorite-btn:not(.active) .heart-icon-full {
+        opacity: 0;
+        transform: scale(0.5);
+        pointer-events: none;
+    }
+
+    .modal-favorite-btn:not(.active):hover {
+        transform: scale(1.1);
+        background: rgba(50, 50, 50, 0.9);
+    }
+
+        .modal-favorite-btn:not(.active):hover .heart-icon-broken {
+            color: #ff4a5a;
+            stroke: #ff4a5a;
+            filter: drop-shadow(0 0 5px rgba(255, 74, 90, 0.5));
+        }
+
+    /* --- ON State: Solid Crimson Heart Filled --- */
+    .modal-favorite-btn.active {
+        border-color: rgba(255, 74, 90, 0.4);
+        background: rgba(255, 74, 90, 0.08);
+    }
+
+        .modal-favorite-btn.active .heart-icon-full {
+            color: #ff4a5a;
+            opacity: 1;
+            transform: scale(1);
+            filter: drop-shadow(0 0 6px rgba(255, 74, 90, 0.6));
+        }
+
+        .modal-favorite-btn.active .heart-icon-broken {
+            opacity: 0;
+            transform: scale(0.5);
+            pointer-events: none;
+        }
+
+        .modal-favorite-btn.active:hover {
+            transform: scale(1.1);
+        }
+
+            .modal-favorite-btn.active:hover .heart-icon-full {
+                transform: scale(0.95);
+            }
+
+/* --- Modal Close Button (X) --- */
+.modal-header-close {
+    color: var(--text-main, #f3f4f6);
+    font-size: 14px;
+    font-weight: bold;
 }
 
     .modal-header-close:hover {
-        background-color: #ff4a4a;
-        border-color: #ff4a4a;
-        color: white;
+        background-color: var(--danger-red, #ff4a5a);
+        border-color: var(--danger-red, #ff4a5a);
+        color: #ffffff;
     }
 
-/* Body & Structural Columns */
+/* Subtitle Platforms */
+.game-platforms-subtitle {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text-muted, #9ca3af);
+    margin-top: 6px;
+    margin-bottom: 20px;
+    line-height: 1.4;
+    letter-spacing: 0.2px;
+}
+
+/* ==========================================================================
+   MODAL BODY & STRUCTURAL COLUMNS
+   ========================================================================== */
 .modal-body {
     display: flex;
     flex: 1;
     overflow: hidden;
     padding: 75px 25px 25px 25px;
     gap: 25px;
+    box-sizing: border-box;
 }
 
 .modal-sidebar-art {
     width: 200px;
+    height: 100%;
     flex-shrink: 0;
     display: flex;
     flex-direction: column;
     gap: 12px;
+    overflow-y: auto;
+    min-height: 0;
+    padding-right: 4px;
+    scrollbar-width: thin;
 }
 
 .modal-cover-frame {
     width: 100%;
     height: 270px;
+    flex-shrink: 0;
     border-radius: 6px;
     background-size: cover;
     background-position: center;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    box-sizing: border-box;
 }
 
 /* Local Library Specific Sidebar Section */
@@ -183,28 +342,120 @@
     flex-direction: column;
     gap: 8px;
     padding-bottom: 12px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
 }
 
 .local-meta-row {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--text-muted, #9ca3af);
 }
 
     .local-meta-row .local-value {
-        color: var(--text-main);
+        color: var(--text-main, #f3f4f6);
         font-weight: 600;
     }
 
-.install-status-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    font-weight: 700;
-    color: var(--text-main);
-    margin: 3px 0;
+/* Installation Dual Segment Switch */
+.premium-install-switch-container {
+    width: 100%;
+    margin: 6px 0 10px 0;
+    cursor: pointer;
+    user-select: none;
 }
+
+.install-switch-track {
+    position: relative;
+    display: flex;
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.07));
+    padding: 2px;
+    border-radius: 8px;
+    height: 34px;
+    align-items: center;
+    box-sizing: border-box;
+    overflow: hidden;
+}
+
+.install-switch-segment {
+    flex: 1;
+    z-index: 5;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--text-muted, #9ca3af);
+    transition: color 0.25s ease;
+    line-height: 28px;
+}
+
+/* Switch Active Glow Slider */
+.install-switch-slider-glow {
+    position: absolute;
+    top: 2px;
+    bottom: 2px;
+    left: 2px;
+    width: calc(50% - 2px);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    transition: transform 0.25s cubic-bezier(0.4, 0, 0.2, 1), background 0.25s, border-color 0.25s, box-shadow 0.25s;
+    z-index: 2;
+}
+
+.premium-install-switch-container.is-not-installed-active .not-installed-seg {
+    color: #ff4a5a;
+}
+
+.premium-install-switch-container.is-not-installed-active .install-switch-slider-glow {
+    background: rgba(255, 74, 90, 0.08);
+    border-color: rgba(255, 74, 90, 0.25);
+    box-shadow: inset 0 0 8px rgba(255, 74, 90, 0.1);
+    transform: translateX(0);
+}
+
+.premium-install-switch-container.is-installed-active .installed-seg {
+    color: #03dac6;
+}
+
+.premium-install-switch-container.is-installed-active .install-switch-slider-glow {
+    background: rgba(3, 218, 198, 0.08);
+    border-color: rgba(3, 218, 198, 0.25);
+    box-shadow: inset 0 0 8px rgba(3, 218, 198, 0.1);
+    transform: translateX(100%);
+}
+
+/* Sidebar Action Buttons */
+.sidebar-action-btn {
+    background: rgba(255, 255, 255, 0.02);
+    color: var(--text-main, #f3f4f6);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.07));
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+    margin-top: 4px;
+}
+
+    .sidebar-action-btn:hover {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: var(--primary-purple, #8a46ff);
+    }
+
+    .sidebar-action-btn.danger {
+        color: #ff4a5a;
+        border-color: rgba(255, 74, 90, 0.15);
+        margin-top: 12px;
+    }
+
+        .sidebar-action-btn.danger:hover {
+            background: rgba(255, 74, 90, 0.08);
+            border-color: #ff4a5a;
+            box-shadow: 0 0 10px rgba(255, 74, 90, 0.15);
+        }
 
 .open-folder-btn {
     background: #4a6c82;
@@ -234,13 +485,13 @@
     font-size: 11px;
     text-transform: uppercase;
     letter-spacing: 0.5px;
-    color: var(--primary-purple);
+    color: var(--primary-purple, #8a46ff);
     font-weight: bold;
 }
 
 .meta-value {
     font-size: 13px;
-    color: var(--text-main);
+    color: var(--text-main, #f3f4f6);
     line-height: 1.4;
 }
 
@@ -258,42 +509,13 @@
     filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.5));
 }
 
-.meta-rating-block {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-}
-
-.rating-bar-container {
-    position: relative;
-    display: inline-block;
-    font-size: 20px;
-    line-height: 1;
-    font-family: Times, 'Times New Roman', serif;
-    user-select: none;
-}
-
-.stars-empty {
-    color: #444444;
-}
-
-.stars-fill {
-    color: #ffb300;
-    position: absolute;
-    top: 0;
-    left: 0;
-    white-space: nowrap;
-    overflow: hidden;
-    width: 0%;
-    transition: width 0.3s ease;
-}
-
 .meta-count {
     font-size: 11px;
-    color: var(--text-muted);
+    color: var(--text-muted, #9ca3af);
+    align-self: center;
 }
 
-/* Main Content Area */
+/* Main Content Workspace */
 .modal-main-scroll {
     flex: 1;
     overflow-y: auto;
@@ -303,53 +525,24 @@
 
 .game-subtitle {
     font-size: 13px;
-    color: var(--text-muted);
+    color: var(--text-muted, #9ca3af);
     margin-top: -15px;
     margin-bottom: 20px;
     font-style: italic;
     line-height: 1.4;
 }
 
-.install-status-badge {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 15px;
-    font-weight: 700;
-    margin: 4px 0;
-    cursor: pointer;
-    user-select: none;
-    padding: 6px 10px;
-    border-radius: 6px;
-    border: 1px solid transparent;
-    transition: all 0.2s ease;
-    width: fit-content;
-}
-
-    .install-status-badge:hover {
-        background: rgba(255, 255, 255, 0.08);
-        border-color: rgba(255, 255, 255, 0.15);
-    }
-
-    .install-status-badge.installed {
-        color: #03dac6;
-    }
-
-    .install-status-badge.not-installed {
-        color: var(--text-muted);
-    }
-
-/* Tabs */
+/* Tab Navigation */
 .modal-tabs-bar {
     display: flex;
     gap: 10px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
     margin-bottom: 20px;
     padding-bottom: 5px;
 }
 
 .modal-tab-link {
-    color: var(--text-muted);
+    color: var(--text-muted, #9ca3af);
     padding: 8px 16px;
     cursor: pointer;
     font-size: 14px;
@@ -359,8 +552,8 @@
 }
 
     .modal-tab-link.active {
-        color: var(--primary-purple);
-        border-bottom-color: var(--primary-purple);
+        color: var(--primary-purple, #8a46ff);
+        border-bottom-color: var(--primary-purple, #8a46ff);
     }
 
 .modal-tab-content {
@@ -374,17 +567,17 @@
 .taxonomies-grid {
     margin-bottom: 20px;
     padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 12px;
     font-size: 13px;
-    color: var(--text-main);
+    color: var(--text-main, #f3f4f6);
     line-height: 1.5;
 }
 
     .taxonomies-grid strong {
-        color: var(--text-muted);
+        color: var(--text-muted, #9ca3af);
     }
 
 /* Local Specs Block */
@@ -394,31 +587,32 @@
     gap: 6px;
     margin-bottom: 25px;
     padding-bottom: 15px;
-    border-bottom: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
 }
 
 .local-spec-type {
     font-size: 14px;
-    color: var(--text-main);
+    color: var(--text-main, #f3f4f6);
     font-weight: 600;
 }
 
 .local-spec-path {
     font-size: 12px;
-    color: var(--text-muted);
+    color: var(--text-muted, #9ca3af);
     word-break: break-all;
     line-height: 1.4;
 }
 
 .local-spec-size {
     font-size: 13px;
-    color: var(--text-main);
+    color: var(--text-main, #f3f4f6);
     font-weight: 600;
 }
 
-/* Screenshots & Media Grids */
-.screenshot-grid,
-.similar-grid {
+/* ==========================================================================
+   SCREENSHOTS, VIDEOS & SIMILAR GAMES GRIDS
+   ========================================================================== */
+.screenshot-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
     gap: 15px;
@@ -431,7 +625,7 @@
     border-radius: 6px;
     background-size: cover;
     background-position: center;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
     cursor: pointer;
     transition: opacity 0.2s;
 }
@@ -440,7 +634,13 @@
         opacity: 0.7;
     }
 
-/* Videos Grid */
+.similar-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(var(--card-w, 160px), 1fr));
+    gap: 24px 20px;
+    margin-top: 15px;
+}
+
 .video-grid {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
@@ -455,7 +655,7 @@
     border-radius: 8px;
     background-size: cover;
     background-position: center;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
     cursor: pointer;
     overflow: hidden;
     transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
@@ -463,7 +663,7 @@
 
     .video-item:hover {
         transform: translateY(-2px);
-        border-color: var(--primary-purple);
+        border-color: var(--primary-purple, #8a46ff);
         box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
     }
 
@@ -490,8 +690,8 @@
 
 .video-item:hover .video-play-badge {
     transform: translate(-50%, -50%) scale(1.15);
-    background: var(--primary-purple);
-    border-color: var(--primary-purple);
+    background: var(--primary-purple, #8a46ff);
+    border-color: var(--primary-purple, #8a46ff);
 }
 
 .video-title-bar {
@@ -509,17 +709,6 @@
     text-overflow: ellipsis;
     z-index: 2;
 }
-
-.similar-grid .game-card,
-.game-card {
-    cursor: pointer;
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-    .similar-grid .game-card:hover,
-    .game-card:hover {
-        transform: translateY(-3px);
-    }
 
 /* ==========================================================================
    ADVANCED LIGHTBOX CINEMATIC VIEWER (ZOOM + CAPTIONS)
@@ -546,8 +735,8 @@
     left: 50%;
     transform: translateX(-50%);
     background: rgba(25, 25, 25, 0.85);
-    border: 1px solid var(--border-color);
-    color: var(--text-main);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+    color: var(--text-main, #f3f4f6);
     font-size: 14px;
     font-weight: 600;
     padding: 8px 20px;
@@ -589,7 +778,7 @@
         aspect-ratio: 16 / 9;
         border-radius: 8px;
         box-shadow: 0 0 30px rgba(0, 0, 0, 0.9);
-        border: 1px solid var(--border-color);
+        border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
     }
 
 .viewer-close-btn {
@@ -597,7 +786,7 @@
     top: 25px;
     right: 35px;
     background: #1e1e1e;
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
     color: white;
     font-size: 18px;
     font-weight: bold;
@@ -623,7 +812,7 @@
     top: 50%;
     transform: translateY(-50%);
     background: rgba(30, 30, 30, 0.7);
-    border: 1px solid var(--border-color);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
     color: white;
     width: 50px;
     height: 50px;
@@ -642,8 +831,8 @@
 }
 
     .viewer-nav-btn:hover {
-        background-color: var(--primary-purple);
-        border-color: var(--primary-purple);
+        background-color: var(--primary-purple, #8a46ff);
+        border-color: var(--primary-purple, #8a46ff);
         transform: translateY(-50%) scale(1.08);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
     }
@@ -661,4 +850,127 @@
         height: 22px;
         display: block;
         pointer-events: none;
+    }
+
+/* ==========================================================================
+   PROGRESS TRACKING TOGGLE BADGES
+   ========================================================================== */
+.status-toggle-badge {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text-muted, #9ca3af);
+    margin: 4px 0;
+    cursor: pointer;
+    user-select: none;
+    padding: 8px 12px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: rgba(255, 255, 255, 0.02);
+    transition: all 0.2s ease;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+    .status-toggle-badge:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        color: var(--text-main, #f3f4f6);
+    }
+
+    .status-toggle-badge.disabled {
+        opacity: 0.25;
+        cursor: not-allowed;
+        pointer-events: none;
+        border-color: rgba(255, 255, 255, 0.02);
+        background: transparent;
+        color: var(--text-muted, #9ca3af);
+    }
+
+    .status-toggle-badge.status-played {
+        color: #a855f7;
+        background: rgba(168, 85, 247, 0.1);
+        border-color: rgba(168, 85, 247, 0.3);
+    }
+
+    .status-toggle-badge.status-playing {
+        color: #3b82f6;
+        background: rgba(59, 130, 246, 0.1);
+        border-color: rgba(59, 130, 246, 0.3);
+    }
+
+    .status-toggle-badge.status-finished {
+        color: #10b981;
+        background: rgba(16, 185, 129, 0.1);
+        border-color: rgba(16, 185, 129, 0.3);
+    }
+
+    .status-toggle-badge.status-playlist {
+        color: #f59e0b;
+        background: rgba(245, 158, 11, 0.08);
+        border-color: rgba(245, 158, 11, 0.3);
+    }
+
+        .status-toggle-badge.status-playlist:hover {
+            background: rgba(245, 158, 11, 0.15);
+            border-color: #f59e0b;
+            box-shadow: 0 0 10px rgba(245, 158, 11, 0.2);
+        }
+
+/* Star Rating Container */
+#md-rating-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+    #md-rating-container .star-rating-box,
+    #md-rating-container .star-rating-wrapper {
+        font-size: 20px;
+    }
+
+    #md-rating-container .star-rating-wrapper {
+        display: inline-flex;
+        align-items: center;
+    }
+
+/* ==========================================================================
+   SAME FRANCHISE TAB FILTERING & HEADER
+   ========================================================================== */
+.franchise-tab-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    gap: 15px;
+}
+
+    .franchise-tab-header .meta-label {
+        margin: 0;
+    }
+
+.franchise-platform-select {
+    background: rgba(30, 30, 30, 0.85);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    color: var(--text-main, #f3f4f6);
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: 600;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+    .franchise-platform-select:hover,
+    .franchise-platform-select:focus {
+        border-color: var(--primary-purple, #8a46ff);
+        background: rgba(45, 45, 45, 0.95);
+    }
+
+    .franchise-platform-select option {
+        background: #181820;
+        color: #f3f4f6;
     }

@@ -9,8 +9,6 @@ namespace GameStash.Web.GUI.DTO
 {
     public class GameSearchResultDto
     {
-        public static readonly string GameSearchQueryFields = "id, name, cover.*, first_release_date, rating, rating_count, platforms.*,platforms.platform_logo.*, game_type," +
-            " involved_companies.*, involved_companies.company.*,involved_companies.company.logo.*,involved_companies.company.websites.*,involved_companies.game.*";
         public long Id { get; set; }
         public string Name { get; set; } = string.Empty;
         public string CoverUrl { get; set; } = string.Empty;
@@ -44,7 +42,7 @@ namespace GameStash.Web.GUI.DTO
                     ? string.Join(", ", game.Platforms.Values.Select(p => p.Name))
                     : "No platforms available",
                 Rating = game.TotalRating ?? game.Rating ?? 0,
-                GameType = FormatGameType(game.GameType?.ToString())
+                GameType = FormatGameType(game.GameType?.Value?.Type)
             };
         }
 

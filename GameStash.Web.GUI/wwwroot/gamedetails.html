@@ -1,142 +1,213 @@
 ﻿<div id="game-details-modal" class="modal-overlay">
     <div class="modal-container">
-        <!-- Floating Navigation System Interface Core Controls -->
+        <!-- Floating Actions Header Orchestrator -->
         <div class="modal-floating-actions-bar">
-            <!-- Isolated back navigation button on the left -->
-            <button id="md-nav-back" class="history-nav-btn" type="button">←</button>
+            <div class="modal-history-nav">
+                <button id="md-nav-back" class="history-nav-btn" type="button" title="Back">←</button>
+                <button id="md-nav-forward" class="history-nav-btn" type="button" title="Forward">→</button>
+            </div>
 
-            <!-- Grouped actions on the right (Favorite + Forward + Close) -->
             <div class="modal-actions-right">
-                <!-- Local Library Favorite Button (Visible only for local games) -->
-                <button id="md-favorite-btn" class="modal-favorite-btn" type="button" title="Toggle Favorite" style="display: none;">
-                    <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+                <button type="button" class="modal-playlist-btn" id="md-floating-playlist-btn" title="Toggle Playlist">
+                    <!-- Concept 1 OFF: Playlist Outline + -->
+                    <svg class="playlist-icon-off" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M7 3h10a2 2 0 0 1 2 2v10"></path>
+                        <rect x="3" y="7" width="14" height="14" rx="2"></rect>
+                        <line x1="10" y1="11" x2="10" y2="17"></line>
+                        <line x1="7" y1="14" x2="13" y2="14"></line>
+                    </svg>
+                    <!-- Concept 1 ON: Playlist Solid + Checkmark -->
+                    <svg class="playlist-icon-on" width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M8 2a2 2 0 0 0-2 2h11a2 2 0 0 1 2 2v11a2 2 0 0 0 2-2V4a2 2 0 0 0-2-2H8z" />
+                        <path d="M4 6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2H4zm8.707 5.707-3.5 3.5a1 1 0 0 1-1.414 0l-1.5-1.5a1 1 0 0 1 1.414-1.414L10 13.086l2.793-2.793a1 1 0 1 1 1.414 1.414z" />
                     </svg>
                 </button>
 
-                <button id="md-nav-forward" class="history-nav-btn" type="button">→</button>
-                <button class="modal-header-close" type="button">✕</button>
+                <!-- Favorite Button with Full & Broken SVGs -->
+                <button type="button" id="md-favorite-btn" class="modal-favorite-btn" title="Favorite">
+                    <svg class="heart-icon-full" viewBox="0 0 24 24" fill="currentColor">
+                        <path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"></path>
+                    </svg>
+                    <svg class="heart-icon-broken" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M12 5c-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7l1.5-1.5M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.1 0-2 .2-3 1M12 5l-1.5 3.5l2.5 3l-2.5 3.5l1.5 3"></path>
+                    </svg>
+                </button>
+
+                <button type="button" class="modal-header-close" id="md-modal-close-btn" title="Close details">✕</button>
             </div>
         </div>
 
+        <!-- Modal Main Body Structure -->
         <div class="modal-body">
+            <!-- Left Sidebar Section -->
             <div class="modal-sidebar-art">
                 <div id="md-cover" class="modal-cover-frame"></div>
 
-                <!-- Local Library Specific Sidebar Panel (Hidden for Browse Games) -->
-                <div id="md-local-sidebar" class="local-sidebar-panel" style="display: none;">
-                    <div class="local-meta-row">
-                        <span class="local-label">Added to Library:</span>
-                        <span id="md-added-date" class="local-value"></span>
-                    </div>
-
-                    <div id="md-install-status" class="install-status-badge" role="button" tabindex="0" title="Click to toggle Installed / Not Installed">
-                        <svg id="md-install-icon" viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                        </svg>
-                        <span id="md-install-status-text">Not Installed</span>
-                    </div>
-
-                    <button type="button" id="md-open-folder-btn" class="open-folder-btn">
-                        Open Game Folder
-                    </button>
-                </div>
-
+                <!-- STATIC INFO: Directly below cover -->
                 <div class="metadata-sidebar-panel">
                     <div class="meta-label">Released</div>
-                    <div id="md-release-date" class="meta-value"></div>
+                    <div id="md-release-date" class="meta-value">TBD</div>
 
                     <div class="meta-label">Developer Company</div>
                     <div class="meta-developer-block">
                         <img id="md-developer-logo" class="developer-logo" src="" alt="Developer Logo" style="display: none;" />
-                        <div id="md-developer-company" class="meta-value"></div>
+                        <div id="md-developer-company" class="meta-value">Unknown Developer</div>
                     </div>
 
                     <div class="meta-label">Rating</div>
-                    <div class="meta-rating-block">
-                        <div class="rating-bar-container" id="md-stars-container">
-                            <div class="stars-empty">★★★★★</div>
-                            <div id="md-stars-fill" class="stars-fill">★★★★★</div>
+                    <div id="md-rating-container" style="display: flex; gap: 8px;"></div>
+                </div>
+
+                <!-- LOCAL MANAGEMENT -->
+                <div id="md-local-sidebar" class="local-sidebar-panel" style="display: none;">
+                    <div class="meta-label">Stash Management</div>
+
+                    <!-- Installation Status Switch Combo -->
+                    <div id="md-install-status" class="premium-install-switch-container">
+                        <div class="install-switch-track">
+                            <div class="install-switch-segment not-installed-seg">Not Installed</div>
+                            <div class="install-switch-segment installed-seg">Installed</div>
+                            <div class="install-switch-slider-glow"></div>
                         </div>
-                        <div id="md-rating-meta" class="meta-count"></div>
                     </div>
+
+                    <!-- Currently Playing Toggle Badge -->
+                    <div id="md-playing-status" class="status-toggle-badge playing">
+                        <span class="status-indicator">🎮</span>
+                        <span>Currently Playing</span>
+                    </div>
+
+                    <!-- Have Played Toggle Badge -->
+                    <div id="md-played-status" class="status-toggle-badge played">
+                        <span class="status-indicator">✓</span>
+                        <span>Have Played</span>
+                    </div>
+
+                    <!-- Played to End Toggle Badge -->
+                    <div id="md-played-to-end-status" class="status-toggle-badge played-to-end disabled">
+                        <span class="status-indicator">🏆</span>
+                        <span>Played to End</span>
+                    </div>
+
+                    <!-- Sidebar Management Actions -->
+                    <button id="md-edit-sort-name-btn" class="sidebar-action-btn" type="button">Edit Sort Name</button>
+                    <button id="md-open-folder-btn" class="open-folder-btn" type="button">Open Game Folder</button>
+                    <button id="md-remove-stash-btn" class="sidebar-action-btn danger" type="button">Remove from Stash</button>
                 </div>
             </div>
 
+            <!-- Right Content Workspace Area -->
             <div class="modal-main-scroll">
-                <h1 id="md-title"></h1>
-                <div id="md-platforms" class="game-subtitle"></div>
+                <h1 id="md-title" class="stash-title">Unknown Title</h1>
+                <div id="md-title-platforms" class="game-platforms-subtitle">No platforms available</div>
 
                 <div class="modal-tabs-bar">
                     <div class="modal-tab-link active">Summary</div>
                     <div class="modal-tab-link">Media</div>
                     <div class="modal-tab-link">Similar Games</div>
+                    <!-- Dynamically toggled tab: only displayed if game has a franchise -->
+                    <div id="tab-link-same-franchise" class="modal-tab-link" style="display: none;">Same Franchise</div>
                 </div>
 
+                <!-- Tab: Summary -->
                 <div id="tab-summary" class="modal-tab-content active">
                     <div class="taxonomies-grid">
-                        <div><strong>Genres:</strong> <span id="md-genres"></span></div>
-                        <div><strong>Themes:</strong> <span id="md-themes"></span></div>
-                        <div><strong>Perspectives:</strong> <span id="md-perspectives"></span></div>
-                        <div><strong>Game Modes:</strong> <span id="md-modes"></span></div>
+                        <div><strong>Genres:</strong> <span id="md-genres">Not specified</span></div>
+                        <div><strong>Themes:</strong> <span id="md-themes">Not specified</span></div>
+                        <div><strong>Perspectives:</strong> <span id="md-perspectives">Not specified</span></div>
+                        <div><strong>Game Modes:</strong> <span id="md-modes">Not specified</span></div>
+                        <!-- Franchise field placed below Perspectives -->
+                        <div><strong>Franchise:</strong> <span id="md-franchise">No franchise</span></div>
                     </div>
 
-                    <!-- Local Library Technical Specs (Type, Path, Size) -->
                     <div id="md-local-specs" class="local-specs-container" style="display: none;">
-                        <div id="md-local-type" class="local-spec-type"></div>
-                        <div id="md-local-path" class="local-spec-path" title=""></div>
-                        <div id="md-local-size" class="local-spec-size"></div>
+                        <div class="local-meta-row">Release Type: <span id="md-local-type" class="local-value">PC Game</span></div>
+                        <div class="local-meta-row">Added to Stash: <span id="md-added-date" class="local-value">TBD</span></div>
+                        <div class="local-meta-row">Folder Size: <span id="md-local-size" class="local-value">0 B</span></div>
+                        <div class="local-meta-row">Path: <span id="md-local-path" class="local-spec-path">None</span></div>
                     </div>
 
-                    <h2>Summary</h2>
-                    <p id="md-summary" style="line-height: 1.6; margin-bottom: 20px; color: var(--text-main);"></p>
-                    <h2>Storyline</h2>
-                    <p id="md-storyline" style="line-height: 1.6; color: var(--text-muted);"></p>
+                    <h2 class="meta-label">Summary</h2>
+                    <p id="md-summary" class="meta-value">No summary overview supplied.</p>
+
+                    <h2 class="meta-label">Storyline</h2>
+                    <p id="md-storyline" class="meta-value">No descriptive storyline details logged.</p>
                 </div>
 
+                <!-- Tab: Media -->
                 <div id="tab-media" class="modal-tab-content">
-                    <h2>Screenshots</h2>
+                    <h2 class="meta-label">Screenshots</h2>
                     <div id="md-screenshots" class="screenshot-grid"></div>
-                    <h2 style="margin-top: 25px;">Videos</h2>
+
+                    <h2 class="meta-label">Videos</h2>
                     <div id="md-videos" class="video-grid"></div>
                 </div>
 
+                <!-- Tab: Similar Games -->
                 <div id="tab-similar-games" class="modal-tab-content">
-                    <h2>Similar Games</h2>
+                    <h2 class="meta-label">Similar Games</h2>
                     <div id="md-similar" class="similar-grid"></div>
+                </div>
+
+                <!-- Tab: Same Franchise -->
+                <div id="tab-same-franchise" class="modal-tab-content">
+                    <div class="franchise-tab-header">
+                        <h2 class="meta-label">Same Franchise <span id="md-franchise-count" class="meta-count"></span></h2>
+                        <div class="franchise-filter-container">
+                            <select id="md-franchise-platform-select" class="franchise-platform-select">
+                                <option value="all">All Platforms</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="md-franchise-games" class="similar-grid"></div>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Lightbox / Media Viewer supporting Images (with mouse wheel zoom) and Embedded Videos -->
-<div id="media-viewer" class="media-viewer-overlay" tabindex="0">
-    <div id="viewer-title" class="viewer-title-header"></div>
+<!-- Edit Sort Name Modal (Nested Dialog inside Game Details) -->
+<div id="gd-edit-modal" class="modal-overlay nested-modal">
+    <div class="modal-dialog-card">
+        <h3>Edit Sort Name</h3>
+        <div class="modal-form-group" style="margin: 15px 0;">
+            <label for="gd-edit-sortname-input" style="display:block; margin-bottom:6px; font-size:13px; color: var(--text-muted, #9ca3af);">Custom Sort Name:</label>
+            <input type="text" id="gd-edit-sortname-input" style="width:100%; padding:10px 14px; background:#111; border:1px solid #333; color:#fff; border-radius:6px; font-size:14px; box-sizing:border-box; outline:none;" />
+        </div>
+        <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button type="button" id="gd-edit-save-btn" class="sidebar-action-btn" style="width:auto; padding:8px 18px; margin:0;">Save</button>
+            <button type="button" id="gd-edit-close-btn" class="sidebar-action-btn" style="width:auto; padding:8px 18px; margin:0; background:transparent;">Close</button>
+        </div>
+    </div>
+</div>
 
-    <button class="viewer-close-btn" aria-label="Close" type="button">✕</button>
+<!-- Remove from Stash Confirmation Modal (Nested Dialog inside Game Details) -->
+<div id="gd-delete-modal" class="modal-overlay nested-modal">
+    <div class="modal-dialog-card">
+        <h3 style="color: #ff5252;">Remove from Stash</h3>
+        <p id="gd-delete-message" style="margin: 15px 0; font-size:14px; line-height:1.5; color:#ccc;"></p>
+        <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
+            <button type="button" id="gd-delete-confirm-btn" class="sidebar-action-btn danger" style="width:auto; padding:8px 18px; margin:0;">Yes</button>
+            <button type="button" id="gd-delete-cancel-btn" class="sidebar-action-btn" style="width:auto; padding:8px 18px; margin:0; background:transparent;">No</button>
+        </div>
+    </div>
+</div>
 
-    <button class="viewer-nav-btn prev" aria-label="Previous" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="15 18 9 12 15 6"></polyline>
-        </svg>
+<!-- Advanced Lightbox Cinematic Viewer Overlay -->
+<div id="media-viewer" class="media-viewer-overlay" tabIndex="-1">
+    <div id="viewer-title" class="viewer-title-header">Capture</div>
+    <button class="viewer-close-btn" type="button" title="Close Viewer">✕</button>
+
+    <button class="viewer-nav-btn prev" type="button" title="Previous Media">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M15 18l-6-6 6-6" /></svg>
     </button>
 
     <div id="viewer-stage" class="viewer-stage">
-        <img id="viewer-img" src="" alt="Capture" style="display: none;" />
-        <iframe id="viewer-video"
-                src=""
-                title="YouTube video player"
-                frameborder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                allowfullscreen
-                style="display: none;">
-        </iframe>
+        <img id="viewer-img" src="" alt="Lightbox Target" style="display: none;" />
+        <iframe id="viewer-video" src="" allow="autoplay; encrypted-media" allowfullscreen style="display: none;"></iframe>
     </div>
 
-    <button class="viewer-nav-btn next" aria-label="Next" type="button">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-            <polyline points="9 18 15 12 9 6"></polyline>
-        </svg>
+    <button class="viewer-nav-btn next" type="button" title="Next Media">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M9 18l6-6-6-6" /></svg>
     </button>
 </div>

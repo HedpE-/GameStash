@@ -1,0 +1,65 @@
+﻿<div class="stash-container">
+    <!-- 1. Fixed Top Header & Toolbar Area -->
+    <div class="stash-fixed-header">
+        <div class="stash-header-row">
+            <h1 class="view-title-main">Steam Games Stash</h1>
+            <p id="steam-count-label" class="stash-subtitle">Loading games...</p>
+        </div>
+
+        <div class="stash-toolbar">
+            <div class="toolbar-left-actions">
+                <button type="button" id="steam-reload-btn" class="toolbar-action-btn">
+                    ↻ Reload Stash
+                </button>
+                <button type="button" id="steam-sync-btn" class="toolbar-action-btn" title="Force refresh from Steam Web API">
+                    🔄 Sync from Steam
+                </button>
+                <button type="button" id="steam-export-btn" class="toolbar-action-btn">
+                    📋 Export List
+                </button>
+            </div>
+
+            <div class="toolbar-right-actions">
+                <!-- Sort Dropdown Context Menu -->
+                <div class="dropdown-container">
+                    <button type="button" id="steam-sort-toggle" class="toolbar-dropdown-btn">
+                        <span id="steam-sort-label">Sort: Name ↑</span>
+                    </button>
+                    <div id="steam-sort-menu" class="dropdown-menu">
+                        <div class="dropdown-item active" data-sort="Name">Name <span class="sort-indicator">↑</span></div>
+                        <div class="dropdown-item" data-sort="Playtime">Playtime <span class="sort-indicator"></span></div>
+                    </div>
+                </div>
+
+                <!-- Filter Dropdown Context Menu -->
+                <div class="dropdown-container">
+                    <button type="button" id="steam-filter-toggle" class="toolbar-dropdown-btn">
+                        <span id="steam-filter-label">Filter: All</span>
+                    </button>
+                    <div id="steam-filter-menu" class="dropdown-menu">
+                        <div class="dropdown-item active" data-filter="All">All</div>
+                        <div class="dropdown-item" data-filter="Played">Played</div>
+                        <div class="dropdown-item" data-filter="Unplayed">Unplayed</div>
+                        <div class="dropdown-item" data-filter="Installed">Installed</div>
+                        <div class="dropdown-item" data-filter="Not Installed">Not Installed</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. Scrollable Render Workspace Grid -->
+    <div id="steam-workspace" class="stash-workspace" style="display: none;">
+        <div id="steam-games-grid" class="stash-games-grid"></div>
+        <div id="steam-alphabet-bar" class="stash-alphabet-bar"></div>
+    </div>
+
+    <!-- 3. Central Grid Fullscreen Visual Loading Spinner -->
+    <div id="steam-loading-indicator" class="stash-loading-indicator">
+        <div class="spinner"></div>
+        <p>Loading Steam library...</p>
+    </div>
+
+    <!-- 4. Floating Operational Widgets -->
+    <button type="button" id="steam-scroll-top-btn" class="stash-scroll-top-btn" title="Scroll to Top">↑</button>
+</div>

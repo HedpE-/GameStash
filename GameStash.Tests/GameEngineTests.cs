@@ -2,20 +2,16 @@ using FluentAssertions;
 using GameStash.Core.Models;
 using GameStash.Core.Services;
 using GameStash.Tests.Config;
-using Google.Apis.Auth.OAuth2;
-using IgdbSharp.Models;
 using Microsoft.Extensions.Configuration;
 using NUnit.Framework;
 using NUnit.Framework.Internal;
 using Serilog;
 using System.Diagnostics;
-using System.Text;
-using System.Text.RegularExpressions;
 
-namespace GameStash.Tests
+namespace GameStash.Core.ProdTests
 {
     [TestFixture, Order(1)]
-    public class Tests
+    public class GameEngineTests
     {
         private IConfiguration _config;
         private string igdb_client_id;
@@ -26,7 +22,7 @@ namespace GameStash.Tests
         {
             // AddUserSecrets<T>() automatically reads the secrets linked to this test assembly
             _config = new ConfigurationBuilder()
-                .AddUserSecrets<Tests>()
+                .AddUserSecrets<GameEngineTests>()
                 .Build();
 
             // Read the exact keys you defined in secrets.json
@@ -64,7 +60,6 @@ namespace GameStash.Tests
 
             var result = new GameScanner().ScanFolder(folderPath);
 
-            // Assert: FluentAssertions validation framework matrix
             result.Should().NotBeNull();
             result.Should().NotBeEmpty("because the target PC games directory contains active installations");
 
@@ -83,7 +78,6 @@ namespace GameStash.Tests
 
             var result = await new GameScanner().ScanFolderAsync(folderPath);
 
-            // Assert: FluentAssertions validation framework matrix
             result.Should().NotBeNull();
             result.Should().NotBeEmpty("because the target PC games directory contains active installations");
 
@@ -104,7 +98,7 @@ namespace GameStash.Tests
 
             result.Should().NotBeNull();
             result.Should().NotBeEmpty("because the target PC games directory contains active installations");
-            
+
             // Writes down the final summary report explicitly into the Test runner container
             TestContext.Out.WriteLine("==========================================================================");
             TestContext.Out.WriteLine($"  SCAN FINISHED - FOUND {result.Count()} FILES TO PROCESS");
@@ -195,12 +189,11 @@ namespace GameStash.Tests
         }
 
         [Test]
-        [DependsOnTest(nameof(Test_ScanFolderIdentifyGamesAndMatchGamesAsync))]
-        public async Task Test_IGDBGame()
+        public async Task Test_StashGame()
         {
             int game_id = 140427;
 
-            var game = new Core.Models.StashGame { Id = game_id };
+            var game = new LocalStashGame { Id = game_id };
 
             game.Should().NotBeNull();
             game.Id.Should().HaveValue("because the identity allocation phase should be completed");

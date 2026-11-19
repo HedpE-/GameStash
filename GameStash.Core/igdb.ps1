@@ -1,38 +1,76 @@
 param(
     [Parameter(Mandatory = $true)]
-    [string]$Query
+    [string]$Endpoint,
+
+    [Parameter(Mandatory = $true)]
+    [string]$Query,
+
+    [string]$PgHost = "localhost",
+    [int]$PgPort = 5432,
+    [string]$PgUser = "postgres",
+    [string]$PgPassword = "postgres",
+    [string]$PgDatabase = "gamestash"
 )
 
 Write-Host "Script started"
 
-$clientId = "p8tfbuzs9lcvur6erh6fwevejsmzx9"
-$clientSecret = "8hgyaw52nkvhfbm3p9yf1dfx9e4hcf"
+$clientId = $null
+$clientSecret = $null
 
 if ([string]::IsNullOrWhiteSpace($clientId) -or [string]::IsNullOrWhiteSpace($clientSecret)) {
-    $dbPath = "C:\Users\hed_p\AppData\Roaming\Playarr\playarr.db"
+    Write-Host "Fetching credentials from PostgreSQL database '$PgDatabase'..."
 
-    if (-not (Test-Path $dbPath))
-    {
-        throw "Database not found: $dbPath"
+    # 1. Localizar o executável psql
+    $psqlCmd = Get-Command psql -ErrorAction SilentlyContinue
+    if ($psqlCmd) {
+        $psqlExe = "psql"
+    } else {
+        $found = Get-ChildItem "C:\Program Files\PostgreSQL" -Filter psql.exe -Recurse -ErrorAction SilentlyContinue | Select-Object -First 1
+        if (-not $found) {
+            throw "O comando 'psql' não foi encontrado no PATH nem em 'C:\Program Files\PostgreSQL'. Instala o client ou adiciona o caminho ao PATH."
+        }
+        $psqlExe = $found.FullName
     }
 
-    Write-Host "Database found: $dbPath"
-
-    $clientId = (sqlite3 $dbPath "SELECT IGDB_Client_ID FROM settings LIMIT 1;").Trim()
-    $clientSecret = (sqlite3 $dbPath "SELECT IGDB_Secret FROM settings LIMIT 1;").Trim()
-
-    if ([string]::IsNullOrWhiteSpace($clientId))
-    {
-        throw "IGDB_Client_ID is empty."
+    # 2. Configurar a password no ambiente para execução não-interativa
+    if (-not [string]::IsNullOrWhiteSpace($PgPassword)) {
+        $env:PGPASSWORD = $PgPassword
     }
 
-    if ([string]::IsNullOrWhiteSpace($clientSecret))
-    {
-        throw "IGDB_Secret is empty."
+    # 3. Executar query sacando igdb_client_id e igdb_secret delimitados por '|'
+    $sql = "SELECT igdb_client_id || '|' || igdb_secret FROM settings LIMIT 1;"
+
+    try {
+        $output = (& $psqlExe -h $PgHost -p $PgPort -U $PgUser -d $PgDatabase -t -A -c $sql).Trim()
     }
+    catch {
+        throw "Erro ao executar query no PostgreSQL: $($_.Exception.Message)"
+    }
+    finally {
+        # Limpar variável de ambiente por segurança
+        Remove-Item Env:\PGPASSWORD -ErrorAction SilentlyContinue
+    }
+
+    if ([string]::IsNullOrWhiteSpace($output) -or -not ($output -match "\|")) {
+        throw "A tabela 'settings' está vazia ou as colunas não contêm valores válidos."
+    }
+
+    $parts = $output -split '\|'
+    $clientId = $parts[0].Trim()
+    $clientSecret = $parts[1].Trim()
+
+    if ([string]::IsNullOrWhiteSpace($clientId)) {
+        throw "igdb_client_id está vazio na base de dados."
+    }
+
+    if ([string]::IsNullOrWhiteSpace($clientSecret)) {
+        throw "igdb_secret está vazio na base de dados."
+    }
+
+    Write-Host "Credentials successfully retrieved from PostgreSQL."
 }
 
-Write-Host "Client ID found"
+Write-Host "Client ID found: $clientId"
 Write-Host "Client Secret length: $($clientSecret.Length)"
 
 try
@@ -63,11 +101,11 @@ try
     Write-Host "Calling IGDB..."
 
     $result = Invoke-RestMethod `
-        -Uri "https://api.igdb.com/v4/games" `
-        -Method POST `
-        -Headers $headers `
-        -Body $Query `
-        -ContentType "text/plain"
+		-Uri ("https://api.igdb.com/v4/" + $Endpoint) `
+		-Method POST `
+		-Headers $headers `
+		-Body $Query `
+		-ContentType "text/plain"
 
     Write-Host "Request successful"
 

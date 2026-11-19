@@ -1,4 +1,5 @@
 ﻿using IgdbSharp.Models;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace GameStash.Web.GUI.Interfaces
@@ -13,5 +14,8 @@ namespace GameStash.Web.GUI.Interfaces
         /// </summary>
         // Adiciona <T> aqui também
         Task<T?> GetGameDetailsAsync<T>(long gameId) where T : Game;
+        Task<IEnumerable<T>> GetGamesAsync<T>(long[] ids) where T : Game;
+        Task<IEnumerable<Game>> GetSameFranchiseGames(long franchise);
+        Task<T?> GetGameBySteamAppIdAsync<T>(long steamAppId) where T : Game;
     }
 }

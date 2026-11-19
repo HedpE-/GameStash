@@ -36,14 +36,14 @@ namespace GameStash.Core.Extensions
             return "//images.igdb.com/igdb/image/upload/t_cover_big/nocover.jpg";
         }
 
-        public static async Task GetCoverValue<T>(this T game, IgdbClient igdbClient) where T : IgdbSharp.Models.Game
+        public static async Task GetCoverValue<T>(this T game, IgdbClient igdbClient) where T : Game
         {
             var query = $"fields *; where id = {game.Cover.Id};";
-            IgdbSharp.Models.Cover result = (await igdbClient.QueryAsync<IgdbSharp.Models.Cover>(Endpoints.Covers, query: query, requestPriority: RequestPriority.High)).FirstOrDefault();
+            Cover result = (await igdbClient.QueryAsync<Cover>(Endpoints.Covers, query: query, requestPriority: RequestPriority.High)).FirstOrDefault();
             //game.Cover.Value = result;
         }
 
-        public static string GetReleaseDate<T>(this T game, string format = "MMM dd, yyyy", CultureInfo culture = null) where T : IgdbSharp.Models.Game
+        public static string GetReleaseDate<T>(this T game, string format = "MMM dd, yyyy", CultureInfo culture = null) where T : Game
         {
             if (game == null) return null;
             if (culture == null)

@@ -1,4 +1,6 @@
+import { createGameCard } from './gamecard.js';
 import { openGameDetails } from './gamedetails.js';
+import { renderAlphabetBar } from './alphabetbar.js';
 
 let libraryGames = [];
 let filteredGames = [];
@@ -13,10 +15,10 @@ export async function initLocalStashView(workspaceElement) {
     setupToolbarEvents();
     setupDialogEvents();
     setupScrollTopEvent();
-    await loadLibraryData();
+    await loadStashData();
 }
 
-async function loadLibraryData() {
+async function loadStashData() {
     const loader = document.getElementById('stash-loading-indicator');
     const workspace = document.getElementById('stash-workspace');
     const countLabel = document.getElementById('stash-count-label');
@@ -26,24 +28,66 @@ async function loadLibraryData() {
     if (countLabel) countLabel.innerText = 'Loading games...';
 
     try {
+        // 1. First validate if any Root Folders are registered in the system bounds
+        const foldersResponse = await fetch('/api/folders');
+        const folders = await foldersResponse.json();
+        if (foldersResponse.ok) {
+            if (!folders || folders.length === 0) {
+                renderFoldersWarning('MissingRootFolders');
+                return; // Abort loading further game data indices
+            }
+        }
+
+        // 2. Fetch local library stash records
         const response = await fetch('/api/stash/local');
         if (!response.ok) throw new Error(`HTTP Error ${response.status}`);
 
         libraryGames = await response.json();
+
+        // 3. EVALUATE EMPTY STATED DATA: If library has 0 games, check the unimported backlog state
+        if (!libraryGames || libraryGames.length === 0) {
+            // NEW SCENARIO INTERCEPTOR: Check if any folder is actively scanning right now
+            const isAnyScanning = folders.some(f => f.IsImportingFolders === true || f.isImportingFolders === true);
+            if (isAnyScanning) {
+                renderFoldersWarning('FoldersAreScanning');
+                return; // Abort loading library until scanning pipeline completes
+            }
+
+            const foundResponse = await fetch('/api/folders/found');
+
+            if (foundResponse.ok) {
+                const foundFolders = await foundResponse.json();
+
+                // If there are unimported folders waiting, prompt the user to import them
+                if (foundFolders && foundFolders.length > 0) {
+                    renderFoldersWarning('HasUnimportedGames');
+                } else {
+                    // If everything is completely empty, prompt the user that no matches exist
+                    renderFoldersWarning('NoGamesFoundInRoots');
+                }
+                return;
+            }
+        }
+
+        // Remove any old stale warning boxes if games are now present
+        document.querySelector('.stash-empty-warning-box')?.remove();
+
+        // 4. Proceed with standard sorting and rendering pipeline
         applyFilterAndSort();
     } catch (err) {
         console.error("Failed to load local stash data:", err);
-        const grid = document.getElementById('stash-games-grid');
-        if (grid) grid.innerHTML = `<p style="color: #ff5252; padding: 20px;">Failed to load stash items: ${err.message}</p>`;
-        if (countLabel) countLabel.innerText = 'Failed to load stash items';
+        renderFoldersWarning('Error', err.message);
     } finally {
         if (loader) loader.style.display = 'none';
-        if (workspace) workspace.style.display = 'flex';
+        // Only restore workspace viewport bounds if a warning screen didn't intercept the DOM
+        if (workspace && !document.querySelector('.stash-empty-warning-box')) {
+            workspace.style.display = 'flex';
+        }
     }
 }
 
 function setupToolbarEvents() {
-    document.getElementById('stash-reload-btn')?.addEventListener('click', () => loadLibraryData());
+    document.getElementById('stash-reload-btn')?.addEventListener('click', () => loadStashData());
 
     document.getElementById('stash-flush-btn')?.addEventListener('click', async () => {
         if (!confirm("CRITICAL WARNING:\nAre you sure you want to permanently flush the entire PostgreSQL database table?\nThis action cannot be undone.")) {
@@ -54,7 +98,7 @@ function setupToolbarEvents() {
             const response = await fetch('/api/stash/local/', { method: 'DELETE' });
             if (response.ok) {
                 alert('Database successfully flushed.');
-                await loadLibraryData();
+                await loadStashData();
             } else {
                 alert('Failed to clear database records.');
             }
@@ -158,35 +202,43 @@ function applyFilterAndSort() {
         }
     });
 
+    const naturalCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
+
     filteredGames.sort((a, b) => {
         let valA, valB;
         switch (currentSortOption) {
             case 'Release Date':
                 valA = a.FirstReleaseDate ? new Date(a.FirstReleaseDate).getTime() : 0;
                 valB = b.FirstReleaseDate ? new Date(b.FirstReleaseDate).getTime() : 0;
-                break;
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
             case 'Rating':
                 valA = a.Rating || 0;
                 valB = b.Rating || 0;
-                break;
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
             case 'Date Added':
                 valA = a.DateAdded ? new Date(a.DateAdded).getTime() : 0;
                 valB = b.DateAdded ? new Date(b.DateAdded).getTime() : 0;
-                break;
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
             case 'Folder Size':
                 valA = a.FolderDiskSpaceBytes || 0;
                 valB = b.FolderDiskSpaceBytes || 0;
-                break;
+                if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
+                if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
+                return 0;
             case 'Name':
             default:
-                valA = (a.SortName || a.Name || '').toLowerCase();
-                valB = (b.SortName || b.Name || '').toLowerCase();
-                break;
+                valA = (a.SortName || a.Name || a.name || '').toLowerCase();
+                valB = (b.SortName || b.Name || b.name || '').toLowerCase();
+                return sortDirection === 'asc'
+                    ? naturalCollator.compare(valA, valB)
+                    : naturalCollator.compare(valB, valA);
         }
-
-        if (valA < valB) return sortDirection === 'asc' ? -1 : 1;
-        if (valA > valB) return sortDirection === 'asc' ? 1 : -1;
-        return 0;
     });
 
     const countLabel = document.getElementById('stash-count-label');
@@ -201,7 +253,12 @@ function applyFilterAndSort() {
     }
 
     renderGrid();
-    renderAlphabetBar();
+    renderAlphabetBar({
+        barId: 'stash-alphabet-bar',
+        workspaceId: 'stash-workspace',
+        games: filteredGames.map(g => ({ ...g, Name: g.SortName || g.Name || g.name })),
+        sortOption: currentSortOption
+    });
 }
 
 function renderGrid() {
@@ -210,180 +267,133 @@ function renderGrid() {
     grid.innerHTML = '';
 
     filteredGames.forEach(game => {
-        const card = document.createElement('div');
-        card.className = 'stash-card-container';
-        card.setAttribute('data-id', game.Id);
-
-        const firstChar = (game.SortName || game.Name || '').trim().charAt(0).toUpperCase();
-        card.setAttribute('data-letter', /\d/.test(firstChar) ? '#' : firstChar);
-
-        let subtitleText = '';
-        switch (currentSortOption) {
-            case 'Release Date': subtitleText = game.ReleaseDateFormatted; break;
-            case 'Rating': subtitleText = `★ ${game.Rating.toFixed(1)}`; break;
-            case 'Date Added': subtitleText = game.DateAddedFormatted; break;
-            case 'Folder Size': subtitleText = game.FolderSizeFormatted; break;
-            case 'Name':
-            default:
-                subtitleText = game.ReleaseYear;
-                break;
-        }
-
-        const isMissing = !game.IsFolderValid;
-
-        card.innerHTML = `
-            <div class="stash-card-frame" style="background-image: url('${game.CoverUrl}');">
-                ` + (isMissing ? `
-                    <div class="stash-missing-overlay">
-                        <button type="button" class="menu-action-delete danger" title="Remove Missing Entry">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                                <path d="M3 6h18M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-                            </svg>
-                        </button>
-                    </div>
-                ` : `
-                    <div class="stash-card-overlay">
-                        <button type="button" class="stash-favorite-btn ${game.IsFavorite ? 'active' : ''}" title="Favorite">
-                            ${game.IsFavorite ? '♥' : '♡'}
-                        </button>
-                        <div style="position: relative; align-self: flex-end;">
-                            <button type="button" class="stash-menu-btn" title="Options">⋮</button>
-                            <div class="stash-card-context-menu">
-                                <button type="button" class="menu-action-refresh">Refresh</button>
-                                <button type="button" class="menu-action-edit">Edit</button>
-                                <button type="button" class="menu-action-delete danger">Delete</button>
-                            </div>
-                        </div>
-                    </div>
-                `) + `
-            </div>
-            <div class="stash-card-text">
-                <div class="stash-game-title" title="${game.Name}">${game.Name}</div>
-                <div class="stash-game-meta">${subtitleText}</div>
-            </div>
-        `;
-
-        if (isMissing) {
-            card.querySelector('.menu-action-delete').addEventListener('click', (e) => {
-                e.stopPropagation();
-                openDeleteModal(game);
-            });
-        } else {
-            card.addEventListener('click', (e) => {
-                if (e.target.closest('.stash-favorite-btn') || e.target.closest('.stash-menu-btn') || e.target.closest('.stash-card-context-menu')) {
-                    return;
-                }
-                openGameDetails(game.Id, 'local');
-            });
-
-            const favBtn = card.querySelector('.stash-favorite-btn');
-            favBtn.addEventListener('click', async (e) => {
-                e.stopPropagation();
-                const newFav = !game.IsFavorite;
-                game.IsFavorite = newFav;
-                favBtn.classList.toggle('active', newFav);
-                favBtn.innerText = newFav ? '♥' : '♡';
-
-                await fetch(`/api/stash/local/${game.Id}/favorite`, {
-                    method: 'PUT',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(newFav)
-                });
-
+        const card = createGameCard(
+            game,
+            currentSortOption,
+            openDeleteModal,
+            openEditModal,
+            () => {
                 if (currentFilterOption === 'Favorites' || currentFilterOption === 'Not Favorites') {
                     applyFilterAndSort();
                 }
-            });
-
-            const menuBtn = card.querySelector('.stash-menu-btn');
-            const contextMenu = card.querySelector('.stash-card-context-menu');
-            menuBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                document.querySelectorAll('.stash-card-context-menu').forEach(m => {
-                    if (m !== contextMenu) m.style.display = 'none';
-                });
-                contextMenu.style.display = contextMenu.style.display === 'flex' ? 'none' : 'flex';
-            });
-
-            card.querySelector('.menu-action-refresh').addEventListener('click', async (e) => {
-                e.stopPropagation();
-                contextMenu.style.display = 'none';
-                const res = await fetch(`/api/stash/local/${game.Id}/refresh`, { method: 'POST' });
-                if (res.ok) {
-                    const updated = await res.json();
-                    Object.assign(game, updated);
-                    renderGrid();
-                }
-            });
-
-            card.querySelector('.menu-action-edit').addEventListener('click', (e) => {
-                e.stopPropagation();
-                contextMenu.style.display = 'none';
-                openEditModal(game);
-            });
-
-            card.querySelector('.menu-action-delete').addEventListener('click', (e) => {
-                e.stopPropagation();
-                contextMenu.style.display = 'none';
-                openDeleteModal(game);
-            });
-        }
-
+            },
+            'local'
+        );
         grid.appendChild(card);
     });
 }
 
-function renderAlphabetBar() {
-    const alphabetBar = document.getElementById('stash-alphabet-bar');
-    if (!alphabetBar) return;
+/**
+ * Renders a full-screen warning layout when no root folders are monitored.
+ */
+function renderFoldersWarning(scenario, detailMessage = '') {
+    const container = document.querySelector('.stash-container');
+    const loader = document.getElementById('stash-loading-indicator');
+    const workspace = document.getElementById('stash-workspace');
+    const countLabel = document.getElementById('stash-count-label');
 
-    if (currentSortOption !== 'Name') {
-        alphabetBar.style.display = 'none';
-        return;
+    if (loader) loader.style.display = 'none';
+    if (workspace) workspace.style.display = 'none';
+
+    // Cleanup previous warning instances to block duplications
+    document.querySelector('.stash-empty-warning-box')?.remove();
+
+    let icon = '📂';
+    let title = 'No Monitored Folders Found';
+    let text = 'You have not configured any root directories to monitor for local game installations.';
+    let subtext = 'Please navigate to the <strong>Global Settings</strong> panel to add your first folder path and begin indexing your library.';
+    let btnText = 'Go to Settings';
+    let targetView = 'settings';
+    let hideButton = false;
+
+    if (scenario === 'Error') {
+        icon = '⚠️';
+        title = 'Failed to Load Local Stash';
+        text = detailMessage || 'A network error occurred while communicating with the backend local stash service.';
+        subtext = 'Check the application logs or verify your database connection in Global Settings.';
+        btnText = 'Go to Settings';
+        targetView = 'settings';
+    } else if (scenario === 'HasUnimportedGames') {
+        icon = '🎮';
+        title = 'Empty Stash';
+        text = 'Unimported local game folders detected within your root directories.';
+        subtext = 'Please navigate to the <strong>Import from Root Folders</strong> view to match metadata and add new games to your stash.';
+        btnText = 'Import Games';
+        targetView = 'importfolders';
+    } else if (scenario === 'NoGamesFoundInRoots') {
+        icon = '🔍';
+        title = 'No Matches Discovered';
+        text = 'No matching game installations or folders were found across your configured Root Folder(s).';
+        subtext = 'Make sure your subdirectories contain executable game files or verify directory layouts inside your local storage.';
+        btnText = 'Verify Settings';
+        targetView = 'settings';
+    } else if (scenario === 'FoldersAreScanning') {
+        icon = '<span class="spinner" style="width:44px; height:44px; display:inline-block;"></span>';
+        title = 'Scanning Operations Ongoing';
+        text = 'A monitored root directory is currently being indexed and parsed in the background.';
+        subtext = 'The system is building the initial cache maps. Please wait a few moments for the operations to finalize.';
+        hideButton = true;
     }
 
-    alphabetBar.style.display = 'flex';
-    alphabetBar.innerHTML = '';
+    if (countLabel) countLabel.innerText = title;
 
-    const letters = new Set();
-    filteredGames.forEach(g => {
-        const char = (g.SortName || g.Name || '').trim().charAt(0).toUpperCase();
-        letters.add(/\d/.test(char) ? '#' : char);
-    });
+    const warningBox = document.createElement('div');
+    warningBox.className = 'stash-empty-warning-box';
+    warningBox.innerHTML = `
+        <div class="warning-icon">${icon}</div>
+        <h2>${title}</h2>
+        <p>${text}</p>
+        <p class="warning-subtext">${subtext}</p>
+        ${hideButton ? '' : `<button class="nav-to-settings-btn" id="stash-warn-redirect-btn">${btnText}</button>`}
+    `;
 
-    const sortedLetters = Array.from(letters).sort();
+    container.appendChild(warningBox);
 
-    sortedLetters.forEach(letter => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'alphabet-letter-btn';
-        btn.innerText = letter;
-
-        btn.addEventListener('click', () => {
-            const targetCard = document.querySelector(`.stash-card-container[data-letter="${letter}"]`);
-            if (targetCard) {
-                targetCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            }
-        });
-
-        alphabetBar.appendChild(btn);
+    document.getElementById('stash-warn-redirect-btn')?.addEventListener('click', () => {
+        import('./router.js').then(m => m.navigateTo(targetView));
     });
 }
 
 function setupScrollTopEvent() {
     const workspace = document.getElementById('stash-workspace');
     const scrollTopBtn = document.getElementById('stash-scroll-top-btn');
+    const alphabetBar = document.getElementById('stash-alphabet-bar');
 
     if (!workspace || !scrollTopBtn) return;
 
-    workspace.addEventListener('scroll', () => {
+    // Função centralizada para avaliar visibilidade e colisões geométricas
+    const handleWorkspaceScroll = () => {
+        // 1. Controlo de Visibilidade Base (Surgir após 300px)
         if (workspace.scrollTop > 300) {
             scrollTopBtn.classList.add('visible');
         } else {
             scrollTopBtn.classList.remove('visible');
+            scrollTopBtn.classList.remove('shifted-left'); // Limpa se voltar ao topo
+            return;
         }
-    });
 
+        // 2. Motor de Colisão Dinâmico com a Alphabet Bar
+        if (alphabetBar && window.getComputedStyle(alphabetBar).display !== 'none') {
+            const btnRect = scrollTopBtn.getBoundingClientRect();
+            const barRect = alphabetBar.getBoundingClientRect();
+
+            // Se o topo do botão ultrapassar o limite inferior da barra do alfabeto,
+            // ou se as áreas verticais se sobrepuserem de alguma forma:
+            if (btnRect.top <= barRect.bottom && btnRect.bottom >= barRect.top) {
+                scrollTopBtn.classList.add('shifted-left');
+            } else {
+                scrollTopBtn.classList.remove('shifted-left');
+            }
+        } else {
+            scrollTopBtn.classList.remove('shifted-left');
+        }
+    };
+
+    // Ouve tanto o Scroll como o Resize da janela para recalcular posições instantaneamente
+    workspace.addEventListener('scroll', handleWorkspaceScroll);
+    window.addEventListener('resize', handleWorkspaceScroll);
+
+    // Suporta também o clique suave original
     scrollTopBtn.addEventListener('click', () => {
         workspace.scrollTo({
             top: 0,
@@ -393,23 +403,34 @@ function setupScrollTopEvent() {
 }
 
 function setupDialogEvents() {
+    const editModal = document.getElementById('stash-edit-modal');
+    const editInput = document.getElementById('stash-edit-sortname-input');
+    const editSaveBtn = document.getElementById('stash-edit-save-btn');
+
     document.getElementById('stash-edit-close-btn')?.addEventListener('click', () => {
-        document.getElementById('stash-edit-modal').classList.remove('active');
+        if (editModal) editModal.classList.remove('active');
     });
 
-    document.getElementById('stash-edit-save-btn')?.addEventListener('click', async () => {
-        if (!activeGameForEdit) return;
-        const newSortName = document.getElementById('stash-edit-sortname-input').value.trim();
+    editSaveBtn?.addEventListener('click', async () => {
+        if (!activeGameForEdit || !editInput) return;
+        const newSortName = editInput.value.trim();
         activeGameForEdit.SortName = newSortName;
 
-        await fetch(`/api/stash/local/${activeGameForEdit.Id}/sortname`, {
+        await fetch(`/api/stash/local/${activeGameForEdit.Id}/details`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newSortName)
+            body: JSON.stringify({ propertyName: 'SortName', value: newSortName })
         });
 
-        document.getElementById('stash-edit-modal').classList.remove('active');
+        if (editModal) editModal.classList.remove('active');
         applyFilterAndSort();
+    });
+
+    editInput?.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            editSaveBtn?.click();
+        }
     });
 
     document.getElementById('stash-delete-cancel-btn')?.addEventListener('click', () => {
@@ -429,8 +450,12 @@ function setupDialogEvents() {
 
 function openEditModal(game) {
     activeGameForEdit = game;
-    document.getElementById('stash-edit-sortname-input').value = game.SortName || game.Name;
-    document.getElementById('stash-edit-modal').classList.add('active');
+    const input = document.getElementById('stash-edit-sortname-input');
+    if (input) {
+        input.value = game.SortName || game.Name;
+        document.getElementById('stash-edit-modal').classList.add('active');
+        input.focus();
+    }
 }
 
 function openDeleteModal(game) {

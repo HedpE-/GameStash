@@ -16,13 +16,13 @@ namespace GameStash.Web.GUI.Services
     public class RootFoldersService : IRootFoldersService
     {
         private readonly List<RootFolder> _rootFolders = new();
-        private readonly List<StashGame> _foundFolders = new();
+        private readonly List<LocalStashGame> _foundFolders = new();
 
         public event Action? RootFoldersChanged;
 
         public IReadOnlyList<RootFolder> RootFolders { get => _rootFolders.ToList(); }
 
-        public IReadOnlyList<StashGame> FoundFolders { get => _foundFolders.ToList(); }
+        public IReadOnlyList<LocalStashGame> FoundFolders { get => _foundFolders.ToList(); }
 
         public async Task InitializeAsync()
         {
@@ -45,8 +45,8 @@ namespace GameStash.Web.GUI.Services
 
                 foreach (var folder in existingFolders)
                 {
-                    string normalized = PathHelper.NormalizePath(folder.Path);
-                    bool isSubfolder = validRootFolders.Any(parent => PathHelper.IsSubdirectoryOf(normalized, PathHelper.NormalizePath(parent.Path)));
+                    string normalized = Utils.NormalizePath(folder.Path);
+                    bool isSubfolder = validRootFolders.Any(parent => Utils.IsSubdirectoryOf(normalized, Utils.NormalizePath(parent.Path)));
 
                     if (!isSubfolder)
                     {
@@ -93,7 +93,7 @@ namespace GameStash.Web.GUI.Services
             // Persist changes to PostgreSQL
             await using var context = GameStashDbContext.CreateDbContext();
 
-            string normalized = PathHelper.NormalizePath(path.Trim());
+            string normalized = Utils.NormalizePath(path.Trim());
 
             if (!Directory.Exists(normalized))
                 throw new DirectoryNotFoundException($"Directory '{normalized}' does not exist on filesystem.");
@@ -102,15 +102,15 @@ namespace GameStash.Web.GUI.Services
             List<RootFolder> childFoldersToRemove = new();
 
             // Prevent duplicate entries
-            if (_rootFolders.Any(f => string.Equals(PathHelper.NormalizePath(f.Path), normalized, StringComparison.OrdinalIgnoreCase)))
+            if (_rootFolders.Any(f => string.Equals(Utils.NormalizePath(f.Path), normalized, StringComparison.OrdinalIgnoreCase)))
                 return;
 
             // Reject if path is inside an already registered root folder
-            if (_rootFolders.Any(f => PathHelper.IsSubdirectoryOf(normalized, PathHelper.NormalizePath(f.Path))))
+            if (_rootFolders.Any(f => Utils.IsSubdirectoryOf(normalized, Utils.NormalizePath(f.Path))))
                 throw new InvalidOperationException($"'{normalized}' is already a subfolder of an existing root folder.");
 
             // If adding a parent folder, remove child root folders
-            childFoldersToRemove = _rootFolders.Where(f => PathHelper.IsSubdirectoryOf(PathHelper.NormalizePath(f.Path), normalized)).ToList();
+            childFoldersToRemove = _rootFolders.Where(f => Utils.IsSubdirectoryOf(Utils.NormalizePath(f.Path), normalized)).ToList();
             foreach (var child in childFoldersToRemove)
             {
                 await RemoveRootFolderAsync(child.Path);
@@ -121,7 +121,7 @@ namespace GameStash.Web.GUI.Services
 
             if (childFoldersToRemove.Count > 0)
             {
-                var pathsToRemove = childFoldersToRemove.Select(c => PathHelper.NormalizePath(c.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
+                var pathsToRemove = childFoldersToRemove.Select(c => Utils.NormalizePath(c.Path)).ToHashSet(StringComparer.OrdinalIgnoreCase);
                 var dbChildren = await context.RootFolders
                     .Where(r => pathsToRemove.Contains(r.Path))
                     .ToListAsync();
@@ -140,9 +140,9 @@ namespace GameStash.Web.GUI.Services
 
         public async Task RemoveRootFolderAsync(string path)
         {
-            string normalized = PathHelper.NormalizePath(path.Trim());
+            string normalized = Utils.NormalizePath(path.Trim());
 
-            var folder = _rootFolders.FirstOrDefault(f => string.Equals(PathHelper.NormalizePath(f.Path), normalized, StringComparison.OrdinalIgnoreCase));
+            var folder = _rootFolders.FirstOrDefault(f => string.Equals(Utils.NormalizePath(f.Path), normalized, StringComparison.OrdinalIgnoreCase));
             if (folder == null) return;
 
             _rootFolders.Remove(folder);
@@ -156,21 +156,21 @@ namespace GameStash.Web.GUI.Services
                 await context.SaveChangesAsync();
             }
 
-            _foundFolders.RemoveAll(g => string.Equals(PathHelper.NormalizePath(g.RootFolder), normalized, StringComparison.OrdinalIgnoreCase));
+            _foundFolders.RemoveAll(g => string.Equals(Utils.NormalizePath(g.RootFolder), normalized, StringComparison.OrdinalIgnoreCase));
 
             RootFoldersChanged?.Invoke();
         }
 
         public async Task RefreshRootFolderAsync(string path)
         {
-            string normalized = PathHelper.NormalizePath(path.Trim());
+            string normalized = Utils.NormalizePath(path.Trim());
             RootFolder? folder;
 
-            folder = _rootFolders.FirstOrDefault(f => string.Equals(PathHelper.NormalizePath(f.Path), normalized, StringComparison.OrdinalIgnoreCase));
+            folder = _rootFolders.FirstOrDefault(f => string.Equals(Utils.NormalizePath(f.Path), normalized, StringComparison.OrdinalIgnoreCase));
 
             if (folder != null)
             {
-                _foundFolders.RemoveAll(f => string.Equals(PathHelper.NormalizePath(f.RootFolder), normalized, StringComparison.OrdinalIgnoreCase));
+                _foundFolders.RemoveAll(f => string.Equals(Utils.NormalizePath(f.RootFolder), normalized, StringComparison.OrdinalIgnoreCase));
                 await folder.FindGames();
 
                 await ImportGamesFromFolderAsync(folder);
@@ -182,11 +182,11 @@ namespace GameStash.Web.GUI.Services
             RootFolder? folder = _rootFolders.FirstOrDefault(f => f.Id == id);
             if (folder == null) return;
 
-            folder = _rootFolders.FirstOrDefault(f => string.Equals(PathHelper.NormalizePath(f.Path), folder.Path, StringComparison.OrdinalIgnoreCase));
+            folder = _rootFolders.FirstOrDefault(f => string.Equals(Utils.NormalizePath(f.Path), folder.Path, StringComparison.OrdinalIgnoreCase));
 
             if (folder != null)
             {
-                _foundFolders.RemoveAll(f => string.Equals(PathHelper.NormalizePath(f.RootFolder), folder.Path, StringComparison.OrdinalIgnoreCase));
+                _foundFolders.RemoveAll(f => string.Equals(Utils.NormalizePath(f.RootFolder), folder.Path, StringComparison.OrdinalIgnoreCase));
 
                 await ImportGamesFromFolderAsync(folder);
             }
@@ -199,14 +199,14 @@ namespace GameStash.Web.GUI.Services
 
             var scanTasks = foldersToRefresh.Select(async folder =>
             {
-                 _foundFolders.RemoveAll(f => string.Equals(PathHelper.NormalizePath(f.RootFolder), folder.Path, StringComparison.OrdinalIgnoreCase));
+                 _foundFolders.RemoveAll(f => string.Equals(Utils.NormalizePath(f.RootFolder), folder.Path, StringComparison.OrdinalIgnoreCase));
                 await ImportGamesFromFolderAsync(folder);
             });
 
             await Task.WhenAll(scanTasks);
         }
 
-        public void AddFoundFolder(StashGame game)
+        public void AddFoundFolder(LocalStashGame game)
         {
             if (game.IsFolderValid)
             {
@@ -218,22 +218,22 @@ namespace GameStash.Web.GUI.Services
             }
         }
 
-        public void AddFoundFolders(IEnumerable<StashGame> games)
+        public void AddFoundFolders(IEnumerable<LocalStashGame> games)
         {
-            foreach (StashGame game in games)
+            foreach (LocalStashGame game in games)
                 AddFoundFolder(game);
         }
 
         public void RemoveFoundFolder(string folderPath)
         {
-            string normalized = PathHelper.NormalizePath(folderPath);
-            _foundFolders.RemoveAll(g => string.Equals(PathHelper.NormalizePath(g.Folder), normalized, StringComparison.OrdinalIgnoreCase));
+            string normalized = Utils.NormalizePath(folderPath);
+            _foundFolders.RemoveAll(g => string.Equals(Utils.NormalizePath(g.Folder), normalized, StringComparison.OrdinalIgnoreCase));
             //_foundFolders.Sort((a, b) => string.Compare(a.MatchName, b.MatchName, StringComparison.OrdinalIgnoreCase));
         }
 
         public void RemoveFoundFolders(IEnumerable<string> folderPaths)
         {
-            _foundFolders.RemoveAll(g => !string.IsNullOrEmpty(g.Folder) && folderPaths.Contains(PathHelper.NormalizePath(g.Folder)));
+            _foundFolders.RemoveAll(g => !string.IsNullOrEmpty(g.Folder) && folderPaths.Contains(Utils.NormalizePath(g.Folder)));
             //_foundFolders.Sort((a, b) => string.Compare(a.MatchName, b.MatchName, StringComparison.OrdinalIgnoreCase));
         }
 
@@ -248,19 +248,27 @@ namespace GameStash.Web.GUI.Services
             {
                 await folder.FindGames();
 
-                var identifiedGames = (folder.FoundGames ?? Enumerable.Empty<StashGame>())
-                    .Where(x => !StashLibraryService.ContainsFolder(x.Folder))
+                await using var context = GameStashDbContext.CreateDbContext();
+                var importedPaths = await context.LocalStash
+                    .Where(g => g.Folder != null)
+                    .Select(g => g.Folder)
+                    .ToListAsync();
+
+                var importedSet = new HashSet<string>(importedPaths, StringComparer.OrdinalIgnoreCase);
+
+                var identifiedGames = (folder.FoundGames ?? Enumerable.Empty<LocalStashGame>())
+                    .Where(x => !string.IsNullOrEmpty(x.Folder) && !importedSet.Contains(x.Folder))
                     .OrderBy(g => g.MatchName)
                     .ToList();
 
-                    foreach (var game in identifiedGames)
+                foreach (var game in identifiedGames)
+                {
+                    game.IsIgdbMatched = false;
+                    if (!_foundFolders.Any(f => string.Equals(Utils.NormalizePath(f.Folder), Utils.NormalizePath(game.Folder), StringComparison.OrdinalIgnoreCase)))
                     {
-                        game.IsIgdbMatched = false;
-                        if (!_foundFolders.Any(f => string.Equals(PathHelper.NormalizePath(f.Folder), PathHelper.NormalizePath(game.Folder), StringComparison.OrdinalIgnoreCase)))
-                        {
-                            _foundFolders.Add(game);
-                        }
+                        _foundFolders.Add(game);
                     }
+                }
             }
             catch (Exception ex)
             {
@@ -270,6 +278,37 @@ namespace GameStash.Web.GUI.Services
             {
                 Log.ForContext<SettingsService>().Information("Completed scanning directory: {Path}", folder.Path);
             }
+        }
+
+        public void IgnoreFoundFolder(string folderPath)
+        {
+            if (string.IsNullOrWhiteSpace(folderPath))
+                throw new ArgumentException("Folder path cannot be null or empty.", nameof(folderPath));
+
+            var folder = _foundFolders.FirstOrDefault(f => string.Equals(f.Folder, folderPath, StringComparison.OrdinalIgnoreCase)) ??
+                throw new InvalidOperationException($"No found folder matches the provided path: {folderPath}");
+
+            try
+            {
+                // Ensure the directory exists before creating the ignore marker
+                if (!Directory.Exists(folderPath))
+                    throw new InvalidOperationException($"The provided path does not exist: {folderPath}");
+                
+                string ignoreFilePath = Path.Combine(folderPath, "gamestash.ignore");
+
+                // Create an empty ignore file and immediately release the file stream handle
+                File.Create(ignoreFilePath).Dispose();
+
+                Log.ForContext<LocalStashService>().Information("Created ignore marker file at: {Path}", ignoreFilePath);
+                
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<LocalStashService>().Error(ex, "Failed to create 'gamestash.ignore' file inside folder: {Path}\n{ex}", folderPath, ex.Message);
+                throw new InvalidOperationException($"Failed to ignore the folder: {folderPath}.");
+            }
+
+            _foundFolders.Remove(folder);
         }
     }
 }

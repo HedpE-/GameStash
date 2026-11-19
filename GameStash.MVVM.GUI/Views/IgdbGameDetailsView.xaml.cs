@@ -4,6 +4,7 @@ using GameStash.MVVM.GUI.ViewModels;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using GameStash.Core.Models;
 
 namespace GameStash.MVVM.GUI.Views
 {
@@ -101,7 +102,7 @@ namespace GameStash.MVVM.GUI.Views
                             if (mainViewModel.LocalGamesLibrary.Any(g => g.Id == similarGame.Id))
                                 similarGames.Add(mainViewModel.LocalGamesLibrary.First(g => g.Id == similarGame.Id));
                             else
-                                similarGames.Add(await Core.Models.StashGame.GetBaseGame(mainViewModel.Igdb_Client_Id, mainViewModel.Igdb_Secret, similarGame.Id.Value));
+                                similarGames.Add(await StashGame.GetBaseGame(mainViewModel.Igdb_Client_Id, mainViewModel.Igdb_Secret, similarGame.Id.Value));
                         }
 
                         SimilarGames = similarGames;

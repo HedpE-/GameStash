@@ -21,7 +21,6 @@
   <ItemGroup>
     <ProjectReference Include="..\..\Common.Lib\Common.Lib.csproj" />
     <ProjectReference Include="..\..\IgdbSharp\IgdbSharp\IgdbSharp.csproj" />
-    <ProjectReference Include="..\GameStash.GoogleGenAi\GameStash.GoogleGenAi.csproj" />
   </ItemGroup>
 
 </Project>
