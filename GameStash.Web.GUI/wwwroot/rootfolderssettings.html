@@ -1,0 +1,43 @@
+﻿<div class="settings-container">
+    <div class="settings-header">
+        <h1 class="view-title-main">Root Folders Settings</h1>
+        <p class="settings-subtitle">Configure storage directories scanned periodically for local game installers and archives.</p>
+    </div>
+
+    <!-- Monitored Root Folders Card -->
+    <div class="settings-card wide-card">
+        <div class="card-header">
+            <div class="card-header-top">
+                <div class="card-title-group">
+                    <span class="card-badge">Storage</span>
+                    <h2>Monitored Root Folders</h2>
+                </div>
+                <!-- Rescan All moved to top-right header -->
+                <button id="rescan-all-btn" class="btn btn-secondary" style="display: none;">↻ Rescan All</button>
+            </div>
+            <p class="card-description">Directory locations scanned periodically for game installers and archive payloads.</p>
+        </div>
+
+        <div class="card-body">
+            <div class="add-folder-bar">
+                <div class="input-with-icon">
+                    <span class="input-icon">📂</span>
+                    <input type="text" id="new-folder-input" placeholder="e.g. D:\Games\Installers" autocomplete="off" />
+                </div>
+                <!-- Hidden native folder input tailored for Chromium / WebView2 absolute path exposure -->
+                <input type="file" id="native-folder-picker" webkitdirectory style="display: none;" />
+
+                <button id="browse-folder-btn" class="btn btn-secondary" title="Browse folder on disk">Browse...</button>
+                <button id="add-folder-btn" class="btn btn-primary">+ Add Folder</button>
+            </div>
+
+            <!-- List of Monitored Root Folders -->
+            <div class="root-folders-list" id="folders-list">
+                <div class="loading-state">
+                    <div class="spinner"></div>
+                    <span>Loading storage directories...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

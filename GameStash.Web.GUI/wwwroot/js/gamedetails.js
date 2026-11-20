@@ -103,18 +103,9 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
         }
 
         // 1. Dynamic Endpoint Selection supporting external stashes (Steam, etc.)
-        let endpoint = "";
-
-        switch (libraryType) {
-            case "local":
-                endpoint = `/api/stash/local/${gameId}/details`;
-                break;
-            case "steam":
-                endpoint = `/api/stash/steam/${gameId}/details`;
-                break;
-            default:
-                endpoint = `/api/games/${gameId}`;
-        }
+        const endpoint = (!libraryType || libraryType === 'none')
+            ? `/api/games/${gameId}`
+            : `/api/stash/${libraryType}/${gameId}/details`;
 
         const response = await fetch(endpoint);
         if (!response.ok) return;
@@ -241,9 +232,128 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
             if (favoriteBtn) favoriteBtn.style.display = 'flex';
 
             // Local-only file management actions visibility
-            if (editSortNameBtn) editSortNameBtn.style.display = 'block';
-            if (openFolderBtn) openFolderBtn.style.display = libraryType === 'local' ? 'block' : 'none';
-            if (removeStashBtn) removeStashBtn.style.display = libraryType === 'local' ? 'block' : 'none';
+            // 1. Edit Sort Name (Supported across all managed stashes)
+            if (editSortNameBtn) {
+                editSortNameBtn.style.display = 'block';
+                editSortNameBtn.onclick = (e) => {
+                    e.stopPropagation();
+
+                    const editModal = document.getElementById('gd-edit-modal');
+                    const sortInput = document.getElementById('gd-edit-sortname-input');
+                    const saveBtn = document.getElementById('gd-edit-save-btn');
+                    const closeBtn = document.getElementById('gd-edit-close-btn');
+
+                    if (!editModal || !sortInput || !saveBtn) return;
+
+                    sortInput.value = game.SortName || game.Name || '';
+                    editModal.classList.add('active');
+                    sortInput.focus();
+                    sortInput.select();
+
+                    const closeEditModal = () => editModal.classList.remove('active');
+                    if (closeBtn) closeBtn.onclick = closeEditModal;
+
+                    editModal.onclick = (ev) => {
+                        if (ev.target === editModal) closeEditModal();
+                    };
+
+                    saveBtn.onclick = async () => {
+                        const newSortName = sortInput.value.trim();
+                        if (!newSortName) {
+                            showError("Sort name cannot be empty.");
+                            return;
+                        }
+
+                        try {
+                            const res = await fetch(`/api/stash/${libraryType}/${gameId}/details`, {
+                                method: 'PUT',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ propertyName: 'SortName', value: newSortName })
+                            });
+
+                            if (res.ok) {
+                                game.SortName = newSortName;
+                                showSuccess("Sort name updated.");
+                                closeEditModal();
+
+                                window.dispatchEvent(new CustomEvent('gameSortNameChanged', {
+                                    detail: { gameId: gameId, libraryType: libraryType, sortName: newSortName }
+                                }));
+                            } else {
+                                showError("Failed to update sort name.");
+                            }
+                        } catch {
+                            showError("Network error while updating sort name.");
+                        }
+                    };
+                };
+            }
+
+            // 2. Open Game Folder (Local Stash only)
+            if (openFolderBtn) {
+                openFolderBtn.style.display = libraryType === 'local' ? 'block' : 'none';
+                openFolderBtn.onclick = async (e) => {
+                    e.stopPropagation();
+                    try {
+                        const res = await fetch(`/api/stash/local/${gameId}/open-folder`, { method: 'POST' });
+                        if (!res.ok) {
+                            const errData = await res.json().catch(() => ({}));
+                            showError(errData.Message || errData.message || "Failed to open game folder.");
+                        }
+                    } catch {
+                        showError("Network error while opening game folder.");
+                    }
+                };
+            }
+
+            // 3. Remove Game from Stash (Local Stash only)
+            if (removeStashBtn) {
+                removeStashBtn.style.display = libraryType === 'local' ? 'block' : 'none';
+                removeStashBtn.onclick = (e) => {
+                    e.stopPropagation();
+
+                    const deleteModal = document.getElementById('gd-delete-modal');
+                    const deleteMsgEl = document.getElementById('gd-delete-message');
+                    const confirmBtn = document.getElementById('gd-delete-confirm-btn');
+                    const cancelBtn = document.getElementById('gd-delete-cancel-btn');
+
+                    if (!deleteModal || !confirmBtn) return;
+
+                    if (deleteMsgEl) {
+                        deleteMsgEl.innerText = `Are you sure you want to remove "${game.Name || 'this game'}" from your Local Stash?`;
+                    }
+                    deleteModal.classList.add('active');
+
+                    const closeDeleteModal = () => deleteModal.classList.remove('active');
+                    if (cancelBtn) cancelBtn.onclick = closeDeleteModal;
+
+                    deleteModal.onclick = (ev) => {
+                        if (ev.target === deleteModal) closeDeleteModal();
+                    };
+
+                    confirmBtn.onclick = async () => {
+                        try {
+                            const res = await fetch(`/api/stash/local/${gameId}`, { method: 'DELETE' });
+                            if (res.ok) {
+                                closeDeleteModal();
+                                closeGameDetails();
+                                showSuccess(`Removed "${game.Name}" from Local Stash.`);
+
+                                if (initialData && typeof initialData.onDeleteCallback === 'function') {
+                                    initialData.onDeleteCallback(game);
+                                } else {
+                                    document.querySelector(`.game-card-container[data-id="${gameId}"]`)?.remove();
+                                }
+                            } else {
+                                showError("Failed to remove game from stash.");
+                            }
+                        } catch {
+                            showError("Network error while removing game.");
+                        }
+                    };
+                };
+            }
+
 
             // Progress badges are local-only features
             if (playingBadge) playingBadge.style.display = 'flex';
@@ -655,8 +765,10 @@ function renderMediaGrids(screenshots, videos, similarGames) {
  * Closes the primary dashboard modal overlay layer.
  */
 export function closeGameDetails() {
-    const modal = document.getElementById('game-details-modal');
+    document.getElementById('gd-edit-modal')?.classList.remove('active');
+    document.getElementById('gd-delete-modal')?.classList.remove('active');
 
+    const modal = document.getElementById('game-details-modal');
     if (modal) {
         modal.classList.remove('active');
     }

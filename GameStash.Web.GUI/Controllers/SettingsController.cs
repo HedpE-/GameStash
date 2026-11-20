@@ -17,9 +17,9 @@ namespace GameStash.Web.GUI.Controllers
         private readonly ISettingsService _settingsService = settingsService;
 
         [HttpGet]
-        public IActionResult GetSettings()
+        public async Task<IActionResult> GetSettings()
         {
-            var settings = _settingsService.GetCurrentSettings();
+            var settings = await _settingsService.GetCurrentSettings();
             return Ok(settings);
         }
 
@@ -63,9 +63,6 @@ namespace GameStash.Web.GUI.Controllers
                         if (userData == null || string.IsNullOrWhiteSpace(userData.AccountId))
                             return BadRequest(new { Message = "Epic Games session has expired or is not configured." });
 
-                        // Se os tokens foram renovados em segundo plano, persiste na base de dados
-                        await _settingsService.UpdateCredentialsAsync("epic", epicClient.RefreshToken!, epicClient.AccessToken!);
-
                         return Ok(new { Success = true, Username = userData.DisplayName, userData.DisplayName });
                     }
                     catch (Exception ex)
@@ -82,14 +79,26 @@ namespace GameStash.Web.GUI.Controllers
                         if (userData == null || !userData.IsLoggedIn)
                             return BadRequest(new { Message = "GOG session has expired or is invalid." });
 
-                        // If tokens were refreshed in background, persist them using the standard UpdateCredentialsAsync
-                        await _settingsService.UpdateCredentialsAsync("gog", gogClient.RefreshToken!, gogClient.AccessToken!);
-
                         return Ok(new { Success = true, Username = userData.Username });
                     }
                     catch (Exception ex)
                     {
                         return BadRequest(new { Message = $"GOG verification error: {ex.Message}" });
+                    }
+                case "amazon":
+                    try
+                    {
+                        var amazonClient = _settingsService.GetAmazonClient();
+                        var userProfile = await amazonClient.GetUserProfileAsync();
+
+                        if (userProfile == null || string.IsNullOrWhiteSpace(userProfile.UserId))
+                            return BadRequest(new { Message = "Amazon Games session has expired or is invalid." });
+
+                        return Ok(new { Success = true, Username = userProfile.Email, DisplayName = userProfile.Name });
+                    }
+                    catch (Exception ex)
+                    {
+                        return BadRequest(new { Message = $"Amazon Games verification error: {ex.Message}" });
                     }
                 default:
                     return BadRequest(new { Message = "Unsupported credentials type." });
@@ -105,6 +114,14 @@ namespace GameStash.Web.GUI.Controllers
                 LoginUrl = $"https://epicgames.com/id/api/redirect?clientId={EpicClient.ClientId}&responseType=code"
             });
         }
+
+        [HttpGet("amazon/login-url")]
+        public IActionResult GetAmazonLoginUrl()
+        {
+            var loginUrl = _settingsService.GenerateAmazonLoginUrl();
+            return Ok(new { LoginUrl = loginUrl });
+        }
+
 
         [HttpPut("{apiName}/credentials")]
         public async Task<IActionResult> UpdateCredentials([FromRoute] string apiName, [FromBody] CredentialsUpdateDto request)

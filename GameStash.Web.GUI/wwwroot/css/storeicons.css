@@ -1,0 +1,29 @@
+﻿/* ==========================================================================
+   STOREFRONT ICON & BADGE COLOR TOKENS
+   ========================================================================== */
+.store-icon {
+    display: block;
+    width: 100%;
+    height: 100%;
+    flex-shrink: 0;
+}
+
+.store-badge-local {
+    color: #a78bfa;
+}
+
+.store-badge-steam {
+    color: #60a5fa;
+}
+
+.store-badge-epic {
+    color: #f3f4f6;
+}
+
+.store-badge-gog {
+    color: #e879f9;
+}
+
+.store-badge-amazon {
+    color: #fbbf24;
+}

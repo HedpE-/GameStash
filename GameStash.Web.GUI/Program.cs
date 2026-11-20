@@ -63,9 +63,12 @@ try
     builder.Services.AddSingleton<ILocalStashService, LocalStashService>();
     builder.Services.AddSingleton<ISteamStashService, SteamStashService>();
     builder.Services.AddSingleton<IEpicStashService, EpicStashService>();
+    builder.Services.AddSingleton<IGogStashService, GogStashService>();
+    builder.Services.AddSingleton<IAmazonStashService, AmazonStashService>();
     builder.Services.AddScoped<IHomeDashboardService, HomeDashboardService>();
     builder.Services.AddScoped<IGameDetailsService, GameDetailsService>();
     builder.Services.AddScoped<IRecommendationService, RecommendationService>();
+    builder.Services.AddScoped<IUnifiedStashService, UnifiedStashService>();
 
     // 3. Register Web API Routing Infrastructure
     builder.Services.AddControllers()
@@ -143,6 +146,30 @@ try
                     catch (Exception ex)
                     {
                         Log.ForContext(typeof(Program)).Error(ex, "Epic Stash initialization encountered an unexpected error.");
+                    }
+                }),
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var gogStashService = scope.ServiceProvider.GetRequiredService<IGogStashService>();
+                        await gogStashService.InitializeAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.ForContext(typeof(Program)).Error(ex, "GOG Stash initialization encountered an unexpected error.");
+                    }
+                }),
+                Task.Run(async () =>
+                {
+                    try
+                    {
+                        var amazonStashService = scope.ServiceProvider.GetRequiredService<IAmazonStashService>();
+                        await amazonStashService.InitializeAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        Log.ForContext(typeof(Program)).Error(ex, "Amazon Stash initialization encountered an unexpected error.");
                     }
                 })
             };

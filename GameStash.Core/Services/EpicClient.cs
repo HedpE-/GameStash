@@ -14,7 +14,7 @@ using System.Threading.Tasks;
 
 namespace GameStash.Core.Services
 {
-    public class EpicClient(string? refreshToken = null, string? accessToken = null)
+    public class EpicClient
     {
         // Official Epic Games Launcher client credentials used by open-source launchers (Legendary/Heroic)
         public const string ClientId = "34a02cf8f4414e29b15921876da36f9a";
@@ -33,13 +33,22 @@ namespace GameStash.Core.Services
 
         private const string _graphQlEndpoint = "https://store.epicgames.com/graphql";
 
-        private readonly HttpClient _httpClient = new();
-        private string? _accessToken = accessToken;
-        private string? _refreshToken = refreshToken;
+        private readonly HttpClient _httpClient;
+        private string? _accessToken;
+        private string? _refreshToken;
         private string? _accountId;
+        private readonly Func<string, string, Task>? _onTokensRefreshed;
 
-        public string? AccessToken => _accessToken;
-        public string? RefreshToken => _refreshToken;
+        public EpicClient(
+            string? refreshToken = null,
+            string? accessToken = null,
+            Func<string, string, Task>? onTokensRefreshed = null)
+        {
+            _refreshToken = refreshToken;
+            _accessToken = accessToken;
+            _onTokensRefreshed = onTokensRefreshed;
+            _httpClient = new();
+        }
 
         private AuthenticationHeaderValue GetBasicAuthHeader()
         {
@@ -82,11 +91,20 @@ namespace GameStash.Core.Services
                 var json = await response.Content.ReadAsStringAsync();
                 var tokenData = JsonSerializer.Deserialize<EpicAuthTokenResponse>(json);
 
-                if (tokenData != null)
+                if (tokenData != null && !string.IsNullOrWhiteSpace(tokenData.AccessToken))
                 {
                     _accessToken = tokenData.AccessToken;
-                    _refreshToken = tokenData.RefreshToken;
-                    _accountId = tokenData.AccountId;
+                    if (!string.IsNullOrWhiteSpace(tokenData.RefreshToken))
+                        _refreshToken = tokenData.RefreshToken;
+                    if (!string.IsNullOrWhiteSpace(tokenData.AccountId))
+                        _accountId = tokenData.AccountId;
+
+                    if (_onTokensRefreshed != null &&
+                        !string.IsNullOrWhiteSpace(_refreshToken) &&
+                        !string.IsNullOrWhiteSpace(_accessToken))
+                    {
+                        await _onTokensRefreshed(_refreshToken, _accessToken);
+                    }
                 }
 
                 return tokenData;
@@ -123,11 +141,21 @@ namespace GameStash.Core.Services
                 var json = await response.Content.ReadAsStringAsync();
                 var tokenData = JsonSerializer.Deserialize<EpicAuthTokenResponse>(json);
 
-                if (tokenData != null)
+                if (tokenData != null && !string.IsNullOrWhiteSpace(tokenData.AccessToken))
                 {
                     _accessToken = tokenData.AccessToken;
-                    _refreshToken = tokenData.RefreshToken;
-                    _accountId = tokenData.AccountId;
+                    if (!string.IsNullOrWhiteSpace(tokenData.RefreshToken))
+                        _refreshToken = tokenData.RefreshToken;
+                    if (!string.IsNullOrWhiteSpace(tokenData.AccountId))
+                        _accountId = tokenData.AccountId;
+
+                    if (_onTokensRefreshed != null &&
+                        !string.IsNullOrWhiteSpace(_refreshToken) &&
+                        !string.IsNullOrWhiteSpace(_accessToken))
+                    {
+                        await _onTokensRefreshed(_refreshToken, _accessToken);
+                    }
+
                     return true;
                 }
             }

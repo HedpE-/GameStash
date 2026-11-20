@@ -29,7 +29,7 @@ namespace GameStash.Web.GUI.DTO
         public bool IsInPlaylist { get; set; }
         public string Folder { get; set; } = string.Empty;
 
-        private StashGameCardDto(StashGame game) : base(game)
+        protected StashGameCardDto(StashGame game) : base(game)
         {
             if (game == null) throw new ArgumentNullException(nameof(game));
 
@@ -100,6 +100,26 @@ namespace GameStash.Web.GUI.DTO
                 if (game.Cover?.Value?.ImageId == null && !string.IsNullOrWhiteSpace(epic.FallbackCoverUrl))
                 {
                     CoverUrl = epic.FallbackCoverUrl;
+                }
+            }
+            else if (game is GogStashGame gog)
+            {
+                ExternalAppId = gog.ExtId;
+                ExternalSystem = "GOG";
+                PlaytimeMinutes = gog.PlaytimeMinutes;
+
+                if (game.Cover?.Value?.ImageId == null && !string.IsNullOrWhiteSpace(gog.FallbackCoverUrl))
+                {
+                    CoverUrl = gog.FallbackCoverUrl;
+                }
+            }
+            else if (game is AmazonStashGame amazon)
+            {
+                ExternalSystem = "Amazon";
+
+                if (game.Cover?.Value?.ImageId == null && !string.IsNullOrWhiteSpace(amazon.FallbackCoverUrl))
+                {
+                    CoverUrl = amazon.FallbackCoverUrl;
                 }
             }
         }

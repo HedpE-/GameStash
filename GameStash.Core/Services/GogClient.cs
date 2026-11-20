@@ -13,19 +13,24 @@ namespace GameStash.Core.Services
         private const string ClientId = "46899977096215655";
         private const string ClientSecret = "9d85c43b1482497dbbce61f6e4aa173a433796eeae2ca8c5f6129f2dc4de46d9";
         private const string RedirectUri = "https://embed.gog.com/on_login_success?origin=client";
+        private const string GameplayHost = "gameplay.gog.com";
 
         private readonly HttpClient _httpClient;
         private string? _accessToken;
         private string? _refreshToken;
+        private string? _userId;
 
-        public string? RefreshToken => _refreshToken;
-        public string? AccessToken => _accessToken;
+        private readonly Func<string, string, Task>? _onTokensRefreshed;
 
-        public GogClient(string? refreshToken = null, string? accessToken = null)
+        public GogClient(
+            string? refreshToken = null,
+            string? accessToken = null,
+            Func<string, string, Task>? onTokensRefreshed = null)
         {
             _refreshToken = refreshToken;
             _accessToken = accessToken;
-            _httpClient = new HttpClient();
+            _onTokensRefreshed = onTokensRefreshed;
+            _httpClient = new();
         }
 
         /// <summary>
@@ -54,10 +59,20 @@ namespace GameStash.Core.Services
                 var json = await response.Content.ReadAsStringAsync();
                 var tokenData = JsonSerializer.Deserialize<GogTokenResponse>(json);
 
-                if (tokenData != null)
+                if (tokenData != null && !string.IsNullOrWhiteSpace(tokenData.AccessToken))
                 {
                     _accessToken = tokenData.AccessToken;
-                    _refreshToken = tokenData.RefreshToken;
+                    if (!string.IsNullOrWhiteSpace(tokenData.RefreshToken))
+                        _refreshToken = tokenData.RefreshToken;
+                    if (!string.IsNullOrWhiteSpace(tokenData.UserId))
+                        _userId = tokenData.UserId;
+
+                    if (_onTokensRefreshed != null &&
+                        !string.IsNullOrWhiteSpace(_refreshToken) &&
+                        !string.IsNullOrWhiteSpace(_accessToken))
+                    {
+                        await _onTokensRefreshed(_refreshToken, _accessToken);
+                    }
                 }
 
                 return tokenData;
@@ -79,23 +94,52 @@ namespace GameStash.Core.Services
 
             try
             {
-                var url = $"https://auth.gog.com/token?client_id={ClientId}&client_secret={ClientSecret}&grant_type=refresh_token&refresh_token={_refreshToken}";
+                var url = $"https://gog.com{ClientId}&client_secret={ClientSecret}&grant_type=refresh_token&refresh_token={_refreshToken}";
                 var response = await _httpClient.GetAsync(url);
-                response.EnsureSuccessStatusCode();
+
+                if (!response.IsSuccessStatusCode)
+                    return false;
 
                 var json = await response.Content.ReadAsStringAsync();
                 var tokenData = JsonSerializer.Deserialize<GogTokenResponse>(json);
 
-                if (tokenData != null)
+                if (tokenData != null && !string.IsNullOrWhiteSpace(tokenData.AccessToken))
                 {
                     _accessToken = tokenData.AccessToken;
-                    _refreshToken = tokenData.RefreshToken;
+                    if (!string.IsNullOrWhiteSpace(tokenData.RefreshToken))
+                        _refreshToken = tokenData.RefreshToken;
+                    if (!string.IsNullOrWhiteSpace(tokenData.UserId))
+                        _userId = tokenData.UserId;
+
+                    if (_onTokensRefreshed != null &&
+                        !string.IsNullOrWhiteSpace(_refreshToken) &&
+                        !string.IsNullOrWhiteSpace(_accessToken))
+                    {
+                        await _onTokensRefreshed(_refreshToken, _accessToken);
+                    }
+
                     return true;
                 }
             }
             catch (Exception ex)
             {
                 Log.ForContext<GogClient>().Error(ex, "Failed to refresh GOG access token.");
+            }
+
+            return false;
+        }
+
+        // Helper to ensure _userId is available before calling user-scoped endpoints:
+        private async Task<bool> EnsureUserIdAsync()
+        {
+            if (!string.IsNullOrWhiteSpace(_userId) && !string.IsNullOrWhiteSpace(_accessToken))
+                return true;
+
+            var userData = await GetUserDataAsync();
+            if (userData != null && !string.IsNullOrWhiteSpace(userData.UserId))
+            {
+                _userId = userData.UserId;
+                return true;
             }
 
             return false;
@@ -180,7 +224,7 @@ namespace GameStash.Core.Services
                     if (data?.Products != null)
                     {
                         allProducts.AddRange(data.Products);
-                        totalPages = data.Pages;
+                        totalPages = data.TotalPages;
                     }
                     else
                     {
@@ -234,5 +278,128 @@ namespace GameStash.Core.Services
 
             return installedIds;
         }
+
+        /// <summary>
+        /// Fetches accumulated playtime in minutes for all games played via GOG Galaxy.
+        /// </summary>
+        public async Task<Dictionary<long, int>> FetchPlaytimeAsync()
+        {
+            if (!await EnsureUserIdAsync())
+                return new Dictionary<long, int>();
+
+            try
+            {
+                var url = $"https://{GameplayHost}/games/users/{_userId}/sessions";
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+
+                var response = await _httpClient.SendAsync(request);
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
+                {
+                    using var retry = new HttpRequestMessage(HttpMethod.Get, url);
+                    retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                    response = await _httpClient.SendAsync(retry);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                    return new Dictionary<long, int>();
+
+                var json = await response.Content.ReadAsStringAsync();
+                var data = JsonSerializer.Deserialize<GogPlaytimeResponse>(json);
+
+                var result = new Dictionary<long, int>();
+                if (data?.Items != null)
+                {
+                    foreach (var item in data.Items)
+                    {
+                        if (long.TryParse(item.GameId, out long gameId) && item.MinutesSum > 0)
+                        {
+                            result[gameId] = item.MinutesSum;
+                        }
+                    }
+                }
+
+                return result;
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<GogClient>().Warning(ex, "Failed to retrieve GOG playtime sessions.");
+                return new Dictionary<long, int>();
+            }
+        }
+
+        /// <summary>
+        /// Fetches player achievements, unlock dates, rarity, and icons for a specific GOG product ID.
+        /// </summary>
+        public async Task<GogGameAchievementsResult?> FetchGameAchievementsAsync(long gogGameId)
+        {
+            if (gogGameId <= 0 || !await EnsureUserIdAsync())
+                return null;
+
+            try
+            {
+                var url = $"https://{GameplayHost}/clients/{gogGameId}/users/{_userId}/achievements";
+                using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                request.Headers.TryAddWithoutValidation("Accept-Language", "en-US");
+
+                var response = await _httpClient.SendAsync(request);
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
+                {
+                    using var retry = new HttpRequestMessage(HttpMethod.Get, url);
+                    retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                    retry.Headers.TryAddWithoutValidation("Accept-Language", "en-US");
+                    response = await _httpClient.SendAsync(retry);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var json = await response.Content.ReadAsStringAsync();
+                var parsed = JsonSerializer.Deserialize<GogAchievementsResponse>(json);
+
+                if (parsed == null || parsed.Items.Count == 0)
+                    return null;
+
+                var achievements = parsed.Items
+                    .Select(item =>
+                    {
+                        bool isUnlocked = item.DateUnlocked.HasValue;
+                        bool isSecret = !item.Visible && !isUnlocked;
+
+                        return new GogPlayerAchievement
+                        {
+                            Id = item.AchievementId,
+                            Key = item.AchievementKey,
+                            Name = isSecret ? "Hidden Achievement" : item.Name,
+                            Description = isSecret ? "Details for this achievement will be revealed once unlocked." : item.Description,
+                            Unlocked = isUnlocked,
+                            UnlockDate = item.DateUnlocked,
+                            RarityPercent = item.Rarity,
+                            UnlockedIconUrl = item.ImageUrlUnlocked,
+                            LockedIconUrl = item.ImageUrlLocked,
+                            IsHidden = !item.Visible
+                        };
+                    })
+                    .OrderByDescending(a => a.Unlocked)
+                    .ThenByDescending(a => a.UnlockDate)
+                    .ThenBy(a => a.RarityPercent)
+                    .ToList();
+
+                return new GogGameAchievementsResult
+                {
+                    GameId = gogGameId,
+                    TotalAchievements = parsed.TotalCount > 0 ? parsed.TotalCount : achievements.Count,
+                    UnlockedAchievements = achievements.Count(a => a.Unlocked),
+                    Achievements = achievements
+                };
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<GogClient>().Warning(ex, "Failed to retrieve GOG achievements for game ID {GameId}.", gogGameId);
+                return null;
+            }
+        }
+
     }
 }

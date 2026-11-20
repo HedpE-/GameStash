@@ -9,6 +9,8 @@ namespace GameStash.Core.Data
         public DbSet<LocalStashGame> LocalStash { get; set; }
         public DbSet<SteamStashGame> SteamStash { get; set; }
         public DbSet<EpicStashGame> EpicStash { get; set; }
+        public DbSet<GogStashGame> GogStash { get; set; }
+        public DbSet<AmazonStashGame> AmazonStash { get; set; }
         public DbSet<Settings> Settings { get; set; }
         public DbSet<RootFolder> RootFolders { get; set; }
 
@@ -34,10 +36,12 @@ namespace GameStash.Core.Data
                 entity.Property(s => s.IGDB_Secret).HasColumnName("igdb_secret").IsRequired();
                 entity.Property(s => s.SteamId64).HasColumnName("steam_id64").IsRequired();
                 entity.Property(s => s.SteamApiKey).HasColumnName("steam_api_key").IsRequired();
-                entity.Property(s => s.GogRefreshToken).HasColumnName("gog_refresh_token").IsRequired();
-                entity.Property(s => s.GogAccessToken).HasColumnName("gog_access_token").IsRequired();
                 entity.Property(s => s.EpicRefreshToken).HasColumnName("epic_refresh_token").IsRequired();
                 entity.Property(s => s.EpicAccessToken).HasColumnName("epic_access_token").IsRequired();
+                entity.Property(s => s.GogRefreshToken).HasColumnName("gog_refresh_token").IsRequired();
+                entity.Property(s => s.GogAccessToken).HasColumnName("gog_access_token").IsRequired();
+                entity.Property(s => s.AmazonRefreshToken).HasColumnName("amazon_refresh_token").IsRequired();
+                entity.Property(s => s.AmazonAccessToken).HasColumnName("amazon_access_token").IsRequired();
             });
 
             // -------------------------------------------------------------
@@ -109,6 +113,36 @@ namespace GameStash.Core.Data
                 // Epic-specific ignored runtime properties
                 entity.Ignore(g => g.FallbackCoverUrl);
                 entity.Ignore(g => g.PlaytimeMinutes);
+            });
+
+            // -------------------------------------------------------------
+            // 6. GOG Library Table Mapping
+            // -------------------------------------------------------------
+            modelBuilder.Entity<GogStashGame>(entity =>
+            {
+                ConfigureStashTableBase(entity, "gog_stash");
+
+                // GOG-specific persisted properties
+                entity.Property(g => g.ExtId);
+
+                // GOG-specific ignored runtime properties
+                entity.Ignore(g => g.FallbackCoverUrl);
+                entity.Ignore(g => g.PlaytimeMinutes);
+            });
+
+            // -------------------------------------------------------------
+            // 7. Amazon Library Table Mapping
+            // -------------------------------------------------------------
+
+            modelBuilder.Entity<AmazonStashGame>(entity =>
+            {
+                ConfigureStashTableBase(entity, "amazon_stash");
+
+                // Amazon-specific persisted properties
+                entity.Property(g => g.ExtId);
+
+                // Amazon-specific ignored runtime properties
+                entity.Ignore(g => g.FallbackCoverUrl);
             });
         }
 

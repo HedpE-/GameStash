@@ -59,12 +59,6 @@ namespace GameStash.Web.GUI.Services
 
                 var rawEpicGames = FilterValidGames(allCatalogItems);
 
-                // Persist refreshed tokens if rotated during fetch
-                if (!string.IsNullOrWhiteSpace(epicClient.RefreshToken) && !string.IsNullOrWhiteSpace(epicClient.AccessToken))
-                {
-                    await _settingsService.UpdateCredentialsAsync("epic", epicClient.RefreshToken, epicClient.AccessToken);
-                }
-
                 var locallyInstalledIds = epicClient.GetLocallyInstalledCatalogIds();
 
                 // STEP 2: Load current stash from PostgreSQL

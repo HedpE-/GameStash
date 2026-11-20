@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="pt-PT">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -9,47 +9,8 @@
 <body>
     <div class="app-container" style="display: flex; width: 100vw; height: 100vh; background-color: #0b0b0f; color: #f3f4f6; font-family: system-ui, -apple-system, sans-serif; overflow: hidden;">
 
-        <!-- SIDEBAR / NAVBAR COMPONENT -->
-        <aside class="sidebar">
-            <div class="brand">GameStash</div>
-
-            <nav class="nav-container">
-                <div class="nav-section">Dashboard</div>
-                <a class="nav-item" id="nav-home" data-view="home">🏠 Home</a>
-                <a class="nav-item" id="nav-browse" data-view="browse">🔍 Browse Games</a>
-
-                <div class="nav-section">Game Stashes</div>
-                <a class="nav-item" id="nav-totalstash" data-view="totalstash">📦 Total Stash</a>
-
-                <!-- Acordeão Expansível do Local Stash -->
-                <button type="button" id="nav-group-local-stash" class="nav-item nav-group-toggle-btn">
-                    <span class="nav-group-header-item">
-                        <span>📁 Local Stash</span>
-                        <span class="sidebar-collapse-arrow">▼</span>
-                    </span>
-                </button>
-
-                <!-- Sub-grupo do Local Stash -->
-                <div id="local-stash-sub-group" class="nav-sub-group collapsed">
-                    <a class="nav-item nav-sub-item" id="nav-localstashhome" data-view="localstashhome">Home</a>
-                    <a class="nav-item nav-sub-item" id="nav-localstash" data-view="localstash">Browse Stash</a>
-                    <a class="nav-item nav-sub-item" id="nav-localstashplaylist" data-view="localstashplaylist">Playlist</a>
-                    <a class="nav-item nav-sub-item" id="nav-importfolders" data-view="importfolders">Import from Root Folders</a>
-                </div>
-
-                <!-- Outras Plataformas Externas -->
-                <a class="nav-item" id="nav-steamstash" data-view="steamstash">⚛️ Steam Stash</a>
-                <a class="nav-item" id="nav-epicstash" data-view="epicstash">🎮 Epic Stash</a>
-                <a class="nav-item" id="nav-gogstash" data-view="gogstash">🌌 GOG Stash</a>
-                <a class="nav-item" id="nav-amazonstash" data-view="amazonstash">👑 Amazon Stash</a>
-
-                <div class="nav-section">Settings</div>
-                <a class="nav-item" id="nav-settings" data-view="settings">⚙️ Global Settings</a>
-
-                <div class="nav-section">System</div>
-                <a class="nav-item" id="nav-system" data-view="system">📟 System</a>
-            </nav>
-        </aside>
+        <!-- SIDEBAR / NAVBAR COMPONENT (Injected dynamically from /navbar.html) -->
+        <aside class="sidebar"></aside>
 
         <!-- MAIN WORKSPACE PLATFORM -->
         <div class="content-area">

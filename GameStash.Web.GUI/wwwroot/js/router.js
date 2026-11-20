@@ -4,30 +4,27 @@
 
 let isNavigating = false;
 
-import { loadSettings } from './settings.js';
+import { initExternalServicesSettingsView } from './externalservicessettings.js';
+import { initRootFoldersSettingsView } from './rootfolderssettings.js';
 import { loadDashboard } from './dashboard.js';
 import { initBrowseView } from './browse.js';
-import { initLocalStashView } from './localstash.js';
 import { initImportFoldersView } from './importfolders.js';
-import { initPlaylistView } from './localstashplaylist.js';
-import { initSteamStashView } from './steamstash.js';
-import { initEpicStashView } from './epicstash.js';
+import { initPlaylistView } from './playlist.js';
+import { initStashView } from './stash.js';
 
-// Route dictionary mapping templates and view lifecycle initializers
 const routes = {
     'home': { templateUrl: '/home.html', init: loadDashboard },
     'browse': { templateUrl: '/browse.html', init: initBrowseView },
-    'totalstash': { templateUrl: '/totalstash.html', init: null },
-    'localstashhome': { templateUrl: '/localstashhome.html', init: null },
-    'localstash': { templateUrl: '/localstash.html', init: initLocalStashView },
-    'localstashplaylist': { templateUrl: '/localstashplaylist.html', init: initPlaylistView },
+    'unifiedstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'unified') },
+    'localstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'local') },
     'importfolders': { templateUrl: '/importfolders.html', init: initImportFoldersView },
-    'steamstash': { templateUrl: '/steamstash.html', init: initSteamStashView },
-    'epicstash': { templateUrl: '/epicstash.html', init: initEpicStashView },
-    'gogstash': { templateUrl: '/gogstash.html', init: null },
-    'amazonstash': { templateUrl: '/amazonstash.html', init: null },
-    'settings': { templateUrl: '/settings.html', init: loadSettings },
-    'system': { templateUrl: '/system.html', init: null }
+    'steamstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'steam') },
+    'epicstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'epic') },
+    'gogstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'gog') },
+    'amazonstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'amazon') },
+    'playlist': { templateUrl: '/playlist.html', init: initPlaylistView },
+    'externalservicessettings': { templateUrl: '/externalservicessettings.html', init: initExternalServicesSettingsView },
+    'rootfolderssettings': { templateUrl: '/rootfolderssettings.html', init: initRootFoldersSettingsView }
 };
 
 const routeAliases = {
@@ -38,7 +35,7 @@ const routeAliases = {
 };
 
 function syncNavbarAccordionState(routeKey) {
-    const localLibrarySubViews = ['localstashhome', 'localstash', 'localstashplaylist', 'importfolders'];
+    const localLibrarySubViews = ['localstash', 'importfolders'];
 
     if (localLibrarySubViews.includes(routeKey)) {
         const groupToggleBtn = document.getElementById('nav-group-local-stash');

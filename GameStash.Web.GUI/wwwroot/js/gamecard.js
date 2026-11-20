@@ -1,6 +1,7 @@
 ﻿import { openGameDetails } from './gamedetails.js';
 import { renderStarRating } from './starrating.js';
 import { getAlphabetGroup } from './alphabetbar.js';
+import { getStoreIconSvg } from './storeicons.js';
 
 export function createGameCard(game, currentSortOption, onDeleteCallback, onEditCallback, onFavoriteToggleCallback, stashType = 'local') {
     const card = document.createElement('div');
@@ -34,7 +35,16 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
 
     const isMissing = isLocal && !game.IsFolderValid;
 
+    const showStoreBadge = !!game.showStoreBadge;
+    const storeSource = (game.ExternalSystem || game.externalSystem || stashType || '').toLowerCase();
+    const storeSvg = showStoreBadge ? getStoreIconSvg(storeSource) : '';
+    const storeLabel = game.ExternalSystem || game.externalSystem || '';
+    const storeBadgeHtml = storeSvg
+        ? '<div class="game-card-store-badge store-badge-' + storeSource + '" title="' + storeLabel + '">' + storeSvg + '</div>'
+        : '';
+
     card.innerHTML = `
+        ${storeBadgeHtml}
         <div class="game-card-frame" style="background-image: url('${game.CoverUrl}');">
             ${isMissing ? `<div class="game-card-missing-blur"></div>` : ''}
         
@@ -97,7 +107,11 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
 
         const navType = isDashboard ? null : stashType;
         const currentInPlaylist = !!(game.IsInPlaylist ?? game.isInPlaylist);
-        openGameDetails(game.Id, navType, { isInPlaylist: currentInPlaylist });
+        openGameDetails(game.Id, navType, {
+            isInPlaylist: currentInPlaylist,
+            onEditCallback,
+            onDeleteCallback
+        });
     });
 
     if (!isDashboard) {
@@ -251,6 +265,14 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
                     playlistBtn.innerText = isInPlaylist ? 'Remove from Playlist' : 'Add to Playlist';
                 }
                 if (typeof onFavoriteToggleCallback === 'function') onFavoriteToggleCallback();
+            }
+        });
+
+        window.addEventListener('gameSortNameChanged', (e) => {
+            const { gameId, sortName } = e.detail;
+            if (String(game.Id) === String(gameId)) {
+                game.SortName = sortName;
+                card.setAttribute('data-letter', getAlphabetGroup(sortName || game.Name || game.name || ''));
             }
         });
     }

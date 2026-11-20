@@ -13,7 +13,7 @@
 
 .brand {
     padding: 0 20px 20px 20px;
-    font-size: 22px;
+    font-size: 30px;
     font-weight: bold;
     color: var(--primary-purple, #814de6);
     border-bottom: 1px solid var(--border-color, #2d2d2d);
@@ -21,7 +21,7 @@
 }
 
 .nav-section {
-    font-size: 11px;
+    font-size: 15px;
     text-transform: uppercase;
     color: #555555;
     font-weight: bold;
@@ -30,13 +30,13 @@
     user-select: none;
 }
 
-/* Itens de Navegação Principais */
+/* Primary Navigation Items */
 .nav-item {
     padding: 12px 20px;
     color: var(--text-muted, #aaaaaa);
     text-decoration: none;
     display: block;
-    font-size: 14px;
+    font-size: 15px;
     cursor: pointer;
     transition: all 0.2s;
     border-left: 4px solid transparent;
@@ -48,40 +48,53 @@
         border-left-color: var(--primary-purple, #814de6);
     }
 
-/* Contentor e Animação do Grupo Colapsável (Estilo Sonarr) */
-.nav-sub-group {
+/* Icon + Label Flex Alignment Wrapper */
+.nav-item-with-icon {
     display: flex;
-    flex-direction: column;
-    overflow: hidden;
-    transition: max-height 0.25s ease-out, opacity 0.2s ease;
-    max-height: 300px; /* Altura suficiente para albergar os sub-itens */
-    opacity: 1;
+    align-items: center;
+    gap: 12px;
+    line-height: 1.2;
 }
 
-    .nav-sub-group.collapsed {
-        max-height: 0 !important;
-        opacity: 0;
-        pointer-events: none;
+.nav-icon,
+.nav-store-icon {
+    width: 20px !important;
+    height: 20px !important;
+    min-width: 20px;
+    min-height: 20px;
+    font-size: 16px;
+    line-height: 1;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+    .nav-store-icon svg,
+    .nav-store-icon img {
+        width: 20px !important;
+        height: 20px !important;
+        display: block;
     }
 
-/* Alinhamento dos sub-itens aninhados */
-.nav-sub-item {
-    padding-left: 42px !important; /* Indentação marcada */
-    font-size: 13px;
+/* Nested Sub-Items Indentation & Styling */
+.nav-item.nav-sub-item {
+    padding-left: 53px !important;
+    font-size: 14px;
     font-style: italic;
     color: var(--text-muted, #888888);
     opacity: 0.85;
     transition: all 0.15s ease-in-out;
 }
 
-    .nav-sub-item:hover,
-    .nav-sub-item.active {
+    .nav-item.nav-sub-item:hover,
+    .nav-item.nav-sub-item.active {
         opacity: 1;
         color: var(--text-main, #ffffff);
         background-color: rgba(255, 255, 255, 0.03);
     }
 
-/* Transforma o botão da linha num item idêntico aos links de navegação */
+/* Accordion Parent Button (Styled to match standard .nav-item links) */
 .nav-group-toggle-btn {
     width: 100%;
     text-align: left;
@@ -91,8 +104,8 @@
     display: flex !important;
     justify-content: space-between;
     align-items: center;
-    padding: 12px 20px; /* Alinhado com o .nav-item */
-    font-size: 14px;
+    padding: 12px 20px;
+    font-size: 15px;
     color: var(--text-muted, #aaaaaa);
     cursor: pointer;
     transition: all 0.2s;
@@ -116,7 +129,13 @@
     width: 100%;
 }
 
-/* Pequena seta discreta estilizada e respetiva rotação com .expanded */
+.nav-sub-group.collapsed {
+    max-height: 0 !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Collapse Chevron Arrow & Rotation State */
 .sidebar-collapse-arrow {
     font-size: 9px;
     color: #555555;
@@ -127,7 +146,6 @@
     color: var(--primary-purple);
 }
 
-/* Roda a seta corretamente quando o botão ganha a classe .expanded */
 .nav-group-toggle-btn.expanded .sidebar-collapse-arrow {
     transform: rotate(180deg);
 }
@@ -138,21 +156,40 @@
 .nav-disabled {
     opacity: 0.25 !important;
     cursor: not-allowed !important;
-    pointer-events: auto !important; /* Kept active so the click event can bubble up and trigger the snackbar */
+    pointer-events: auto !important; /* Kept active so click events bubble up to trigger warning snackbars */
     border-left-color: transparent !important;
     background-color: transparent !important;
     user-select: none;
 }
 
-    /* Neutralize hovering interactions when an entry is disabled */
+    /* Neutralize hover interactions when an entry is disabled */
     .nav-disabled:hover {
         color: var(--text-muted, #888888) !important;
         background-color: transparent !important;
         border-left-color: transparent !important;
     }
 
-    /* Lock downstream sub-arrow visibility hooks if parent button is blocked */
+    /* Lock downstream sub-arrow visibility when parent accordion button is blocked */
     .nav-disabled .sidebar-collapse-arrow {
         color: #333333 !important;
         transform: none !important;
+    }
+
+/* Propagate disabled visual state from the master stashes container to all child entries */
+#nav-stashes-container.nav-disabled .nav-item,
+#nav-stashes-container.nav-disabled .nav-group-toggle-btn,
+#nav-stashes-container.nav-disabled .nav-sub-item {
+    opacity: 0.25 !important;
+    cursor: not-allowed !important;
+    border-left-color: transparent !important;
+    background-color: transparent !important;
+    user-select: none;
+}
+
+    #nav-stashes-container.nav-disabled .nav-item:hover,
+    #nav-stashes-container.nav-disabled .nav-group-toggle-btn:hover,
+    #nav-stashes-container.nav-disabled .nav-sub-item:hover {
+        color: var(--text-muted, #888888) !important;
+        background-color: transparent !important;
+        border-left-color: transparent !important;
     }

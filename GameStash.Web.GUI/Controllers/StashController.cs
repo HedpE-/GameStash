@@ -20,7 +20,10 @@ namespace GameStash.Web.GUI.Controllers
         IRootFoldersService rootFoldersService,
         IRecommendationService recommendationService,
         ISteamStashService steamStashService,
-        IEpicStashService epicStashService) : ControllerBase
+        IEpicStashService epicStashService,
+        IGogStashService gogStashService,
+        IAmazonStashService amazonStashService,
+        IUnifiedStashService unifiedStashService) : ControllerBase
     {
         private readonly ILocalStashService _localStashService = localStashService;
         private readonly IGameDetailsService _gameDetailsService = gameDetailsService;
@@ -28,6 +31,9 @@ namespace GameStash.Web.GUI.Controllers
         private readonly IRecommendationService _recommendationService = recommendationService;
         private readonly ISteamStashService _steamStashService = steamStashService;
         private readonly IEpicStashService _epicStashService = epicStashService;
+        private readonly IGogStashService _gogStashService = gogStashService;
+        private readonly IAmazonStashService _amazonStashService = amazonStashService;
+        private readonly IUnifiedStashService _unifiedStashService = unifiedStashService;
 
         [HttpGet]
         public Task<IActionResult> GetStash([FromRoute] string type, [FromQuery] bool refresh = false) =>
@@ -36,6 +42,9 @@ namespace GameStash.Web.GUI.Controllers
                 "local" => GetStashCardsAsync(_localStashService, refresh),
                 "steam" => GetStashCardsAsync(_steamStashService, refresh),
                 "epic" => GetStashCardsAsync(_epicStashService, refresh),
+                "gog" => GetStashCardsAsync(_gogStashService, refresh),
+                "amazon" => GetStashCardsAsync(_amazonStashService, refresh),
+                "unified" => GetUnifiedStashCardsAsync(refresh),
                 _ => Task.FromResult<IActionResult>(BadRequest(new { Message = $"Unsupported library type: {type}" }))
             };
 
@@ -46,6 +55,8 @@ namespace GameStash.Web.GUI.Controllers
                 "local" => GetGameDetailsAsync(_localStashService, id, type, g => g.CheckIsFolderValid()),
                 "steam" => GetGameDetailsAsync(_steamStashService, id, type),
                 "epic" => GetGameDetailsAsync(_epicStashService, id, type),
+                "gog" => GetGameDetailsAsync(_gogStashService, id, type),
+                "amazon" => GetGameDetailsAsync(_amazonStashService, id, type),
                 _ => Task.FromResult<IActionResult>(BadRequest(new { Message = $"Unsupported library type: {type}" }))
             };
 
@@ -56,6 +67,8 @@ namespace GameStash.Web.GUI.Controllers
                 "local" => UpdateGameDetailsAsync(_localStashService, id, request),
                 "steam" => UpdateGameDetailsAsync(_steamStashService, id, request),
                 "epic" => UpdateGameDetailsAsync(_epicStashService, id, request),
+                "gog" => UpdateGameDetailsAsync(_gogStashService, id, request),
+                "amazon" => UpdateGameDetailsAsync(_amazonStashService, id, request),
                 _ => Task.FromResult<IActionResult>(BadRequest(new { Message = $"Unsupported library type: {type}" }))
             };
 
@@ -94,6 +107,12 @@ namespace GameStash.Web.GUI.Controllers
         {
             bool success = await service.UpdateGamePropertyAsync(id, request.PropertyName, request.Value);
             return success ? Ok(new { Success = true }) : NotFound();
+        }
+
+        private async Task<IActionResult> GetUnifiedStashCardsAsync(bool refresh)
+        {
+            var games = await _unifiedStashService.GetAllUnifiedGamesAsync(refresh);
+            return Ok(games);
         }
 
         // ---------------------------------------------------------

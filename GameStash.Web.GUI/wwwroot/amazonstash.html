@@ -2,29 +2,29 @@
     <!-- Fixed Header & Toolbar -->
     <div class="stash-fixed-header">
         <div class="stash-header-row">
-            <h1 class="stash-title">Epic Games Stash</h1>
-            <span class="stash-subtitle" id="epic-count-label">Loading games...</span>
+            <h1 class="stash-title">Amazon Games Stash</h1>
+            <span class="stash-subtitle" id="amazon-count-label">Loading games...</span>
         </div>
 
         <div class="stash-toolbar">
             <div class="toolbar-left-actions">
-                <button type="button" class="toolbar-action-btn" id="epic-reload-btn">
+                <button type="button" class="toolbar-action-btn" id="amazon-reload-btn">
                     <span>↻</span> Reload Stash
                 </button>
-                <button type="button" class="toolbar-action-btn" id="epic-sync-btn" style="background: var(--primary-purple); border-color: var(--primary-purple);">
-                    <span>🔄</span> Sync from Epic
+                <button type="button" class="toolbar-action-btn" id="amazon-sync-btn" style="background: var(--primary-purple); border-color: var(--primary-purple);">
+                    <span>🔄</span> Sync from Amazon
                 </button>
-                <button type="button" class="toolbar-action-btn" id="epic-export-btn">
+                <button type="button" class="toolbar-action-btn" id="amazon-export-btn">
                     <span>📋</span> Export List
                 </button>
             </div>
 
             <div class="toolbar-right-actions">
                 <div class="dropdown-container">
-                    <button type="button" class="toolbar-dropdown-btn" id="epic-sort-toggle">
-                        <span id="epic-sort-label">Sort: Name ↑</span>
+                    <button type="button" class="toolbar-dropdown-btn" id="amazon-sort-toggle">
+                        <span id="amazon-sort-label">Sort: Name ↑</span>
                     </button>
-                    <div class="dropdown-menu" id="epic-sort-menu">
+                    <div class="dropdown-menu" id="amazon-sort-menu">
                         <div class="dropdown-item active" data-sort="Name">
                             <span>Name</span>
                             <span class="sort-indicator">↑</span>
@@ -37,10 +37,10 @@
                 </div>
 
                 <div class="dropdown-container">
-                    <button type="button" class="toolbar-dropdown-btn" id="epic-filter-toggle">
-                        <span id="epic-filter-label">Filter: All</span>
+                    <button type="button" class="toolbar-dropdown-btn" id="amazon-filter-toggle">
+                        <span id="amazon-filter-label">Filter: All</span>
                     </button>
-                    <div class="dropdown-menu" id="epic-filter-menu">
+                    <div class="dropdown-menu" id="amazon-filter-menu">
                         <div class="dropdown-item active" data-filter="All">All</div>
                         <div class="dropdown-item" data-filter="Installed">Installed</div>
                         <div class="dropdown-item" data-filter="Not Installed">Not Installed</div>
@@ -51,17 +51,17 @@
     </div>
 
     <!-- Loading Indicator -->
-    <div class="stash-loading-indicator" id="epic-loading-indicator">
+    <div class="stash-loading-indicator" id="amazon-loading-indicator">
         <div class="spinner"></div>
-        <span>Loading Epic Games library...</span>
+        <span>Loading Amazon Games library...</span>
     </div>
 
     <!-- Scrollable Workspace: Games Grid + Sticky Alphabet Bar -->
-    <div class="stash-workspace" id="epic-workspace" style="display: none;">
-        <div class="stash-games-grid" id="epic-games-grid"></div>
-        <div class="stash-alphabet-bar" id="epic-alphabet-bar"></div>
+    <div class="stash-workspace" id="amazon-workspace" style="display: none;">
+        <div class="stash-games-grid" id="amazon-games-grid"></div>
+        <div class="stash-alphabet-bar" id="amazon-alphabet-bar"></div>
     </div>
 
     <!-- Scroll to Top Floating Button -->
-    <button type="button" class="stash-scroll-top-btn" id="epic-scroll-top-btn" title="Scroll to top">↑</button>
+    <button type="button" class="stash-scroll-top-btn" id="amazon-scroll-top-btn" title="Scroll to top">↑</button>
 </div>

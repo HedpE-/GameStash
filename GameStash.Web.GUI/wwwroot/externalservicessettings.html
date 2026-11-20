@@ -1,6 +1,6 @@
 ﻿<div class="settings-container">
     <div class="settings-header">
-        <h1 class="view-title-main">Global Settings</h1>
+        <h1 class="view-title-main">External Services Settings</h1>
         <p class="settings-subtitle">Manage IGDB API connectivity and configure storage directories for installer scans.</p>
     </div>
 
@@ -104,7 +104,6 @@
         </div>
     </div>
 
-
     <!-- GOG Galaxy API Credentials Card -->
     <div class="settings-card compact-card">
         <div class="card-header">
@@ -136,43 +135,35 @@
         </div>
     </div>
 
-    <!-- Monitored Root Folders Card -->
-    <div class="settings-card wide-card">
+    <!-- Amazon Games Integration Card -->
+    <div class="settings-card compact-card">
         <div class="card-header">
             <div class="card-header-top">
                 <div class="card-title-group">
-                    <span class="card-badge">Storage</span>
-                    <h2>Monitored Root Folders</h2>
+                    <span class="card-badge" style="color:#f59e0b; border-color:rgba(245,158,11,0.35); background:rgba(245,158,11,0.15);">AMAZON</span>
+                    <h2>Amazon Games Integration</h2>
                 </div>
-                <!-- Rescan All moved to top-right header -->
-                <button id="rescan-all-btn" class="btn btn-secondary" style="display: none;">↻ Rescan All</button>
+                <button type="button" class="help-btn" data-help="amazon" title="How to obtain API access">?</button>
             </div>
-            <p class="card-description">Directory locations scanned periodically for game installers and archive payloads.</p>
+            <p class="card-description">Authenticate via official Amazon Games OAuth2 login to synchronize your Prime Gaming &amp; Amazon Games catalog.</p>
         </div>
 
         <div class="card-body">
-            <div class="add-folder-bar">
-                <div class="input-with-icon">
-                    <span class="input-icon">📂</span>
-                    <input type="text" id="new-folder-input" placeholder="e.g. D:\Games\Installers" autocomplete="off" />
+            <div class="form-grid" style="grid-template-columns: 1fr;">
+                <div class="form-group">
+                    <label for="amazon-auth-code-input">Amazon Redirect URL or Authorization Code</label>
+                    <input type="text" id="amazon-auth-code-input" placeholder="Paste authorization code or full maplanding redirect URL..." autocomplete="off">
                 </div>
-                <!-- Hidden native folder input tailored for Chromium / WebView2 absolute path exposure -->
-                <input type="file" id="native-folder-picker" webkitdirectory style="display: none;" />
-
-                <button id="browse-folder-btn" class="btn btn-secondary" title="Browse folder on disk">Browse...</button>
-                <button id="add-folder-btn" class="btn btn-primary">+ Add Folder</button>
             </div>
-
-            <!-- List of Monitored Root Folders -->
-            <div class="root-folders-list" id="folders-list">
-                <div class="loading-state">
-                    <div class="spinner"></div>
-                    <span>Loading storage directories...</span>
-                </div>
+            <div id="settings-amazon-api-status" class="api-status-label"></div>
+            <div class="form-actions" style="gap: 10px;">
+                <a href="#" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" id="open-amazon-login-btn">
+                    1. Open Amazon Login
+                </a>
+                <button class="btn btn-primary" id="save-amazon-credentials-btn">2. Authenticate Amazon</button>
             </div>
         </div>
     </div>
-</div>
 
 <!-- API Access Help Modal -->
 <div id="settings-help-modal" class="help-modal-overlay">

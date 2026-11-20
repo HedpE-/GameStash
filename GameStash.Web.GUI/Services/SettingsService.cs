@@ -14,21 +14,180 @@ namespace GameStash.Web.GUI.Services
     public class SettingsService : ISettingsService
     {
         // IGDB Credentials
-        private string IgdbClientId { get; set; } = string.Empty;
-        private string IgdbSecret { get; set; } = string.Empty;
+        private string IgdbClientId
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.IGDB_Client_ID ?? string.Empty;
+            }
+            set {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().IGDB_Client_ID = value;
+                context.SaveChanges();
+            }
+        }
+
+        private string IgdbSecret
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.IGDB_Secret ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().IGDB_Secret = value;
+                context.SaveChanges();
+            }
+        }
 
         // Steam Credentials
-        private string SteamId64 { get; set; } = string.Empty;
-        private string SteamApiKey { get; set; } = string.Empty;
+        private string SteamId64
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.SteamId64 ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().SteamId64 = value;
+                context.SaveChanges();
+            }
+        }
+
+        private string SteamApiKey
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.SteamApiKey ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().SteamApiKey = value;
+                context.SaveChanges();
+            }
+        }
 
         // Epic Games Credentials & Tokens
-        private string EpicRefreshToken { get; set; } = string.Empty;
-        private string EpicAccessToken { get; set; } = string.Empty;
+        private string EpicRefreshToken
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.EpicRefreshToken ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().EpicRefreshToken = value;
+                context.SaveChanges();
+            }
+        }
+
+        private string EpicAccessToken
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.EpicAccessToken ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().EpicAccessToken = value;
+                context.SaveChanges();
+            }
+        }
 
         // GOG Credentials & Tokens
-        private string GogRefreshToken { get; set; } = string.Empty;
-        private string GogAccessToken { get; set; } = string.Empty;
-        public string GogUsername { get; private set; } = string.Empty;
+        private string GogRefreshToken
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.GogRefreshToken ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().GogRefreshToken = value;
+                context.SaveChanges();
+            }
+        }
+
+        private string GogAccessToken
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.GogAccessToken ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().GogAccessToken = value;
+                context.SaveChanges();
+            }
+        }
+
+        // Amazon Credentials & Tokens
+        private string AmazonRefreshToken
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.AmazonRefreshToken ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().AmazonRefreshToken = value;
+                context.SaveChanges();
+            }
+        }
+
+        private string AmazonAccessToken
+        {
+            get
+            {
+                using var context = GameStashDbContext.CreateDbContext();
+                return context.Settings.FirstOrDefault()?.AmazonAccessToken ?? string.Empty;
+            }
+            set
+            {
+                EnsureSettingsEntityExists();
+                using var context = GameStashDbContext.CreateDbContext();
+                context.Settings.FirstOrDefault().AmazonAccessToken = value;
+                context.SaveChanges();
+            }
+        }
+
+        private (string CodeVerifier, string DeviceSerial)? _pendingAmazonPkce;
+
+        private void EnsureSettingsEntityExists()
+        {
+            using var context = GameStashDbContext.CreateDbContext();
+            if (!context.Settings.Any())
+            {
+                context.Settings.Add(new Settings());
+                context.SaveChanges();
+            }
+        }
 
         public async Task InitializeAsync()
         {
@@ -45,36 +204,15 @@ namespace GameStash.Web.GUI.Services
                 Log.Error("Failed to apply migrations to PostgreSQL database. Please check your connection string and database configuration.\n" + ex.Message);
             }
 
-            // 1. Load all stored credentials from PostgreSQL 'settings' table
-            var settings = await context.Settings.FirstOrDefaultAsync();
-            if (settings != null)
-            {
-                IgdbClientId = settings.IGDB_Client_ID ?? string.Empty;
-                IgdbSecret = settings.IGDB_Secret ?? string.Empty;
-                SteamId64 = settings.SteamId64 ?? string.Empty;
-                SteamApiKey = settings.SteamApiKey ?? string.Empty;
-                EpicRefreshToken = settings.EpicRefreshToken ?? string.Empty;
-                EpicAccessToken = settings.EpicAccessToken ?? string.Empty;
-                GogRefreshToken = settings.GogRefreshToken ?? string.Empty;
-                GogAccessToken = settings.GogAccessToken ?? string.Empty;
-            }
-
             Log.ForContext<SettingsService>().Information("Settings initialization from PostgreSQL completed.");
         }
 
-        public Settings GetCurrentSettings()
+        public async Task<Settings> GetCurrentSettings()
         {
-            return new Settings
-            {
-                IGDB_Client_ID = IgdbClientId,
-                IGDB_Secret = IgdbSecret,
-                SteamId64 = SteamId64,
-                SteamApiKey = SteamApiKey,
-                EpicRefreshToken = EpicRefreshToken,
-                EpicAccessToken = EpicAccessToken,
-                GogRefreshToken = GogRefreshToken,
-                GogAccessToken = GogAccessToken
-            };
+            await using var context = GameStashDbContext.CreateDbContext();
+            var settings = await context.Settings.AsNoTracking().FirstOrDefaultAsync();
+
+            return settings ?? new Settings();
         }
 
         public async Task<IgdbClient> GetIgdbClient()
@@ -103,7 +241,6 @@ namespace GameStash.Web.GUI.Services
             return new EpicClient(EpicRefreshToken, EpicAccessToken);
         }
 
-
         public GogClient GetGogClient()
         {
             if (string.IsNullOrEmpty(GogRefreshToken))
@@ -112,18 +249,29 @@ namespace GameStash.Web.GUI.Services
             return new GogClient(GogRefreshToken, GogAccessToken);
         }
 
+        public AmazonClient GetAmazonClient()
+        {
+            if (string.IsNullOrEmpty(AmazonRefreshToken))
+                throw new InvalidOperationException("Amazon credentials are not configured.");
+
+            return new AmazonClient(
+                AmazonRefreshToken,
+                AmazonAccessToken,
+                null,
+                async (newRefresh, newAccess) => await UpdateCredentialsAsync("amazon", newRefresh, newAccess)
+            );
+        }
+
+        public string GenerateAmazonLoginUrl()
+        {
+            var (loginUrl, codeVerifier, deviceSerial) = AmazonClient.GenerateLoginUrl();
+            _pendingAmazonPkce = (codeVerifier, deviceSerial);
+            return loginUrl;
+        }
+
         public async Task UpdateCredentialsAsync(string apiName, string userClientId, string secret)
         {
             Log.ForContext<SettingsService>().Information("Updating {ApiName} credentials...", apiName);
-
-            await using var context = GameStashDbContext.CreateDbContext();
-            var settings = await context.Settings.FirstOrDefaultAsync();
-
-            if (settings == null)
-            {
-                settings = new Settings();
-                await context.Settings.AddAsync(settings);
-            }
 
             switch (apiName.ToLowerInvariant())
             {
@@ -131,22 +279,15 @@ namespace GameStash.Web.GUI.Services
                     if (string.IsNullOrWhiteSpace(userClientId) || string.IsNullOrWhiteSpace(secret))
                         throw new ArgumentException("Both Client ID and Secret are required for IGDB.");
 
-                    settings.IGDB_Client_ID = userClientId.Trim();
-                    settings.IGDB_Secret = secret.Trim();
-
-                    IgdbClientId = settings.IGDB_Client_ID;
-                    IgdbSecret = settings.IGDB_Secret;
+                    IgdbClientId = userClientId.Trim();
+                    IgdbSecret = secret.Trim();
                     break;
-
                 case "steam":
                     if (string.IsNullOrWhiteSpace(userClientId) || string.IsNullOrWhiteSpace(secret))
                         throw new ArgumentException("Both SteamID64 and Steam Web API Key are required.");
 
-                    settings.SteamId64 = userClientId.Trim();
-                    settings.SteamApiKey = secret.Trim();
-
-                    SteamId64 = settings.SteamId64;
-                    SteamApiKey = settings.SteamApiKey;
+                    SteamId64 = userClientId.Trim();
+                    SteamApiKey = secret.Trim();
                     break;
                 case "epic":
                     if (string.IsNullOrWhiteSpace(secret))
@@ -181,9 +322,6 @@ namespace GameStash.Web.GUI.Services
                         epicRefreshToken = tokenData.RefreshToken;
                         epicAccessToken = tokenData.AccessToken;
                     }
-
-                    settings.EpicRefreshToken = epicRefreshToken;
-                    settings.EpicAccessToken = epicAccessToken;
 
                     EpicRefreshToken = epicRefreshToken;
                     EpicAccessToken = epicAccessToken;
@@ -222,17 +360,64 @@ namespace GameStash.Web.GUI.Services
                         accessToken = tokenData.AccessToken;
                     }
 
-                    settings.GogRefreshToken = refreshToken;
-                    settings.GogAccessToken = accessToken;
-
                     GogRefreshToken = refreshToken;
                     GogAccessToken = accessToken;
+                    break;
+                case "amazon":
+                    if (string.IsNullOrWhiteSpace(secret))
+                        throw new ArgumentException("Amazon Games authorization code or access token is required.");
+
+                    if (AmazonRefreshToken == userClientId && AmazonAccessToken == secret)
+                    {
+                        Log.ForContext<SettingsService>().Information("Amazon Games credentials unchanged. No update required.");
+                        return;
+                    }
+
+                    string amazonRefreshToken;
+                    string amazonAccessToken;
+
+                    // Scenario A: Internal token renewal via callback (userClientId is refreshToken, secret is accessToken)
+                    if (!string.IsNullOrWhiteSpace(userClientId) &&
+                        !string.Equals(userClientId, "amazon", StringComparison.OrdinalIgnoreCase) &&
+                        !secret.Contains("authorization_code="))
+                    {
+                        amazonRefreshToken = userClientId.Trim();
+                        amazonAccessToken = secret.Trim();
+                    }
+                    // Scenario B: Initial login from UI (secret contains the maplanding URL or authorization code)
+                    else
+                    {
+                        if (_pendingAmazonPkce == null)
+                            throw new InvalidOperationException("Please click '1. Open Amazon Login' first to initialize a login session.");
+
+                        var (codeVerifier, deviceSerial) = _pendingAmazonPkce.Value;
+                        string? exchangedRefresh = null;
+                        string? exchangedAccess = null;
+
+                        var tempAmazonClient = new AmazonClient(
+                            onTokensRefreshed: (newRefresh, newAccess) =>
+                            {
+                                exchangedRefresh = newRefresh;
+                                exchangedAccess = newAccess;
+                                return Task.CompletedTask;
+                            });
+
+                        bool exchanged = await tempAmazonClient.ExchangeCodeForTokenAsync(secret, codeVerifier, deviceSerial);
+                        if (!exchanged || string.IsNullOrWhiteSpace(exchangedRefresh) || string.IsNullOrWhiteSpace(exchangedAccess))
+                            throw new InvalidOperationException("Failed to exchange Amazon authorization code. Please log in again.");
+
+                        amazonRefreshToken = exchangedRefresh;
+                        amazonAccessToken = exchangedAccess;
+                        _pendingAmazonPkce = null;
+                    }
+
+                    AmazonRefreshToken = amazonRefreshToken;
+                    AmazonAccessToken = amazonAccessToken;
                     break;
                 default:
                     throw new ArgumentException($"Unsupported credentials provider: '{apiName}'.", nameof(apiName));
             }
 
-            await context.SaveChangesAsync();
             Log.ForContext<SettingsService>().Information("Successfully updated {ApiName} credentials.", apiName);
         }
     }

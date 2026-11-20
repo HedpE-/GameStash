@@ -6,6 +6,7 @@
 @import url('./starrating.css');
 @import url('./gamecard.css');
 @import url('./snackbar.css');
+@import url('./storeicons.css');
 @import url('views/settings.css');
 @import url('views/dashboard.css');
 @import url('views/gamedetails.css');
@@ -67,64 +68,6 @@ body {
     display: flex;
     height: 100vh;
     overflow: hidden;
-}
-
-.sidebar {
-    width: 240px;
-    background-color: var(--bg-sidebar);
-    border-right: 1px solid var(--border-color);
-    display: flex;
-    flex-direction: column;
-    padding: 20px 0;
-}
-
-.brand {
-    padding: 0 20px 20px 20px;
-    font-size: 22px;
-    font-weight: bold;
-    color: var(--primary-purple);
-    border-bottom: 1px solid var(--border-color);
-    margin-bottom: 15px;
-}
-
-.nav-item {
-    padding: 12px 20px;
-    color: var(--text-muted);
-    text-decoration: none;
-    display: block;
-    font-size: 14px;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-    .nav-item:hover, .nav-item.active {
-        color: var(--text-main);
-        background-color: #252525;
-        border-left: 4px solid var(--primary-purple);
-    }
-
-.nav-sub-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.nav-sub-item {
-    padding-left: 28px !important;
-    font-size: 13px;
-    opacity: 0.9;
-}
-
-    .nav-sub-item:hover {
-        opacity: 1;
-    }
-
-.nav-section {
-    font-size: 11px;
-    text-transform: uppercase;
-    color: #555555;
-    font-weight: bold;
-    padding: 15px 20px 5px 20px;
-    letter-spacing: 1px;
 }
 
 .content-area,

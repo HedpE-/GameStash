@@ -1,29 +1,94 @@
-﻿<div class="sidebar">
-    <div class="brand">GameStash</div>
+﻿<div class="brand">GameStash</div>
 
+<nav class="nav-container">
     <div class="nav-section">Dashboard</div>
-    <a class="nav-item active" data-tag="Home" id="nav-home">🏠 Home</a>
-    <a class="nav-item" data-tag="Browse" id="nav-browse">🔍 Browse Games</a>
+    <a class="nav-item" id="nav-home" data-view="home">
+        <span class="nav-item-with-icon">
+            <span class="nav-icon">🏠</span>
+            <span>Home</span>
+        </span>
+    </a>
+    <a class="nav-item" id="nav-browse" data-view="browse">
+        <span class="nav-item-with-icon">
+            <span class="nav-icon">🔍</span>
+            <span>Browse Games</span>
+        </span>
+    </a>
 
-    <!-- Cabeçalho do Grupo com Botão de Expansão para as Bibliotecas -->
-    <div class="nav-section nav-group-header" id="nav-group-libraries">
-        <span>Game Libraries</span>
-        <button class="sidebar-collapse-toggle" id="libraries-toggle-btn" title="Toggle Sub-items">▼</button>
-    </div>
+    <!-- Master container for all Game Stashes (disabled as a whole when IGDB is not configured) -->
+    <div id="nav-stashes-container">
+        <div class="nav-section">Game Stashes</div>
 
-    <!-- Contentor Colapsável das Sub-bibliotecas -->
-    <div class="nav-sub-group collapsed" id="libraries-sub-group">
-        <a class="nav-item nav-sub-item" data-tag="TotalStash" id="nav-total-stash">Total Stash</a>
-        <a class="nav-item nav-sub-item" data-tag="LocalStash" id="nav-local-stash">Local Stash</a>
-        <a class="nav-item nav-sub-item" data-tag="SteamStash" id="nav-steam-stash">Steam Stash</a>
-        <a class="nav-item nav-sub-item" data-tag="EpicStash" id="nav-epic-stash">Epic Stash</a>
-        <a class="nav-item nav-sub-item" data-tag="GogStash" id="nav-gog-stash">GOG Stash</a>
-        <a class="nav-item nav-sub-item" data-tag="AmazonStash" id="nav-amazon-stash">Amazon Stash</a>
+        <!-- Expandable Local Stash Accordion -->
+        <button type="button" id="nav-group-local-stash" class="nav-item nav-group-toggle-btn">
+            <span class="nav-group-header-item">
+                <span class="nav-item-with-icon">
+                    <span class="nav-store-icon store-badge-local" data-store-icon="local"></span>
+                    <span>Local Stash</span>
+                </span>
+                <span class="sidebar-collapse-arrow">▼</span>
+            </span>
+        </button>
+
+        <!-- Local Stash Sub-group -->
+        <div id="local-stash-sub-group" class="nav-sub-group collapsed">
+            <a class="nav-item nav-sub-item" id="nav-localstash" data-view="localstash">Browse Stash</a>
+            <a class="nav-item nav-sub-item" id="nav-importfolders" data-view="importfolders">Import from Root Folders</a>
+        </div>
+
+        <!-- External Platforms -->
+        <a class="nav-item" id="nav-steamstash" data-view="steamstash">
+            <span class="nav-item-with-icon">
+                <span class="nav-store-icon store-badge-steam" data-store-icon="steam"></span>
+                <span>Steam Stash</span>
+            </span>
+        </a>
+        <a class="nav-item" id="nav-epicstash" data-view="epicstash">
+            <span class="nav-item-with-icon">
+                <span class="nav-store-icon store-badge-epic" data-store-icon="epic"></span>
+                <span>Epic Stash</span>
+            </span>
+        </a>
+        <a class="nav-item" id="nav-gogstash" data-view="gogstash">
+            <span class="nav-item-with-icon">
+                <span class="nav-store-icon store-badge-gog" data-store-icon="gog"></span>
+                <span>GOG Stash</span>
+            </span>
+        </a>
+        <a class="nav-item" id="nav-amazonstash" data-view="amazonstash">
+            <span class="nav-item-with-icon">
+                <span class="nav-store-icon store-badge-amazon" data-store-icon="amazon"></span>
+                <span>Amazon Stash</span>
+            </span>
+        </a>
+
+        <a class="nav-item" id="nav-unifiedstash" data-view="unifiedstash">
+            <span class="nav-item-with-icon">
+                <span class="nav-icon">📦</span>
+                <span>Unified Stash</span>
+            </span>
+        </a>
+
+        <!-- Cross-Stash Playlist -->
+        <a class="nav-item" id="nav-playlist" data-view="playlist">
+            <span class="nav-item-with-icon">
+                <span class="nav-icon">🎯</span>
+                <span>Playlist</span>
+            </span>
+        </a>
     </div>
 
     <div class="nav-section">Settings</div>
-    <a class="nav-item" data-tag="GlobalSettings" id="nav-global-settings">Global Settings</a>
-
-    <div class="nav-section">System</div>
-    <a class="nav-item" data-tag="System" id="nav-system">System</a>
-</div>
+    <a class="nav-item" id="nav-externalservicessettings" data-view="externalservicessettings">
+        <span class="nav-item-with-icon">
+            <span class="nav-icon">🔌</span>
+            <span>External Services</span>
+        </span>
+    </a>
+    <a class="nav-item" id="nav-rootfolderssettings" data-view="rootfolderssettings">
+        <span class="nav-item-with-icon">
+            <span class="nav-icon">📂</span>
+            <span>Root Folders</span>
+        </span>
+    </a>
+</nav>
