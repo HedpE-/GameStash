@@ -3,7 +3,8 @@ import { renderStarRating } from './starrating.js';
 import { getAlphabetGroup } from './alphabetbar.js';
 import { getStoreIconSvg } from './storeicons.js';
 
-export function createGameCard(game, currentSortOption, onDeleteCallback, onEditCallback, onFavoriteToggleCallback, stashType = 'local') {
+export function createGameCard(game, currentSortOption, onDeleteCallback, onEditCallback, onFavoriteToggleCallback, stashType) {
+    ensureCardGlobalListeners();
     const card = document.createElement('div');
     card.className = 'game-card-container';
     card.setAttribute('data-id', game.Id);
@@ -23,14 +24,28 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
     card.setAttribute('data-letter', getAlphabetGroup(title));
 
     // Render subtitle logic
+    // Render subtitle logic matching the active sort criterion (default: Release Year)
     let subtitleText = '';
     switch (currentSortOption) {
-        case 'Release Date': subtitleText = game.ReleaseDateFormatted; break;
-        case 'Rating': subtitleText = renderStarRating(game.Rating ?? game.rating); break;
-        case 'Date Added': subtitleText = game.DateAddedFormatted; break;
-        case 'Folder Size': subtitleText = game.FolderSizeFormatted; break;
+        case 'Release Date':
+            subtitleText = game.ReleaseDateFormatted || game.ReleaseYear || '';
+            break;
+        case 'Playtime':
+            subtitleText = formatCardPlaytime(game.PlaytimeMinutes ?? game.playtimeMinutes ?? 0);
+            break;
+        case 'Rating':
+            subtitleText = renderStarRating(game.Rating ?? game.rating);
+            break;
+        case 'Date Added':
+            subtitleText = game.DateAddedFormatted || '';
+            break;
+        case 'Folder Size':
+            subtitleText = game.FolderSizeFormatted || '';
+            break;
         case 'Name':
-        default: subtitleText = game.ReleaseYear || ''; break;
+        default:
+            subtitleText = game.ReleaseYear || '';
+            break;
     }
 
     const isMissing = isLocal && !game.IsFolderValid;
@@ -134,7 +149,7 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
             contextMenu.style.display = contextMenu.style.display === 'flex' ? 'none' : 'flex';
         });
 
-        // Install / Uninstall action (Local and Steam)
+        // Install / Uninstall action (All managed stashes)
         card.querySelector('.menu-action-install')?.addEventListener('click', async (e) => {
             e.stopPropagation();
             contextMenu.style.display = 'none';
@@ -144,34 +159,28 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
             e.target.innerText = newInstallState ? 'Uninstall' : 'Install';
 
             try {
-                const endpoint = isSteam
-                    ? `/api/stash/${game.stashType}/${game.ExternalAppId || game.Id}/details`
-                    : `/api/stash/${game.stashType}/${game.Id}/details`;
-
-                const bodyData = JSON.stringify({ propertyName: 'IsInstalled', value: newInstallState });
-
-                await fetch(endpoint, {
+                await fetch(`/api/stash/${game.stashType}/${game.Id}/details`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
-                    body: bodyData
+                    body: JSON.stringify({ propertyName: 'IsInstalled', value: newInstallState })
                 });
+
+                window.dispatchEvent(new CustomEvent('gameInstalledChanged', {
+                    detail: { gameId: game.Id, isInstalled: newInstallState }
+                }));
             } catch (err) {
                 console.error("Network communication exception during install state commit:", err);
             }
         });
 
-        // Favorite toggle (Supported for Local and Steam)
+        // Favorite toggle (All managed stashes)
         card.querySelector('.game-card-favorite-btn')?.addEventListener('click', async (e) => {
             e.stopPropagation();
             const newFav = !game.IsFavorite;
             game.IsFavorite = newFav;
             card.querySelector('.game-card-favorite-btn').classList.toggle('active', newFav);
 
-            const endpoint = isSteam
-                ? `/api/stash/${game.stashType}/${game.ExternalAppId || game.Id}/details`
-                : `/api/stash/${game.stashType}/${game.Id}/details`;
-
-            await fetch(endpoint, {
+            await fetch(`/api/stash/${game.stashType}/${game.Id}/details`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ propertyName: 'IsFavorite', value: newFav })
@@ -182,6 +191,7 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
             }));
             if (onFavoriteToggleCallback) onFavoriteToggleCallback();
         });
+
         // Refresh action
         card.querySelector('.menu-action-refresh')?.addEventListener('click', async (e) => {
             e.stopPropagation();
@@ -209,7 +219,7 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
             e.target.innerText = newPlaylistState ? 'Remove from Playlist' : 'Add to Playlist';
 
             const method = newPlaylistState ? 'PUT' : 'DELETE';
-            const url = `/api/stash/${game.stashType}/playlist/${game.Id}`;
+            const url = `/api/playlist/${game.stashType}/${game.Id}`;
 
             try {
                 const res = await fetch(url, { method: method });
@@ -243,39 +253,63 @@ export function createGameCard(game, currentSortOption, onDeleteCallback, onEdit
             const contextMenu = card.querySelector('.game-card-context-menu');
             if (contextMenu) contextMenu.style.display = 'none';
         });
-
-        window.addEventListener('gameFavoriteChanged', (e) => {
-            const { gameId, isFavorite } = e.detail;
-            if (String(game.Id) === String(gameId)) {
-                game.IsFavorite = isFavorite;
-                const favBtn = card.querySelector('.game-card-favorite-btn');
-                if (favBtn) favBtn.classList.toggle('active', isFavorite);
-            }
-        });
-
-        window.addEventListener('gamePlaylistStatusChanged', (e) => {
-            const { gameId, isInPlaylist } = e.detail;
-            if (String(gameId) === String(gameId)) {
-                game.IsInPlaylist = isInPlaylist;
-                game.isInPlaylist = isInPlaylist;
-                card.setAttribute('data-in-playlist', isInPlaylist.toString());
-
-                const playlistBtn = card.querySelector('.menu-action-playlist');
-                if (playlistBtn) {
-                    playlistBtn.innerText = isInPlaylist ? 'Remove from Playlist' : 'Add to Playlist';
-                }
-                if (typeof onFavoriteToggleCallback === 'function') onFavoriteToggleCallback();
-            }
-        });
-
-        window.addEventListener('gameSortNameChanged', (e) => {
-            const { gameId, sortName } = e.detail;
-            if (String(game.Id) === String(gameId)) {
-                game.SortName = sortName;
-                card.setAttribute('data-letter', getAlphabetGroup(sortName || game.Name || game.name || ''));
-            }
-        });
     }
 
     return card;
+}
+
+function formatCardPlaytime(totalMinutes) {
+    const mins = Math.floor(Number(totalMinutes) || 0);
+    if (mins <= 0) return 'Unplayed';
+
+    const hours = Math.floor(mins / 60);
+    const remMins = mins % 60;
+    const parts = [];
+    if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hr' : 'hrs'}`);
+    if (remMins > 0) parts.push(`${remMins} ${remMins === 1 ? 'min' : 'mins'}`);
+    return parts.join(' ');
+}
+
+function ensureCardGlobalListeners() {
+    if (window._hasGameCardGlobalListeners) return;
+
+    window.addEventListener('gameFavoriteChanged', (e) => {
+        const { gameId, isFavorite } = e.detail;
+        document.querySelectorAll(`.game-card-container[data-id="${CSS.escape(String(gameId))}"]`).forEach(cardEl => {
+            const favBtn = cardEl.querySelector('.game-card-favorite-btn');
+            if (favBtn) favBtn.classList.toggle('active', isFavorite);
+        });
+    });
+
+    window.addEventListener('gameInstalledChanged', (e) => {
+        const { gameId, isInstalled } = e.detail;
+        document.querySelectorAll(`.game-card-container[data-id="${CSS.escape(String(gameId))}"]`).forEach(cardEl => {
+            const installBtn = cardEl.querySelector('.menu-action-install');
+            if (installBtn) {
+                installBtn.innerText = isInstalled ? 'Uninstall' : 'Install';
+            }
+        });
+    });
+
+    window.addEventListener('gamePlaylistStatusChanged', (e) => {
+        const { gameId, isInPlaylist } = e.detail;
+        document.querySelectorAll(`.game-card-container[data-id="${CSS.escape(String(gameId))}"]`).forEach(cardEl => {
+            cardEl.setAttribute('data-in-playlist', String(isInPlaylist));
+            const playlistBtn = cardEl.querySelector('.menu-action-playlist');
+            if (playlistBtn) {
+                playlistBtn.innerText = isInPlaylist ? 'Remove from Playlist' : 'Add to Playlist';
+            }
+        });
+    });
+
+    window.addEventListener('gameSortNameChanged', (e) => {
+        const { gameId, sortName } = e.detail;
+        document.querySelectorAll(`.game-card-container[data-id="${CSS.escape(String(gameId))}"]`).forEach(cardEl => {
+            const titleEl = cardEl.querySelector('.game-card-title');
+            const fallbackName = titleEl ? titleEl.textContent : '';
+            cardEl.setAttribute('data-letter', getAlphabetGroup(sortName || fallbackName));
+        });
+    });
+
+    window._hasGameCardGlobalListeners = true;
 }

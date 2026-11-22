@@ -2,6 +2,7 @@
 using GameStash.Core.Services;
 using GameStash.Web.GUI.DTO;
 using GameStash.Web.GUI.Interfaces;
+using GameStash.Web.GUI.Services;
 using IgdbSharp.Models;
 using Microsoft.AspNetCore.Mvc;
 using System;
@@ -16,9 +17,9 @@ namespace GameStash.Web.GUI.Controllers
     [Route("api/stash/{type}")]
     public class StashController(
         ILocalStashService localStashService,
+        ISettingsService settingsService,
         IGameDetailsService gameDetailsService,
         IRootFoldersService rootFoldersService,
-        IRecommendationService recommendationService,
         ISteamStashService steamStashService,
         IEpicStashService epicStashService,
         IGogStashService gogStashService,
@@ -26,9 +27,9 @@ namespace GameStash.Web.GUI.Controllers
         IUnifiedStashService unifiedStashService) : ControllerBase
     {
         private readonly ILocalStashService _localStashService = localStashService;
+        private readonly ISettingsService _settingsService = settingsService;
         private readonly IGameDetailsService _gameDetailsService = gameDetailsService;
         private readonly IRootFoldersService _rootFoldersService = rootFoldersService;
-        private readonly IRecommendationService _recommendationService = recommendationService;
         private readonly ISteamStashService _steamStashService = steamStashService;
         private readonly IEpicStashService _epicStashService = epicStashService;
         private readonly IGogStashService _gogStashService = gogStashService;
@@ -100,7 +101,183 @@ namespace GameStash.Web.GUI.Controllers
                 }
             }
 
-            return Ok(StashGameDetailsDto.FromModel(game));
+            var detailsDto = StashGameDetailsDto.FromModel(game);
+
+            // Storefront fallback for games without an IGDB match (Id <= 0)
+            if (!game.Id.HasValue || game.Id.Value <= 0)
+            {
+                if (game is SteamStashGame steam && steam.ExtId.HasValue)
+                {
+                    var steamClient = _settingsService.GetSteamClient();
+                    if (steamClient != null)
+                    {
+                        var storeDetails = await steamClient.FetchStoreAppDetailsAsync(steam.ExtId.Value);
+                        if (storeDetails != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(storeDetails.ShortDescription))
+                                detailsDto.Summary = storeDetails.ShortDescription;
+
+                            if (!string.IsNullOrWhiteSpace(storeDetails.DetailedDescription))
+                                detailsDto.Storyline = storeDetails.DetailedDescription;
+
+                            if (!string.IsNullOrWhiteSpace(storeDetails.ReleaseDateText))
+                                detailsDto.ReleaseDate = storeDetails.ReleaseDateText;
+
+                            if (storeDetails.Developers.Count > 0)
+                                detailsDto.DeveloperCompany = new Company { Name = string.Join(", ", storeDetails.Developers) };
+
+                            if (storeDetails.Genres.Count > 0)
+                                detailsDto.Genres = string.Join(", ", storeDetails.Genres);
+
+                            if (storeDetails.Platforms.Count > 0)
+                                detailsDto.Platforms = string.Join(", ", storeDetails.Platforms);
+
+                            if (storeDetails.Screenshots.Count > 0)
+                            {
+                                detailsDto.Screenshots = storeDetails.Screenshots
+                                    .Select((url, idx) => new ScreenshotDto
+                                    {
+                                        ImageId = $"steam_{steam.ExtId.Value}_{idx + 1}",
+                                        MediumUrl = url,
+                                        HugeRetinaUrl = url
+                                    })
+                                    .ToArray();
+                            }
+
+                            //if (!string.IsNullOrWhiteSpace(storeDetails.HeaderImage))
+                            //    detailsDto.CoverUrl = storeDetails.HeaderImage;
+                        }
+                    }
+                }
+                else if (game is EpicStashGame epic && !string.IsNullOrWhiteSpace(epic.Namespace) && !string.IsNullOrWhiteSpace(epic.CatalogItemId))
+                {
+                    var epicClient = _settingsService.GetEpicClient();
+                    if (epicClient != null)
+                    {
+                        var epicDetails = await epicClient.FetchStoreAppDetailsAsync(epic.Namespace, epic.CatalogItemId);
+                        if (epicDetails != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(epicDetails.ShortDescription))
+                                detailsDto.Summary = epicDetails.ShortDescription;
+
+                            if (!string.IsNullOrWhiteSpace(epicDetails.DetailedDescription))
+                                detailsDto.Storyline = epicDetails.DetailedDescription;
+
+                            if (!string.IsNullOrWhiteSpace(epicDetails.ReleaseDateText))
+                                detailsDto.ReleaseDate = epicDetails.ReleaseDateText;
+
+                            if (epicDetails.Developers.Count > 0)
+                                detailsDto.DeveloperCompany = new Company { Name = string.Join(", ", epicDetails.Developers) };
+
+                            if (epicDetails.Genres.Count > 0)
+                                detailsDto.Genres = string.Join(", ", epicDetails.Genres);
+
+                            if (epicDetails.Platforms.Count > 0)
+                                detailsDto.Platforms = string.Join(", ", epicDetails.Platforms);
+
+                            if (epicDetails.Screenshots.Count > 0)
+                            {
+                                detailsDto.Screenshots = [.. epicDetails.Screenshots
+                                    .Select((url, idx) => new ScreenshotDto
+                                    {
+                                        ImageId = $"epic_{epic.CatalogItemId}_{idx + 1}",
+                                        MediumUrl = url,
+                                        HugeRetinaUrl = url
+                                    })];
+                            }
+
+                            if (detailsDto.CoverUrl == "/css/placeholder.png" && !string.IsNullOrWhiteSpace(epicDetails.CoverUrl))
+                                detailsDto.CoverUrl = epicDetails.CoverUrl;
+                        }
+                    }
+                }
+                else if (game is GogStashGame gog && gog.ExtId.HasValue)
+                {
+                    var gogClient = _settingsService.GetGogClient();
+                    if (gogClient != null)
+                    {
+                        var gogDetails = await gogClient.FetchStoreAppDetailsAsync(gog.ExtId.Value);
+                        if (gogDetails != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(gogDetails.ShortDescription))
+                                detailsDto.Summary = gogDetails.ShortDescription;
+
+                            if (!string.IsNullOrWhiteSpace(gogDetails.DetailedDescription))
+                                detailsDto.Storyline = gogDetails.DetailedDescription;
+
+                            if (!string.IsNullOrWhiteSpace(gogDetails.ReleaseDateText))
+                                detailsDto.ReleaseDate = gogDetails.ReleaseDateText;
+
+                            if (gogDetails.Developers.Count > 0)
+                                detailsDto.DeveloperCompany = new Company { Name = string.Join(", ", gogDetails.Developers) };
+
+                            if (gogDetails.Genres.Count > 0)
+                                detailsDto.Genres = string.Join(", ", gogDetails.Genres);
+
+                            if (gogDetails.Platforms.Count > 0)
+                                detailsDto.Platforms = string.Join(", ", gogDetails.Platforms);
+
+                            if (gogDetails.Screenshots.Count > 0)
+                            {
+                                detailsDto.Screenshots = [.. gogDetails.Screenshots
+                                    .Select((url, idx) => new ScreenshotDto
+                                    {
+                                        ImageId = $"gog_{gog.ExtId.Value}_{idx + 1}",
+                                        MediumUrl = url,
+                                        HugeRetinaUrl = url
+                                    })];
+                            }
+
+                            if (detailsDto.CoverUrl == "/css/placeholder.png" && !string.IsNullOrWhiteSpace(gogDetails.CoverUrl))
+                                detailsDto.CoverUrl = gogDetails.CoverUrl;
+                        }
+                    }
+                }
+                else if (game is AmazonStashGame amazon && !string.IsNullOrWhiteSpace(amazon.ExtId))
+                {
+                    var amazonClient = _settingsService.GetAmazonClient();
+                    if (amazonClient != null)
+                    {
+                        var amazonDetails = await amazonClient.FetchStoreAppDetailsAsync(amazon.ExtId);
+                        if (amazonDetails != null)
+                        {
+                            if (!string.IsNullOrWhiteSpace(amazonDetails.ShortDescription))
+                                detailsDto.Summary = amazonDetails.ShortDescription;
+
+                            if (!string.IsNullOrWhiteSpace(amazonDetails.DetailedDescription))
+                                detailsDto.Storyline = amazonDetails.DetailedDescription;
+
+                            if (!string.IsNullOrWhiteSpace(amazonDetails.ReleaseDateText))
+                                detailsDto.ReleaseDate = amazonDetails.ReleaseDateText;
+
+                            if (amazonDetails.Developers.Count > 0)
+                                detailsDto.DeveloperCompany = new Company { Name = string.Join(", ", amazonDetails.Developers) };
+
+                            if (amazonDetails.Genres.Count > 0)
+                                detailsDto.Genres = string.Join(", ", amazonDetails.Genres);
+
+                            if (amazonDetails.Platforms.Count > 0)
+                                detailsDto.Platforms = string.Join(", ", amazonDetails.Platforms);
+
+                            if (amazonDetails.Screenshots.Count > 0)
+                            {
+                                detailsDto.Screenshots = [.. amazonDetails.Screenshots
+                                    .Select((url, idx) => new ScreenshotDto
+                                    {
+                                        ImageId = $"amazon_{amazon.ExtId}_{idx + 1}",
+                                        MediumUrl = url,
+                                        HugeRetinaUrl = url
+                                    })];
+                            }
+
+                            if (detailsDto.CoverUrl == "/css/placeholder.png" && !string.IsNullOrWhiteSpace(amazonDetails.CoverUrl))
+                                detailsDto.CoverUrl = amazonDetails.CoverUrl;
+                        }
+                    }
+                }
+            }
+
+            return Ok(detailsDto);
         }
 
         private async Task<IActionResult> UpdateGameDetailsAsync<TEntity>(IStashServiceBase<TEntity> service, long id, UpdatePropertyDto request) where TEntity : StashGame
@@ -284,26 +461,5 @@ namespace GameStash.Web.GUI.Controllers
 
             return Ok(new { Success = true, ImportedCount = importedCount });
         }
-
-        [HttpGet("recommendations/playlist")]
-        public async Task<IActionResult> GetPlaylistRecommendations([FromRoute] string type, [FromQuery] int limit = 10)
-        {
-            if (!type.Equals("local", StringComparison.OrdinalIgnoreCase))
-                return BadRequest(new { Message = $"Unsupported library type: {type}" });
-
-            var recommendations = await _recommendationService.GetPlaylistSuggestionsAsync(type, limit);
-            return Ok(recommendations);
-        }
-
-        [HttpGet("recommendations/stash")]
-        public async Task<IActionResult> GetStashRecommendations([FromRoute] string type, [FromQuery] int limit = 10)
-        {
-            if (!type.Equals("local", StringComparison.OrdinalIgnoreCase))
-                return BadRequest(new { Message = $"Unsupported library type: {type}" });
-
-            var recommendations = await _recommendationService.GetStashSuggestionsAsync(type, limit);
-            return Ok(recommendations);
-        }
-
     }
 }

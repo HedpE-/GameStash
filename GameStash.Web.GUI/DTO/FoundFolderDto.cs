@@ -17,23 +17,7 @@ namespace GameStash.Web.GUI.DTO
         public bool IsLoadingIgdbMatches { get; set; }
         //private long? _selectedMatchId;
         public long? SelectedMatchId { get; set; }
-        //{
-        //    get => _selectedMatchId;
-        //    set
-        //    {
-        //        if (_selectedMatchId != value)
-        //        {
-        //            _selectedMatchId = value;
-        //            if (value.HasValue && value > 0)
-        //            {
-        //                _game.IgdbSelectedMatch = _game.IgdbMatches.FirstOrDefault(m => m.Id == value);
-        //                _game.IsIgdbMatched = _game.IgdbSelectedMatch != null;
-        //                _game.IsSelected = _game.IgdbSelectedMatch != null;
-        //                IsSelected = _game.IgdbSelectedMatch != null;
-        //            }
-        //        }
-        //    }
-        //}
+
         public List<IgdbMatchOptionDto> IgdbMatches { get; set; } = new();
         private StashGame _game;
 

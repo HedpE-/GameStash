@@ -1,8 +1,9 @@
 ﻿/**
- * Local Stash - Playlist & Algorithmic Recommendations Controller
+ * Unified Playlist & Algorithmic Recommendations Controller (Across All Stashes)
  */
 
 import { createGameCard } from './gamecard.js';
+import { openEditModal, openDeleteModal } from './stash.js';
 import { showError } from './snackbar.js';
 
 let isSyncing = false;
@@ -24,8 +25,6 @@ export async function initPlaylistView() {
 
 /**
  * Orchestrates data loading across all three strips in parallel.
- *
- * @param {boolean} forceRefresh - If true, bypasses browser caching.
  */
 async function loadAllPlaylistStrips(forceRefresh = false) {
     if (isSyncing) return;
@@ -35,9 +34,9 @@ async function loadAllPlaylistStrips(forceRefresh = false) {
 
     try {
         const [playlistRes, playlistRecsRes, stashRecsRes] = await Promise.all([
-            fetch(`/api/stash/local/playlist${cacheBuster}`),
-            fetch(`/api/stash/local/recommendations/playlist?limit=30${forceRefresh ? '&v=' + Date.now() : ''}`),
-            fetch(`/api/stash/local/recommendations/stash?limit=30${forceRefresh ? '&v=' + Date.now() : ''}`)
+            fetch(`/api/playlist${cacheBuster}`),
+            fetch(`/api/playlist/recommendations/playlist?limit=30${forceRefresh ? '&v=' + Date.now() : ''}`),
+            fetch(`/api/playlist/recommendations/stash?limit=30${forceRefresh ? '&v=' + Date.now() : ''}`)
         ]);
 
         // 1. Render Active Playlist Queue
@@ -75,11 +74,31 @@ async function loadAllPlaylistStrips(forceRefresh = false) {
         }
 
     } catch (err) {
-        console.error("Critical error in playlist view orchestrator:", err);
-        showError("Unable to connect to the recommendation engine.");
+        console.error('Critical error in playlist view orchestrator:', err);
+        showError('Unable to connect to the recommendation engine.');
     } finally {
         isSyncing = false;
     }
+}
+
+/**
+ * Helper to create a storefront-aware card for any stash game.
+ */
+function buildPlaylistCard(game) {
+    const storeType = (game.ExternalSystem || game.externalSystem || 'local').toLowerCase();
+    const cardGame = {
+        ...game,
+        showStoreBadge: true
+    };
+
+    return createGameCard(
+        cardGame,
+        'Name',
+        storeType === 'local' ? openDeleteModal : null,
+        openEditModal,
+        () => loadAllPlaylistStrips(false),
+        storeType
+    );
 }
 
 /**
@@ -99,7 +118,7 @@ function renderPlaylistQueueStrip(games) {
             <div class="empty-strip-box">
                 <span class="empty-icon">📋</span>
                 <strong>Your playlist queue is currently empty.</strong>
-                <span>Click the bookmark icon or context menu on any game in your stash to add it here.</span>
+                <span>Click the bookmark icon or context menu on any game in your stashes to add it here.</span>
             </div>
         `;
         return;
@@ -107,16 +126,7 @@ function renderPlaylistQueueStrip(games) {
 
     container.innerHTML = '';
     games.forEach(game => {
-        const card = createGameCard(
-            game,
-            'Name',
-            () => loadAllPlaylistStrips(false), // On delete callback
-            null,                               // On edit callback
-            () => loadAllPlaylistStrips(false), // On favorite callback
-            'local'                               // Full local stash mode with context tools
-        );
-
-        container.appendChild(card);
+        container.appendChild(buildPlaylistCard(game));
     });
 }
 
@@ -142,21 +152,14 @@ function renderRecommendationsStrip(containerId, recommendations, emptyIcon, emp
         const game = rec.Game || rec.game;
         if (!game) return;
 
-        const card = createGameCard(
-            game,
-            'Name',
-            () => loadAllPlaylistStrips(false),
-            null,
-            () => loadAllPlaylistStrips(false),
-            'local'
-        );
+        const card = buildPlaylistCard(game);
 
         // Inject match percentage and top matching reason into the card metadata area
         const metaEl = card.querySelector('.game-card-meta');
         if (metaEl) {
             const percentage = rec.MatchPercentage ?? rec.matchPercentage ?? 0;
             const reasons = rec.MatchReasons || rec.matchReasons || [];
-            const primaryReason = reasons.length > 0 ? reasons[0] : '';
+            const primaryReason = reasons.length > 0 ? reasons : '';
 
             metaEl.innerHTML = `
                 <div style="display:flex; flex-direction:column; gap:2px;">
@@ -186,18 +189,14 @@ function renderStripError(containerId, message) {
 function setupGlobalSyncEvents() {
     if (window._hasPlaylistViewSync) return;
 
-    // Refresh strips whenever a game's playlist state is toggled from details modal or context menu
     window.addEventListener('gamePlaylistStatusChanged', () => {
-        const activeContainer = document.querySelector('.playlist-view-container');
-        if (activeContainer) {
+        if (document.querySelector('.playlist-view-container')) {
             loadAllPlaylistStrips(false);
         }
     });
 
-    // Refresh strips if a favorite status changes (re-weights the stash recommendations)
     window.addEventListener('gameFavoriteChanged', () => {
-        const activeContainer = document.querySelector('.playlist-view-container');
-        if (activeContainer) {
+        if (document.querySelector('.playlist-view-container')) {
             loadAllPlaylistStrips(false);
         }
     });

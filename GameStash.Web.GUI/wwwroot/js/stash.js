@@ -6,6 +6,8 @@ import { createGameCard } from './gamecard.js';
 import { openGameDetails } from './gamedetails.js';
 import { renderAlphabetBar } from './alphabetbar.js';
 
+let activeDeleteCallback = null;
+
 const STASH_CONFIGS = {
     local: {
         title: 'Local Games Stash',
@@ -14,14 +16,14 @@ const STASH_CONFIGS = {
         countSuffix: (total) => `${total} ${total === 1 ? 'game' : 'games'} cataloged`,
         syncLabel: null,
         hasFlush: true,
-        hasStoreFilter: false,
         sortOptions: ['Name', 'Release Date', 'Rating', 'Date Added', 'Folder Size'],
         filterOptions: [
-            { value: 'All', label: 'All' },
             { value: 'Favorites', label: 'Favorites' },
             { value: 'Not Favorites', label: 'Not Favorites' },
             { value: 'Installed', label: 'Installed' },
             { value: 'Not Installed', label: 'Not Installed' },
+            { value: 'Played', label: 'Played' },
+            { value: 'Not Played', label: 'Not Played' },
             { value: 'Missing', label: 'Missing Folder' }
         ],
         emptyIcon: '📂',
@@ -38,14 +40,14 @@ const STASH_CONFIGS = {
         countSuffix: (total) => `${total} ${total === 1 ? 'game' : 'games'} in Steam library`,
         syncLabel: 'Sync from Steam',
         hasFlush: false,
-        hasStoreFilter: false,
         sortOptions: ['Name', 'Playtime', 'Release Date'],
         filterOptions: [
-            { value: 'All', label: 'All' },
-            { value: 'Played', label: 'Played' },
-            { value: 'Unplayed', label: 'Unplayed' },
+            { value: 'Favorites', label: 'Favorites' },
+            { value: 'Not Favorites', label: 'Not Favorites' },
             { value: 'Installed', label: 'Installed' },
-            { value: 'Not Installed', label: 'Not Installed' }
+            { value: 'Not Installed', label: 'Not Installed' },
+            { value: 'Played', label: 'Played' },
+            { value: 'Not Played', label: 'Not Played' }
         ],
         emptyIcon: '⚛️',
         emptyTitle: 'No Steam Games Found',
@@ -61,12 +63,14 @@ const STASH_CONFIGS = {
         countSuffix: (total) => `${total} ${total === 1 ? 'game' : 'games'} in Epic library`,
         syncLabel: 'Sync from Epic',
         hasFlush: false,
-        hasStoreFilter: false,
-        sortOptions: ['Name', 'Release Date'],
+        sortOptions: ['Name', 'Playtime', 'Release Date'],
         filterOptions: [
-            { value: 'All', label: 'All' },
+            { value: 'Favorites', label: 'Favorites' },
+            { value: 'Not Favorites', label: 'Not Favorites' },
             { value: 'Installed', label: 'Installed' },
-            { value: 'Not Installed', label: 'Not Installed' }
+            { value: 'Not Installed', label: 'Not Installed' },
+            { value: 'Played', label: 'Played' },
+            { value: 'Not Played', label: 'Not Played' }
         ],
         emptyIcon: '🎮',
         emptyTitle: 'No Epic Games Found',
@@ -82,12 +86,14 @@ const STASH_CONFIGS = {
         countSuffix: (total) => `${total} ${total === 1 ? 'game' : 'games'} in GOG library`,
         syncLabel: 'Sync from GOG',
         hasFlush: false,
-        hasStoreFilter: false,
-        sortOptions: ['Name', 'Release Date'],
+        sortOptions: ['Name', 'Playtime', 'Release Date'],
         filterOptions: [
-            { value: 'All', label: 'All' },
+            { value: 'Favorites', label: 'Favorites' },
+            { value: 'Not Favorites', label: 'Not Favorites' },
             { value: 'Installed', label: 'Installed' },
-            { value: 'Not Installed', label: 'Not Installed' }
+            { value: 'Not Installed', label: 'Not Installed' },
+            { value: 'Played', label: 'Played' },
+            { value: 'Not Played', label: 'Not Played' }
         ],
         emptyIcon: '🌌',
         emptyTitle: 'No GOG Games Found',
@@ -103,10 +109,10 @@ const STASH_CONFIGS = {
         countSuffix: (total) => `${total} ${total === 1 ? 'game' : 'games'} in Amazon library`,
         syncLabel: 'Sync from Amazon',
         hasFlush: false,
-        hasStoreFilter: false,
         sortOptions: ['Name', 'Release Date'],
         filterOptions: [
-            { value: 'All', label: 'All' },
+            { value: 'Favorites', label: 'Favorites' },
+            { value: 'Not Favorites', label: 'Not Favorites' },
             { value: 'Installed', label: 'Installed' },
             { value: 'Not Installed', label: 'Not Installed' }
         ],
@@ -124,13 +130,16 @@ const STASH_CONFIGS = {
         countSuffix: (total) => `${total} ${total === 1 ? 'entry' : 'entries'} across all stashes`,
         syncLabel: 'Sync All Stashes',
         hasFlush: false,
-        hasStoreFilter: true,
-        sortOptions: ['Name', 'Release Date', 'Playtime'],
+        sortOptions: ['Name', 'Playtime', 'Release Date'],
         filterOptions: [
-            { value: 'All', label: 'All' },
+            { value: 'Favorites', label: 'Favorites' },
+            { value: 'Not Favorites', label: 'Not Favorites' },
             { value: 'Installed', label: 'Installed' },
             { value: 'Not Installed', label: 'Not Installed' },
-            { value: 'Duplicates', label: 'Duplicates' }
+            { value: 'Played', label: 'Played' },
+            { value: 'Not Played', label: 'Not Played' },
+            { value: 'Duplicates', label: 'Duplicates' },
+            { value: 'Missing', label: 'Missing Folder' }
         ],
         emptyIcon: '📦',
         emptyTitle: 'No Games Found in Unified Stash',
@@ -148,7 +157,7 @@ let filteredGames = [];
 let currentSortOption = 'Name';
 let sortDirection = 'asc';
 let currentFilterOption = 'All';
-let currentStoreOption = 'All';
+let currentSearchQuery = '';
 
 let activeGameForEdit = null;
 let activeGameForDelete = null;
@@ -166,11 +175,12 @@ export async function initStashView(workspaceElement, stashType = 'local') {
     currentSortOption = 'Name';
     sortDirection = 'asc';
     currentFilterOption = 'All';
-    currentStoreOption = 'All';
+    currentSearchQuery = '';
 
     configureHeaderAndToolbar();
     setupToolbarEvents();
     setupDialogEvents();
+    setupExportModalEvents();
     setupScrollTopEvent();
     setupGlobalEventListeners();
 
@@ -216,13 +226,21 @@ function configureHeaderAndToolbar() {
         `).join('');
     }
 
-    // Build dynamic Filter menu
+    // Build dynamic Filter menu with separator + Clear Filter action
     const filterMenu = document.getElementById('stash-filter-menu');
     if (filterMenu) {
-        filterMenu.innerHTML = activeConfig.filterOptions.map((opt, idx) => `
-            <div class="dropdown-item ${idx === 0 ? 'active' : ''}" data-filter="${opt.value}">${opt.label}</div>
-        `).join('');
+        const itemsHtml = activeConfig.filterOptions.map((opt) =>
+            '<div class="dropdown-item" data-filter="' + opt.value + '">' + opt.label + '</div>'
+        ).join('');
+
+        filterMenu.innerHTML =
+            itemsHtml +
+            '<div class="dropdown-separator"></div>' +
+            '<div class="dropdown-item dropdown-clear-item disabled" id="stash-filter-clear-btn" data-filter="All">Clear Filter</div>';
     }
+
+    const filterLabel = document.getElementById('stash-filter-label');
+    if (filterLabel) filterLabel.innerText = 'Filter: All';
 }
 
 async function loadStashData(forceRefresh = false) {
@@ -296,6 +314,7 @@ function getUnifiedGameKey(game) {
     const rawName = (game.Name || game.name || '').toLowerCase().replace(/[^a-z0-9]/g, '');
     return 'title:' + rawName;
 }
+
 function setupToolbarEvents() {
     document.getElementById('stash-reload-btn')?.addEventListener('click', () => loadStashData(false));
     document.getElementById('stash-sync-btn')?.addEventListener('click', () => loadStashData(true));
@@ -315,102 +334,86 @@ function setupToolbarEvents() {
             console.error("Flush transaction encountered a network exception:", err);
         }
     });
-    document.getElementById('stash-export-btn')?.addEventListener('click', async () => {
-        const textLines = stashGames.map(g => {
-            const name = g.Name || g.name;
-            const status = (g.IsInstalled ?? g.isInstalled) ? 'Installed' : 'Not Installed';
-            if (activeType === 'unified') {
-                const source = g.ExternalSystem || g.externalSystem || 'Unknown';
-                const mins = getPlaytimeMinutes(g);
-                const pt = mins > 0 ? ' | Playtime: ' + (mins / 60).toFixed(1) + 'h' : '';
-                return '[' + source + '] ' + name + ' (' + status + pt + ')';
+    const storeToggle = document.getElementById('stash-store-toggle');
+    const storeMenu = document.getElementById('stash-store-menu');
+    const sortToggle = document.getElementById('stash-sort-toggle');
+    const sortMenu = document.getElementById('stash-sort-menu');
+    const filterToggle = document.getElementById('stash-filter-toggle');
+    const filterMenu = document.getElementById('stash-filter-menu');
+    const closeAllDropdowns = () => {
+        if (storeMenu) storeMenu.style.display = 'none';
+        if (sortMenu) sortMenu.style.display = 'none';
+        if (filterMenu) filterMenu.style.display = 'none';
+    };
+    storeToggle?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wasOpen = storeMenu.style.display === 'flex';
+        closeAllDropdowns();
+        if (!wasOpen) storeMenu.style.display = 'flex';
+    });
+    const searchInput = document.getElementById('stash-search-input');
+    const searchClear = document.getElementById('stash-search-clear');
+
+    searchInput?.addEventListener('input', () => {
+        currentSearchQuery = searchInput.value.trim().toLowerCase();
+        if (searchClear) searchClear.style.display = currentSearchQuery ? 'flex' : 'none';
+        applyFilterAndSort();
+    });
+
+    searchClear?.addEventListener('click', () => {
+        if (searchInput) searchInput.value = '';
+        currentSearchQuery = '';
+        if (searchClear) searchClear.style.display = 'none';
+        applyFilterAndSort();
+        searchInput?.focus();
+    });
+
+    sortToggle?.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const wasOpen = sortMenu.style.display === 'flex';
+        closeAllDropdowns();
+        if (!wasOpen) sortMenu.style.display = 'flex';
+    });
+    document.querySelectorAll('#stash-sort-menu .dropdown-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            const option = item.getAttribute('data-sort');
+            if (currentSortOption === option) {
+                sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
+            } else {
+                currentSortOption = option;
+                sortDirection = option === 'Playtime' ? 'desc' : 'asc';
             }
-            if (activeType === 'steam') {
-                return name + ' (' + formatPlaytimeHours(getPlaytimeMinutes(g)) + ' | ' + status + ')';
-            }
-            return name + ' (' + status + ')';
+            updateSortUI();
+            applyFilterAndSort();
+            closeAllDropdowns();
         });
-        try {
-            await navigator.clipboard.writeText(textLines.join('\n'));
-            alert(activeConfig.title + ' list successfully copied to clipboard!');
-        } catch {
-            alert('Failed to copy list to clipboard.');
-        }
     });
-const storeToggle = document.getElementById('stash-store-toggle');
-const storeMenu = document.getElementById('stash-store-menu');
-const sortToggle = document.getElementById('stash-sort-toggle');
-const sortMenu = document.getElementById('stash-sort-menu');
-const filterToggle = document.getElementById('stash-filter-toggle');
-const filterMenu = document.getElementById('stash-filter-menu');
-const closeAllDropdowns = () => {
-    if (storeMenu) storeMenu.style.display = 'none';
-    if (sortMenu) sortMenu.style.display = 'none';
-    if (filterMenu) filterMenu.style.display = 'none';
-};
-storeToggle?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const wasOpen = storeMenu.style.display === 'flex';
-    closeAllDropdowns();
-    if (!wasOpen) storeMenu.style.display = 'flex';
-});
-document.querySelectorAll('#stash-store-menu .dropdown-item').forEach(item => {
-    item.addEventListener('click', (e) => {
+    filterToggle?.addEventListener('click', (e) => {
         e.stopPropagation();
-        currentStoreOption = item.getAttribute('data-store');
-        const label = document.getElementById('stash-store-label');
-        if (label) label.innerText = 'Store: ' + currentStoreOption;
-        document.querySelectorAll('#stash-store-menu .dropdown-item').forEach(el =>
-            el.classList.toggle('active', el.getAttribute('data-store') === currentStoreOption)
-        );
-        applyFilterAndSort();
+        const wasOpen = filterMenu.style.display === 'flex';
         closeAllDropdowns();
+        if (!wasOpen) filterMenu.style.display = 'flex';
     });
-});
-sortToggle?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const wasOpen = sortMenu.style.display === 'flex';
-    closeAllDropdowns();
-    if (!wasOpen) sortMenu.style.display = 'flex';
-});
-document.querySelectorAll('#stash-sort-menu .dropdown-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const option = item.getAttribute('data-sort');
-        if (currentSortOption === option) {
-            sortDirection = sortDirection === 'asc' ? 'desc' : 'asc';
-        } else {
-            currentSortOption = option;
-            sortDirection = option === 'Playtime' ? 'desc' : 'asc';
-        }
-        updateSortUI();
-        applyFilterAndSort();
-        closeAllDropdowns();
+    document.querySelectorAll('#stash-filter-menu .dropdown-item').forEach(item => {
+        item.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (item.classList.contains('disabled')) return;
+
+            currentFilterOption = item.getAttribute('data-filter') || 'All';
+            updateFilterUI();
+            applyFilterAndSort();
+            closeAllDropdowns();
+        });
     });
-});
-filterToggle?.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const wasOpen = filterMenu.style.display === 'flex';
-    closeAllDropdowns();
-    if (!wasOpen) filterMenu.style.display = 'flex';
-});
-document.querySelectorAll('#stash-filter-menu .dropdown-item').forEach(item => {
-    item.addEventListener('click', (e) => {
-        e.stopPropagation();
-        currentFilterOption = item.getAttribute('data-filter');
-        updateFilterUI();
-        applyFilterAndSort();
-        closeAllDropdowns();
-    });
-});
-if (!window._hasStashDropdownCloser) {
-    window.addEventListener('click', () => {
-        document.getElementById('stash-store-menu')?.style.setProperty('display', 'none');
-        document.getElementById('stash-sort-menu')?.style.setProperty('display', 'none');
-        document.getElementById('stash-filter-menu')?.style.setProperty('display', 'none');
-    });
-    window._hasStashDropdownCloser = true;
-}
+    if (!window._hasStashDropdownCloser) {
+        window.addEventListener('click', () => {
+            document.getElementById('stash-store-menu')?.style.setProperty('display', 'none');
+            document.getElementById('stash-sort-menu')?.style.setProperty('display', 'none');
+            document.getElementById('stash-filter-menu')?.style.setProperty('display', 'none');
+        });
+        window._hasStashDropdownCloser = true;
+    }
 }
 
 function updateSortUI() {
@@ -433,9 +436,15 @@ function updateSortUI() {
 function updateFilterUI() {
     const label = document.getElementById('stash-filter-label');
     if (label) label.innerText = 'Filter: ' + currentFilterOption;
-    document.querySelectorAll('#stash-filter-menu .dropdown-item').forEach(item => {
-        item.classList.toggle('active', item.getAttribute('data-filter') === currentFilterOption);
+    document.querySelectorAll('#stash-filter-menu .dropdown-item[data-filter]').forEach(item => {
+        const val = item.getAttribute('data-filter');
+        if (val === 'All') return;
+        item.classList.toggle('active', val === currentFilterOption);
     });
+    const clearBtn = document.getElementById('stash-filter-clear-btn');
+    if (clearBtn) {
+        clearBtn.classList.toggle('disabled', currentFilterOption === 'All');
+    }
 }
 
 function applyFilterAndSort() {
@@ -456,23 +465,37 @@ function applyFilterAndSort() {
         const isInstalled = !!(game.IsInstalled ?? game.isInstalled);
         const isFavorite = !!(game.IsFavorite ?? game.isFavorite);
         const minutes = getPlaytimeMinutes(game);
-        if (activeConfig.hasStoreFilter && currentStoreOption !== 'All') {
-            const source = (game.ExternalSystem || game.externalSystem || '').toLowerCase();
-            if (source !== currentStoreOption.toLowerCase()) return false;
+        const played = minutes > 0 ||
+            !!(game.IsPlayed ?? game.isPlayed) ||
+            !!(game.IsPlaying ?? game.isPlaying);
+
+        if (currentSearchQuery) {
+            const name = (game.Name || game.name || '').toLowerCase();
+            const sortName = (game.SortName || game.sortName || '').toLowerCase();
+            if (!name.includes(currentSearchQuery) && !sortName.includes(currentSearchQuery)) {
+                return false;
+            }
         }
+
         switch (currentFilterOption) {
             case 'Favorites': return isFavorite;
             case 'Not Favorites': return !isFavorite;
             case 'Installed': return isInstalled;
             case 'Not Installed': return !isInstalled;
-            case 'Missing': return !game.IsFolderValid;
-            case 'Played': return minutes > 0;
-            case 'Unplayed': return minutes === 0;
+            case 'Missing': {
+                const source = (game.ExternalSystem || game.externalSystem || activeType || '').toLowerCase();
+                const isLocalGame = source === 'local';
+                const isFolderValid = game.IsFolderValid ?? game.isFolderValid;
+                return isLocalGame && isFolderValid === false;
+            }
+            case 'Played': return played;
+            case 'Not Played': return !played;
             case 'Duplicates': return duplicateKeys ? duplicateKeys.has(getUnifiedGameKey(game)) : true;
             case 'All':
             default: return true;
         }
     });
+
     const naturalCollator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
     filteredGames.sort((a, b) => {
         let valA, valB;
@@ -524,7 +547,7 @@ function applyFilterAndSort() {
     if (countLabel) {
         const total = stashGames.length;
         const filtered = filteredGames.length;
-        if (currentFilterOption === 'All' && currentStoreOption === 'All') {
+        if (currentFilterOption === 'All' && !currentSearchQuery) {
             countLabel.innerText = activeConfig.countSuffix(total);
         } else {
             countLabel.innerText = 'Showing ' + filtered + ' of ' + total + ' games';
@@ -538,6 +561,7 @@ function applyFilterAndSort() {
         sortOption: currentSortOption
     });
 }
+
 function renderGrid() {
     const grid = document.getElementById('stash-games-grid');
     if (!grid) return;
@@ -553,16 +577,13 @@ function renderGrid() {
             Id: igdbId,
             ExternalAppId: externalAppId,
             showStoreBadge: activeType === 'unified',
-            ReleaseYear: activeType === 'steam'
-                ? formatPlaytimeHours(getPlaytimeMinutes(game))
-                : (game.ReleaseYear || game.releaseYear || '')
+            ReleaseYear: game.ReleaseYear || game.releaseYear || ''
         };
-        const cardSortOption = activeType === 'steam' ? 'Name' : currentSortOption;
         const card = createGameCard(
             cardGame,
-            cardSortOption,
+            currentSortOption,
             activeType === 'local' ? openDeleteModal : null,
-            activeType === 'local' ? openEditModal : null,
+            openEditModal,
             () => {
                 if (currentFilterOption === 'Favorites' || currentFilterOption === 'Not Favorites') {
                     applyFilterAndSort();
@@ -630,14 +651,26 @@ function setupDialogEvents() {
     editSaveBtn?.addEventListener('click', async () => {
         if (!activeGameForEdit || !editInput) return;
         const newSortName = editInput.value.trim();
+        if (!newSortName) return;
+
         activeGameForEdit.SortName = newSortName;
-        await fetch('/api/stash/local/' + activeGameForEdit.Id + '/details', {
+        const targetType = activeGameForEdit.stashType || activeType || 'local';
+
+        await fetch(`/api/stash/${targetType}/${activeGameForEdit.Id}/details`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ propertyName: 'SortName', value: newSortName })
         });
+
         if (editModal) editModal.classList.remove('active');
-        applyFilterAndSort();
+
+        window.dispatchEvent(new CustomEvent('gameSortNameChanged', {
+            detail: { gameId: activeGameForEdit.Id, sortName: newSortName }
+        }));
+
+        if (document.getElementById('stash-games-grid')) {
+            applyFilterAndSort();
+        }
     });
     editInput?.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
@@ -650,14 +683,60 @@ function setupDialogEvents() {
     });
     document.getElementById('stash-delete-confirm-btn')?.addEventListener('click', async () => {
         if (!activeGameForDelete) return;
-        await fetch('/api/stash/local/' + activeGameForDelete.Id, { method: 'DELETE' });
-        stashGames = stashGames.filter(g => g.Id !== activeGameForDelete.Id);
+
+        await fetch(`/api/stash/local/${activeGameForDelete.Id}`, { method: 'DELETE' });
+        stashGames = stashGames.filter(g => String(g.Id) !== String(activeGameForDelete.Id));
+
         document.getElementById('stash-delete-modal')?.classList.remove('active');
-        applyFilterAndSort();
+
+        window.dispatchEvent(new CustomEvent('gameRemovedFromStash', {
+            detail: { gameId: activeGameForDelete.Id }
+        }));
+
+        if (document.getElementById('stash-games-grid')) {
+            applyFilterAndSort();
+        }
+
+        if (typeof activeDeleteCallback === 'function') {
+            activeDeleteCallback();
+            activeDeleteCallback = null;
+        }
     });
 }
+
 function setupGlobalEventListeners() {
     if (window._hasSharedStashListeners) return;
+    window.addEventListener('gameProgressChanged', (e) => {
+        const { gameId, isPlaying, isPlayed, playedToEnd } = e.detail;
+        const target = stashGames.find(g => String(g.Id ?? g.id) === String(gameId));
+        if (target) {
+            target.IsPlaying = isPlaying;
+            target.isPlaying = isPlaying;
+            target.IsPlayed = isPlayed;
+            target.isPlayed = isPlayed;
+            target.PlayedToEnd = playedToEnd;
+            target.playedToEnd = playedToEnd;
+
+            if (document.getElementById('stash-games-grid') &&
+                (currentFilterOption === 'Played' || currentFilterOption === 'Not Played')) {
+                applyFilterAndSort();
+            }
+        }
+    });
+
+    window.addEventListener('gameFavoriteChanged', (e) => {
+        const { gameId, isFavorite } = e.detail;
+        const target = stashGames.find(g => String(g.Id ?? g.id) === String(gameId));
+        if (target) {
+            target.IsFavorite = isFavorite;
+            target.isFavorite = isFavorite;
+
+            if (document.getElementById('stash-games-grid') &&
+                (currentFilterOption === 'Favorites' || currentFilterOption === 'Not Favorites')) {
+                applyFilterAndSort();
+            }
+        }
+    });
     window.addEventListener('gameSortNameChanged', (e) => {
         const { gameId, sortName } = e.detail;
         const target = stashGames.find(g => String(g.Id ?? g.id) === String(gameId));
@@ -674,9 +753,32 @@ function setupGlobalEventListeners() {
             applyFilterAndSort();
         }
     });
+    window.addEventListener('gameInstalledChanged', (e) => {
+        const { gameId, isInstalled } = e.detail;
+        const target = stashGames.find(g => String(g.Id ?? g.id) === String(gameId));
+        if (target) {
+            target.IsInstalled = isInstalled;
+            target.isInstalled = isInstalled;
+
+            if (document.getElementById('stash-games-grid') &&
+                (currentFilterOption === 'Installed' || currentFilterOption === 'Not Installed')) {
+                applyFilterAndSort();
+            }
+        }
+    });
+
+    window.addEventListener('gamePlaylistStatusChanged', (e) => {
+        const { gameId, isInPlaylist } = e.detail;
+        const target = stashGames.find(g => String(g.Id ?? g.id) === String(gameId));
+        if (target) {
+            target.IsInPlaylist = isInPlaylist;
+            target.isInPlaylist = isInPlaylist;
+        }
+    });
     window._hasSharedStashListeners = true;
 }
-function openEditModal(game) {
+
+export function openEditModal(game, stashType = activeType) {
     activeGameForEdit = game;
     const input = document.getElementById('stash-edit-sortname-input');
     if (input) {
@@ -685,8 +787,10 @@ function openEditModal(game) {
         input.focus();
     }
 }
-function openDeleteModal(game) {
+
+export function openDeleteModal(game, onDeletedSuccess = null) {
     activeGameForDelete = game;
+    activeDeleteCallback = onDeletedSuccess;
     const msgEl = document.getElementById('stash-delete-message');
     if (msgEl) {
         msgEl.innerHTML =
@@ -695,6 +799,168 @@ function openDeleteModal(game) {
     }
     document.getElementById('stash-delete-modal')?.classList.add('active');
 }
+
+function setupExportModalEvents() {
+    const exportModal = document.getElementById('stash-export-modal');
+    const exportBtn = document.getElementById('stash-export-btn');
+    const closeBtn = document.getElementById('stash-export-close-btn');
+    const copyBtn = document.getElementById('stash-export-copy-btn');
+    const downloadBtn = document.getElementById('stash-export-download-btn');
+    const countInfo = document.getElementById('stash-export-count-info');
+
+    if (!exportModal || !exportBtn) return;
+
+    const closeModal = () => exportModal.classList.remove('active');
+
+    exportBtn.onclick = () => {
+        const sourceList = filteredGames.length > 0 ? filteredGames : stashGames;
+        if (countInfo) countInfo.innerText = String(sourceList.length);
+        exportModal.classList.add('active');
+    };
+
+    if (closeBtn) closeBtn.onclick = closeModal;
+
+    exportModal.onclick = (e) => {
+        if (e.target === exportModal) closeModal();
+    };
+
+    const buildExportPayload = () => {
+        const formatInput = document.querySelector('input[name="stash-export-format"]:checked');
+        const format = formatInput ? formatInput.value : 'csv';
+
+        const selectedFields = Array.from(
+            document.querySelectorAll('#stash-export-fields input[type="checkbox"]:checked')
+        ).map(cb => cb.value);
+
+        const sourceList = filteredGames.length > 0 ? filteredGames : stashGames;
+
+        const fieldDefinitions = {
+            igdbId: {
+                header: 'IGDB ID',
+                getValue: (g) => {
+                    const id = Number(g.Id ?? g.id ?? 0);
+                    return id > 0 ? id : '';
+                }
+            },
+            store: {
+                header: 'Game Store',
+                getValue: (g) => {
+                    const raw = g.ExternalSystem || g.externalSystem || activeType || '';
+                    if (!raw) return '';
+                    return raw.toLowerCase() === 'gog'
+                        ? 'GOG'
+                        : raw.charAt(0).toUpperCase() + raw.slice(1).toLowerCase();
+                }
+            },
+            name: {
+                header: 'Game Name',
+                getValue: (g) => g.Name || g.name || ''
+            },
+            installed: {
+                header: 'Installed',
+                getValue: (g) => !!(g.IsInstalled ?? g.isInstalled)
+            },
+            isPlayed: {
+                header: 'Played',
+                getValue: (g) => !!(g.IsPlayed ?? g.isPlayed) || getPlaytimeMinutes(g) > 0
+            },
+            isPlaying: {
+                header: 'Currently Playing',
+                getValue: (g) => !!(g.IsPlaying ?? g.isPlaying)
+            },
+            playedToEnd: {
+                header: 'Completed',
+                getValue: (g) => !!(g.PlayedToEnd ?? g.playedToEnd)
+            },
+            playtime: {
+                header: 'Playtime',
+                getValue: (g) => {
+                    const mins = getPlaytimeMinutes(g);
+                    if (mins <= 0) return 'Unplayed';
+                    const hrs = Math.floor(mins / 60);
+                    const rem = mins % 60;
+                    const parts = [];
+                    if (hrs > 0) parts.push(hrs + (hrs === 1 ? ' hr' : ' hrs'));
+                    if (rem > 0) parts.push(rem + (rem === 1 ? ' min' : ' mins'));
+                    return parts.join(' ');
+                }
+            }
+        };
+
+        const activeDefs = selectedFields
+            .filter(key => fieldDefinitions[key])
+            .map(key => ({ key, ...fieldDefinitions[key] }));
+
+        if (format === 'json') {
+            const rows = sourceList.map(game => {
+                const obj = {};
+                activeDefs.forEach(def => {
+                    obj[def.header] = def.getValue(game);
+                });
+                return obj;
+            });
+
+            return {
+                format: 'json',
+                mimeType: 'application/json;charset=utf-8;',
+                fileName: 'gamestash-' + activeType + '-export.json',
+                content: JSON.stringify(rows, null, 2)
+            };
+        }
+
+        // CSV format with RFC-4180 escaping
+        const escapeCsvCell = (val) => {
+            if (val === null || val === undefined) return '';
+            const str = String(val);
+            if (str.includes('"') || str.includes(',') || str.includes('\n') || str.includes('\r')) {
+                return '"' + str.replace(/"/g, '""') + '"';
+            }
+            return str;
+        };
+
+        const headerLine = activeDefs.map(d => escapeCsvCell(d.header)).join(',');
+        const dataLines = sourceList.map(game =>
+            activeDefs.map(d => escapeCsvCell(d.getValue(game))).join(',')
+        );
+
+        return {
+            format: 'csv',
+            mimeType: 'text/csv;charset=utf-8;',
+            fileName: 'gamestash-' + activeType + '-export.csv',
+            content: [headerLine, ...dataLines].join('\r\n')
+        };
+    };
+
+    if (copyBtn) {
+        copyBtn.onclick = async () => {
+            const payload = buildExportPayload();
+            try {
+                await navigator.clipboard.writeText(payload.content);
+                closeModal();
+                alert(payload.format.toUpperCase() + ' export copied to clipboard!');
+            } catch {
+                alert('Failed to copy export to clipboard.');
+            }
+        };
+    }
+
+    if (downloadBtn) {
+        downloadBtn.onclick = () => {
+            const payload = buildExportPayload();
+            const blob = new Blob([payload.content], { type: payload.mimeType });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = payload.fileName;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            closeModal();
+        };
+    }
+}
+
 function renderWarning(scenario, detailMessage = '') {
     const container = document.querySelector('.stash-container');
     const loader = document.getElementById('stash-loading-indicator');

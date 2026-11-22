@@ -7,7 +7,7 @@
         public string ShortDescription { get; set; } = string.Empty;
         public string DetailedDescription { get; set; } = string.Empty;
         public string HeaderImage { get; set; } = string.Empty;
-        public string CapsuleCoverUrl => $"https://" + "://steamstatic.com" + $"/store_item_assets/steam/apps/{AppId}/library_600x900.jpg";
+        public string CapsuleCoverUrl => $"https://store.steamstatic.com" + $"/store_item_assets/steam/apps/{AppId}/library_600x900.jpg";
         public string ReleaseDateText { get; set; } = string.Empty;
         public List<string> Developers { get; set; } = new();
         public List<string> Publishers { get; set; } = new();

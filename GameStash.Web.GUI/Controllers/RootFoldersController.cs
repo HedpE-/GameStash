@@ -34,7 +34,7 @@ namespace GameStash.Web.GUI.Controllers
         public async Task<IActionResult> AddFolder([FromBody] string path)
         {
             if (string.IsNullOrWhiteSpace(path))
-                return BadRequest("O caminho da pasta não pode ser vazio.");
+                return BadRequest("The folder path cannot be empty.");
 
             try
             {
@@ -55,7 +55,7 @@ namespace GameStash.Web.GUI.Controllers
                 return NotFound();
 
             if (string.IsNullOrWhiteSpace(rootFolder.Path))
-                return BadRequest("O caminho da pasta é obrigatório.");
+                return BadRequest("The folder path is required.");
 
             await _rootFoldersService.RemoveRootFolderAsync(rootFolder.Path);
             return Ok();
@@ -175,14 +175,10 @@ namespace GameStash.Web.GUI.Controllers
         }
 
         [HttpPut("rescan")]
-        public async Task<IActionResult> RescanFolder()
+        public async Task<IActionResult> RescanFolders()
         {
-            var task = _rootFoldersService.RefreshAllRootFoldersAsync();
-
-            if (task.Status != TaskStatus.Canceled && task.Status != TaskStatus.Faulted)
-                return Accepted();
-
-            return StatusCode(422);
+            await _rootFoldersService.RefreshAllRootFoldersAsync();
+            return Ok();
         }
 
         [HttpPost("rescan/{id:int}")]
@@ -192,13 +188,8 @@ namespace GameStash.Web.GUI.Controllers
             if (rootFolder == null)
                 return NotFound();
 
-            var task = _rootFoldersService.RefreshRootFolderAsync(rootFolder.Path);
-
-            if (task.Status != TaskStatus.Canceled && task.Status != TaskStatus.Faulted)
-                return Accepted();
-            else
-                return StatusCode(422);
-
+            await _rootFoldersService.RefreshRootFolderAsync(rootFolder.Path);
+            return Ok();
         }
     }
 }

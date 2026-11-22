@@ -195,15 +195,6 @@ namespace GameStash.Web.GUI.Services
 
             await using var context = GameStashDbContext.CreateDbContext();
 
-            try
-            {
-                await context.Database.MigrateAsync();
-            }
-            catch (Exception ex)
-            {
-                Log.Error("Failed to apply migrations to PostgreSQL database. Please check your connection string and database configuration.\n" + ex.Message);
-            }
-
             Log.ForContext<SettingsService>().Information("Settings initialization from PostgreSQL completed.");
         }
 

@@ -6,6 +6,10 @@ namespace GameStash.Core.Data
 {
     public class GameStashDbContext : DbContext
     {
+        public const string DefaultConnectionString = "Host=localhost;Port=5432;Database=gamestash;Username=postgres;Password=postgres";
+
+        private static string _connectionString = DefaultConnectionString;
+
         public DbSet<LocalStashGame> LocalStash { get; set; }
         public DbSet<SteamStashGame> SteamStash { get; set; }
         public DbSet<EpicStashGame> EpicStash { get; set; }
@@ -14,9 +18,17 @@ namespace GameStash.Core.Data
         public DbSet<Settings> Settings { get; set; }
         public DbSet<RootFolder> RootFolders { get; set; }
 
+        public static void ConfigureConnectionString(string connectionString)
+        {
+            if (string.IsNullOrWhiteSpace(connectionString))
+                throw new ArgumentException("A PostgreSQL connection string is required.", nameof(connectionString));
+
+            _connectionString = connectionString;
+        }
+
         protected override void OnConfiguring(DbContextOptionsBuilder options)
         {
-            options.UseNpgsql("Host=localhost;Database=gamestash;Username=postgres;Password=postgres");
+            options.UseNpgsql(_connectionString);
 
             options.ConfigureWarnings(warnings =>
                 warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)

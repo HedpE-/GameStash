@@ -403,8 +403,8 @@ namespace GameStash.Web.GUI.Services
         private static long GetSyntheticId(string productId)
         {
             var hash = SHA256.HashData(Encoding.UTF8.GetBytes(productId));
-            long val = BitConverter.ToInt64(hash, 0);
-            return val == 0 ? -1 : -Math.Abs(val);
+            long val = BitConverter.ToInt64(hash, 0) & 0x000FFFFFFFFFFFFFL;
+            return val == 0 ? -1 : -val;
         }
     }
 }

@@ -3,7 +3,7 @@ import { showSuccess, showError, showWarning } from './snackbar.js';
 
 export async function loadDashboard() {
     try {
-        // 1. Verifica se as credenciais existem
+        // 1. Check whether credentials exist.
         const statusResponse = await fetch('/api/settings/igdb/status');
         if (!statusResponse.ok) {
             const status = await statusResponse.json();
@@ -11,7 +11,7 @@ export async function loadDashboard() {
             return;
         }
 
-        // 2. Se existirem, carrega o dashboard normalmente (O seu código existente)
+        // 2. Load the dashboard normally when credentials exist.
         const response = await fetch('/api/home/dashboard');
         if (!response.ok) {
             showHomeError("Failed to fetch dashboard data from server operations.");
@@ -64,7 +64,7 @@ function renderHomeStrip(elementId, games, currentSortOption = 'Name') {
 
     container.innerHTML = '';
     games.forEach(game => {
-        // Criar o card usando o componente unificado com o modo dashboard ativo (último parâmetro como true)
+        // Create the card using the unified component with dashboard mode enabled.
         const card = createGameCard(
             game,
             currentSortOption,
@@ -74,7 +74,7 @@ function renderHomeStrip(elementId, games, currentSortOption = 'Name') {
             'none'
         );
 
-        // Se for o strip de antecipados ou lançamentos e o componente devolveu o ano por omissão, injetamos a data completa como metadados
+        // For anticipated releases or latest releases, inject the full date when the component returned only the year.
         if (elementId === 'anticipated-strip' || elementId === 'releases-strip') {
             const metaContainer = card.querySelector('.game-card-meta');
             if (metaContainer) {

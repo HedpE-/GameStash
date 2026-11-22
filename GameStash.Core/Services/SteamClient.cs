@@ -346,12 +346,6 @@ namespace GameStash.Core.Services
                             ? raw.Description
                             : (schema?.Description ?? string.Empty);
 
-                        if (maskSecret)
-                        {
-                            displayName = "Hidden Achievement";
-                            description = "Details for this achievement will be revealed once unlocked.";
-                        }
-
                         DateTimeOffset? unlockDate = (isUnlocked && raw.UnlockTime > 0)
                             ? DateTimeOffset.FromUnixTimeSeconds(raw.UnlockTime)
                             : null;
@@ -390,5 +384,57 @@ namespace GameStash.Core.Services
             }
         }
 
+        /// <summary>
+        /// Queries the Steam Store API in batch (with filters=basic) to identify deprecated or redirected
+        /// duplicate AppIDs (e.g. old Mac aliases 34440 -> 3900, 34460 -> 8800).
+        /// </summary>
+        public async Task<HashSet<long>> GetNonCanonicalStoreAppIdsAsync(IEnumerable<long> candidateAppIds)
+        {
+            var invalidIds = new HashSet<long>();
+            var distinctIds = candidateAppIds.Where(id => id > 0).Distinct().ToList();
+            if (distinctIds.Count == 0)
+                return invalidIds;
+
+            var tasks = distinctIds.Select(async appId =>
+            {
+                try
+                {
+                    var url = $"https://{SteamStoreHost}/api/appdetails?appids={appId}";
+                    var response = await _httpClient.GetAsync(url);
+                    var json = await response.Content.ReadAsStringAsync();
+
+                    // Fail-open on HTTP rate limit or transient errors so valid games aren't dropped
+                    if (!response.IsSuccessStatusCode)
+                        return;
+
+                    using var doc = JsonDocument.Parse(json);
+
+                    if (!doc.RootElement.TryGetProperty(appId.ToString(), out var appNode))
+                        return;
+
+                    if (!appNode.TryGetProperty("success", out var successProp) ||
+                        successProp.ValueKind != JsonValueKind.True)
+                    {
+                        lock (invalidIds) invalidIds.Add(appId);
+                        return;
+                    }
+
+                    if (appNode.TryGetProperty("data", out var dataNode) &&
+                        dataNode.TryGetProperty("steam_appid", out var canonicalIdProp) &&
+                        canonicalIdProp.TryGetInt64(out long canonicalId) &&
+                        canonicalId != appId)
+                    {
+                        lock (invalidIds) invalidIds.Add(appId);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Log.ForContext<SteamClient>().Warning(ex, "Failed canonical AppID check on Steam Store API for {AppId}.", appId);
+                }
+            });
+
+            await Task.WhenAll(tasks);
+            return invalidIds;
+        }
     }
 }

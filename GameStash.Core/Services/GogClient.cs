@@ -13,12 +13,15 @@ namespace GameStash.Core.Services
         private const string ClientId = "46899977096215655";
         private const string ClientSecret = "9d85c43b1482497dbbce61f6e4aa173a433796eeae2ca8c5f6129f2dc4de46d9";
         private const string RedirectUri = "https://embed.gog.com/on_login_success?origin=client";
+        private const string AuthHost = "auth.gog.com";
+        private const string ApiHost = "api.gog.com";
         private const string GameplayHost = "gameplay.gog.com";
 
         private readonly HttpClient _httpClient;
         private string? _accessToken;
         private string? _refreshToken;
         private string? _userId;
+        private string? _username;
 
         private readonly Func<string, string, Task>? _onTokensRefreshed;
 
@@ -52,7 +55,7 @@ namespace GameStash.Core.Services
 
             try
             {
-                var url = $"https://auth.gog.com/token?client_id={ClientId}&client_secret={ClientSecret}&grant_type=authorization_code&code={code}&redirect_uri={Uri.EscapeDataString(RedirectUri)}";
+                var url = $"https://{AuthHost}/token?client_id={ClientId}&client_secret={ClientSecret}&grant_type=authorization_code&code={code}&redirect_uri={Uri.EscapeDataString(RedirectUri)}";
                 var response = await _httpClient.GetAsync(url);
                 response.EnsureSuccessStatusCode();
 
@@ -94,7 +97,7 @@ namespace GameStash.Core.Services
 
             try
             {
-                var url = $"https://gog.com{ClientId}&client_secret={ClientSecret}&grant_type=refresh_token&refresh_token={_refreshToken}";
+                var url = $"https://{AuthHost}/token?client_id={ClientId}&client_secret={ClientSecret}&grant_type=refresh_token&refresh_token={_refreshToken}";
                 var response = await _httpClient.GetAsync(url);
 
                 if (!response.IsSuccessStatusCode)
@@ -139,6 +142,7 @@ namespace GameStash.Core.Services
             if (userData != null && !string.IsNullOrWhiteSpace(userData.UserId))
             {
                 _userId = userData.UserId;
+                _username = userData.Username;
                 return true;
             }
 
@@ -243,6 +247,138 @@ namespace GameStash.Core.Services
         }
 
         /// <summary>
+        /// Fetches full storefront metadata (descriptions, developers, publishers, platforms,
+        /// release date, cover, and screenshots) on demand from the public GOG Products API.
+        /// </summary>
+        public async Task<GogStoreAppDetails?> FetchStoreAppDetailsAsync(long gogGameId)
+        {
+            if (gogGameId <= 0)
+                return null;
+
+            try
+            {
+                var url = $"https://{ApiHost}/products/{gogGameId}?expand=description,screenshots";
+                var response = await _httpClient.GetAsync(url);
+
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+                var root = doc.RootElement;
+
+                var details = new GogStoreAppDetails
+                {
+                    GameId = gogGameId,
+                    Title = root.TryGetProperty("title", out var titleProp) ? titleProp.GetString() ?? string.Empty : string.Empty
+                };
+
+                if (root.TryGetProperty("description", out var descNode) && descNode.ValueKind == JsonValueKind.Object)
+                {
+                    if (descNode.TryGetProperty("lead", out var leadProp))
+                        details.ShortDescription = StripHtml(leadProp.GetString());
+
+                    if (descNode.TryGetProperty("full", out var fullProp))
+                        details.DetailedDescription = StripHtml(fullProp.GetString());
+                }
+
+                if (root.TryGetProperty("release_date", out var relProp) &&
+                    relProp.ValueKind == JsonValueKind.String &&
+                    DateTimeOffset.TryParse(relProp.GetString(), out var parsedDate))
+                {
+                    details.ReleaseDateText = parsedDate.ToString("MMM dd, yyyy");
+                }
+
+                if (root.TryGetProperty("developers", out var devsArr) && devsArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var d in devsArr.EnumerateArray())
+                    {
+                        var val = d.GetString();
+                        if (!string.IsNullOrWhiteSpace(val)) details.Developers.Add(val);
+                    }
+                }
+
+                if (root.TryGetProperty("publishers", out var pubsArr) && pubsArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var p in pubsArr.EnumerateArray())
+                    {
+                        var val = p.GetString();
+                        if (!string.IsNullOrWhiteSpace(val)) details.Publishers.Add(val);
+                    }
+                }
+
+                if (root.TryGetProperty("genres", out var genresArr) && genresArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var g in genresArr.EnumerateArray())
+                    {
+                        var val = g.GetString();
+                        if (!string.IsNullOrWhiteSpace(val)) details.Genres.Add(val);
+                    }
+                }
+
+                if (root.TryGetProperty("content_system_compatibility", out var osNode) && osNode.ValueKind == JsonValueKind.Object)
+                {
+                    if (osNode.TryGetProperty("windows", out var w) && w.ValueKind == JsonValueKind.True)
+                        details.Platforms.Add("PC (Microsoft Windows)");
+                    if (osNode.TryGetProperty("osx", out var m) && m.ValueKind == JsonValueKind.True)
+                        details.Platforms.Add("Mac");
+                    if (osNode.TryGetProperty("linux", out var l) && l.ValueKind == JsonValueKind.True)
+                        details.Platforms.Add("Linux");
+                }
+
+                if (root.TryGetProperty("images", out var imgNode) && imgNode.ValueKind == JsonValueKind.Object)
+                {
+                    if (imgNode.TryGetProperty("logo2x", out var logoProp))
+                    {
+                        var raw = logoProp.GetString();
+                        if (!string.IsNullOrWhiteSpace(raw))
+                            details.CoverUrl = raw.StartsWith("//") ? $"https:{raw}" : raw;
+                    }
+                }
+
+                if (root.TryGetProperty("screenshots", out var shotsArr) && shotsArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var shot in shotsArr.EnumerateArray())
+                    {
+                        if (shot.TryGetProperty("formatted_images", out var fmtArr) && fmtArr.ValueKind == JsonValueKind.Array)
+                        {
+                            var fullShot = fmtArr.EnumerateArray()
+                                .FirstOrDefault(f => f.TryGetProperty("formatter_name", out var fn) && fn.GetString() == "ggvgm_2x");
+
+                            var target = fullShot.ValueKind == JsonValueKind.Object
+                                ? fullShot
+                                : fmtArr.EnumerateArray().FirstOrDefault();
+
+                            if (target.ValueKind == JsonValueKind.Object &&
+                                target.TryGetProperty("image_url", out var urlProp))
+                            {
+                                var urlStr = urlProp.GetString();
+                                if (!string.IsNullOrWhiteSpace(urlStr))
+                                    details.Screenshots.Add(urlStr);
+                            }
+                        }
+                    }
+                }
+
+                return details;
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<GogClient>().Warning(ex, "Failed to fetch GOG store details for ID {GogGameId}.", gogGameId);
+                return null;
+            }
+        }
+
+        private static string StripHtml(string? input)
+        {
+            if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+            var decoded = System.Net.WebUtility.HtmlDecode(input);
+            var clean = Regex.Replace(decoded, "<br\\s*/?>", "\n", RegexOptions.IgnoreCase);
+            return Regex.Replace(clean, "<[^>]+>", string.Empty).Trim();
+        }
+
+
+        /// <summary>
         /// Scans local Windows registry for installed GOG games.
         /// </summary>
         public HashSet<long> GetLocallyInstalledGameIds()
@@ -284,48 +420,85 @@ namespace GameStash.Core.Services
         /// </summary>
         public async Task<Dictionary<long, int>> FetchPlaytimeAsync()
         {
-            if (!await EnsureUserIdAsync())
-                return new Dictionary<long, int>();
+            var result = new Dictionary<long, int>();
+
+            if (!await EnsureUserIdAsync() || string.IsNullOrWhiteSpace(_username))
+                return result;
 
             try
             {
-                var url = $"https://{GameplayHost}/games/users/{_userId}/sessions";
-                using var request = new HttpRequestMessage(HttpMethod.Get, url);
-                request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                int page = 1;
+                int totalPages = 1;
 
-                var response = await _httpClient.SendAsync(request);
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
+                do
                 {
-                    using var retry = new HttpRequestMessage(HttpMethod.Get, url);
-                    retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-                    response = await _httpClient.SendAsync(retry);
-                }
+                    var url = $"https://www.gog.com/u/{Uri.EscapeDataString(_username)}/games/stats?page={page}";
+                    using var request = new HttpRequestMessage(HttpMethod.Get, url);
+                    request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                    request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
 
-                if (!response.IsSuccessStatusCode)
-                    return new Dictionary<long, int>();
-
-                var json = await response.Content.ReadAsStringAsync();
-                var data = JsonSerializer.Deserialize<GogPlaytimeResponse>(json);
-
-                var result = new Dictionary<long, int>();
-                if (data?.Items != null)
-                {
-                    foreach (var item in data.Items)
+                    var response = await _httpClient.SendAsync(request);
+                    if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
                     {
-                        if (long.TryParse(item.GameId, out long gameId) && item.MinutesSum > 0)
+                        using var retry = new HttpRequestMessage(HttpMethod.Get, url);
+                        retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                        retry.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                        response = await _httpClient.SendAsync(retry);
+                    }
+
+                    if (!response.IsSuccessStatusCode)
+                        break;
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    using var doc = JsonDocument.Parse(json);
+
+                    if (doc.RootElement.TryGetProperty("pages", out var pagesProp) && pagesProp.ValueKind == JsonValueKind.Number)
+                        totalPages = pagesProp.GetInt32();
+
+                    if (doc.RootElement.TryGetProperty("_embedded", out var embedded) &&
+                        embedded.TryGetProperty("items", out var items) &&
+                        items.ValueKind == JsonValueKind.Array)
+                    {
+                        foreach (var item in items.EnumerateArray())
                         {
-                            result[gameId] = item.MinutesSum;
+                            long gameId = 0;
+                            if (item.TryGetProperty("game", out var gameNode) &&
+                                gameNode.TryGetProperty("id", out var idProp))
+                            {
+                                long.TryParse(idProp.ToString(), out gameId);
+                            }
+
+                            int minutes = 0;
+                            if (item.TryGetProperty("stats", out var statsNode) && statsNode.ValueKind == JsonValueKind.Object)
+                            {
+                                foreach (var userStat in statsNode.EnumerateObject())
+                                {
+                                    if (userStat.Value.TryGetProperty("playtime", out var ptProp) && ptProp.ValueKind == JsonValueKind.Number)
+                                    {
+                                        minutes = ptProp.GetInt32();
+                                        break;
+                                    }
+                                }
+                            }
+
+                            if (gameId > 0 && minutes > 0)
+                                result[gameId] = minutes;
                         }
                     }
-                }
+                    else
+                    {
+                        break;
+                    }
 
-                return result;
+                    page++;
+                } while (page <= totalPages);
             }
             catch (Exception ex)
             {
-                Log.ForContext<GogClient>().Warning(ex, "Failed to retrieve GOG playtime sessions.");
-                return new Dictionary<long, int>();
+                Log.ForContext<GogClient>().Warning(ex, "Failed to retrieve GOG playtime from web stats endpoint.");
             }
+
+            return result;
         }
 
         /// <summary>
@@ -371,8 +544,8 @@ namespace GameStash.Core.Services
                         {
                             Id = item.AchievementId,
                             Key = item.AchievementKey,
-                            Name = isSecret ? "Hidden Achievement" : item.Name,
-                            Description = isSecret ? "Details for this achievement will be revealed once unlocked." : item.Description,
+                            Name = item.Name,
+                            Description = item.Description,
                             Unlocked = isUnlocked,
                             UnlockDate = item.DateUnlocked,
                             RarityPercent = item.Rarity,

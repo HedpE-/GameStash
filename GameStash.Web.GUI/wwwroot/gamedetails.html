@@ -103,8 +103,10 @@
 
                 <div class="modal-tabs-bar">
                     <div class="modal-tab-link active">Summary</div>
+                    <!-- Dynamically toggled tab: displayed for supported external stores (Steam, Epic, GOG, Amazon) -->
+                    <div id="tab-link-achievements" class="modal-tab-link" style="display: none;">Achievements <span id="md-achievements-tab-count" class="meta-count"></span></div>
                     <div class="modal-tab-link">Media</div>
-                    <div class="modal-tab-link">Similar Games</div>
+                    <div id="tab-link-similar-games" class="modal-tab-link" style="display: none;">Similar Games</div>
                     <!-- Dynamically toggled tab: only displayed if game has a franchise -->
                     <div id="tab-link-same-franchise" class="modal-tab-link" style="display: none;">Same Franchise</div>
                 </div>
@@ -116,8 +118,8 @@
                         <div><strong>Themes:</strong> <span id="md-themes">Not specified</span></div>
                         <div><strong>Perspectives:</strong> <span id="md-perspectives">Not specified</span></div>
                         <div><strong>Game Modes:</strong> <span id="md-modes">Not specified</span></div>
-                        <!-- Franchise field placed below Perspectives -->
                         <div><strong>Franchise:</strong> <span id="md-franchise">No franchise</span></div>
+                        <div id="md-playtime-row" style="display: none;"><strong>Playtime:</strong> <span id="md-playtime">Unplayed</span></div>
                     </div>
 
                     <div id="md-local-specs" class="local-specs-container" style="display: none;">
@@ -132,6 +134,29 @@
 
                     <h2 class="meta-label">Storyline</h2>
                     <p id="md-storyline" class="meta-value">No descriptive storyline details logged.</p>
+                </div>
+
+                <!-- Tab: Achievements -->
+                <div id="tab-achievements" class="modal-tab-content">
+                    <div class="achievements-summary-card" id="md-achievements-summary" style="display: none;">
+                        <div class="achievements-summary-top">
+                            <span class="achievements-progress-text" id="md-achievements-progress-text">0 / 0 Unlocked (0%)</span>
+                            <span class="achievements-xp-badge" id="md-achievements-xp-badge" style="display: none;"></span>
+                            <button type="button" id="md-achievements-reveal-btn" class="sidebar-action-btn" style="width: auto; margin-top: 0; padding: 6px 12px; display: none;">
+                                👁 Reveal Hidden Achievements
+                            </button>
+                            <select id="md-achievements-filter-select" class="franchise-platform-select">
+                                <option value="all">All Achievements</option>
+                                <option value="unlocked">Unlocked</option>
+                                <option value="locked">Locked</option>
+                            </select>
+                        </div>
+                        <div class="achievements-progress-track">
+                            <div class="achievements-progress-fill" id="md-achievements-progress-fill" style="width: 0%;"></div>
+                        </div>
+                    </div>
+
+                    <div id="md-achievements-list" class="achievements-list"></div>
                 </div>
 
                 <!-- Tab: Media -->
@@ -162,33 +187,6 @@
                     <div id="md-franchise-games" class="similar-grid"></div>
                 </div>
             </div>
-        </div>
-    </div>
-</div>
-
-<!-- Edit Sort Name Modal (Nested Dialog inside Game Details) -->
-<div id="gd-edit-modal" class="modal-overlay nested-modal">
-    <div class="modal-dialog-card">
-        <h3>Edit Sort Name</h3>
-        <div class="modal-form-group" style="margin: 15px 0;">
-            <label for="gd-edit-sortname-input" style="display:block; margin-bottom:6px; font-size:13px; color: var(--text-muted, #9ca3af);">Custom Sort Name:</label>
-            <input type="text" id="gd-edit-sortname-input" style="width:100%; padding:10px 14px; background:#111; border:1px solid #333; color:#fff; border-radius:6px; font-size:14px; box-sizing:border-box; outline:none;" />
-        </div>
-        <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-            <button type="button" id="gd-edit-save-btn" class="sidebar-action-btn" style="width:auto; padding:8px 18px; margin:0;">Save</button>
-            <button type="button" id="gd-edit-close-btn" class="sidebar-action-btn" style="width:auto; padding:8px 18px; margin:0; background:transparent;">Close</button>
-        </div>
-    </div>
-</div>
-
-<!-- Remove from Stash Confirmation Modal (Nested Dialog inside Game Details) -->
-<div id="gd-delete-modal" class="modal-overlay nested-modal">
-    <div class="modal-dialog-card">
-        <h3 style="color: #ff5252;">Remove from Stash</h3>
-        <p id="gd-delete-message" style="margin: 15px 0; font-size:14px; line-height:1.5; color:#ccc;"></p>
-        <div class="modal-actions" style="display:flex; justify-content:flex-end; gap:10px; margin-top:20px;">
-            <button type="button" id="gd-delete-confirm-btn" class="sidebar-action-btn danger" style="width:auto; padding:8px 18px; margin:0;">Yes</button>
-            <button type="button" id="gd-delete-cancel-btn" class="sidebar-action-btn" style="width:auto; padding:8px 18px; margin:0; background:transparent;">No</button>
         </div>
     </div>
 </div>

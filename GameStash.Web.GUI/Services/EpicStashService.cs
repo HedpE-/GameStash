@@ -65,7 +65,7 @@ namespace GameStash.Web.GUI.Services
                 await using var context = GameStashDbContext.CreateDbContext();
                 var dbGames = await context.EpicStash.ToListAsync();
 
-                // Lookups para encontrar jogos já gravados (por Uid do IGDB, por syntheticId ou por Name)
+                // Lookups for existing games by IGDB UID, synthetic ID or name.
                 var existingByUid = dbGames
                     .Where(g => !string.IsNullOrWhiteSpace(g.Uid))
                     .GroupBy(g => g.Uid!, StringComparer.OrdinalIgnoreCase)
@@ -80,13 +80,13 @@ namespace GameStash.Web.GUI.Services
                     .GroupBy(g => g.Name!, StringComparer.OrdinalIgnoreCase)
                     .ToDictionary(g => g.Key, g => g.First(), StringComparer.OrdinalIgnoreCase);
 
-                // Resolver IGDB ID + Uid para todos os jogos que ainda não têm match válido na BD (ou todos os novos)
+                // Resolve the IGDB ID and UID for games without a valid database match, including all new games.
                 var itemsToResolve = rawEpicGames
                     .Where(g => !string.IsNullOrWhiteSpace(g.Id))
                     .Where(g =>
                     {
                         long syntheticId = GetSyntheticId(g.Id);
-                        // Se já existe na BD com ID positivo (> 0) e Uid preenchido, não precisa de ir ao IGDB
+                        // If a positive database ID and UID already exist, an IGDB request is not required.
                         if (existingByName.TryGetValue(g.Title ?? string.Empty, out var byName) && byName.Id > 0 && !string.IsNullOrWhiteSpace(byName.Uid))
                             return false;
                         if (existingById.TryGetValue(syntheticId, out var bySynth) && bySynth.Id > 0)
@@ -139,8 +139,8 @@ namespace GameStash.Web.GUI.Services
                     if (existing != null)
                     {
                         bool finalIsInstalled = existing.IsInstalled || isInstalled;
-                        // Se o jogo tinha um ID negativo (syntheticId) e agora conseguimos resolver o ID real do IGDB,
-                        // temos de remover o registo antigo e inserir o novo porque 'Id' é Primary Key no EF Core.
+                        // If the game had a negative ID (synthetic ID) and the real IGDB ID is now resolved,
+                        // remove the old record and insert a new one because Id is an EF Core primary key.
                         if (existing.Id <= 0 && igdbMatch != null && igdbMatch.IgdbId > 0)
                         {
                             context.EpicStash.Remove(existing);
@@ -192,7 +192,7 @@ namespace GameStash.Web.GUI.Services
                     {
                         long targetId = (igdbMatch != null && igdbMatch.IgdbId > 0) ? igdbMatch.IgdbId : syntheticId;
 
-                        // Evita duplicados caso a conta Epic tenha 2 edições diferentes do mesmo jogo IGDB
+                        // Avoid duplicates when the Epic account contains two editions of the same IGDB game.
                         if (gamesToInsert.Any(x => x.Id == targetId) || existingById.ContainsKey(targetId))
                             continue;
 
@@ -213,7 +213,7 @@ namespace GameStash.Web.GUI.Services
                     }
                 }
 
-                // Remove da BD jogos que já não vêm da conta Epic
+            // Remove games from the database that are no longer returned by the Epic account.
                 var gamesToRemove = dbGames
                     .Where(g => g.Id.HasValue && !matchedDbIds.Contains(g.Id.Value))
                     .ToList();
@@ -522,7 +522,7 @@ namespace GameStash.Web.GUI.Services
         private static string GenerateEpicSlug(string title)
         {
             var lower = title.Trim().ToLowerInvariant();
-            // Remove caracteres especiais comuns em títulos (®, ™, :, ', etc.) e substitui espaços por hífen
+            // Remove common special characters from titles (®, ™, :, ', etc.) and replace spaces with hyphens.
             var cleaned = System.Text.RegularExpressions.Regex.Replace(lower, @"[^a-z0-9\s-]", "");
             var slug = System.Text.RegularExpressions.Regex.Replace(cleaned, @"\s+", "-").Trim('-');
             return slug;

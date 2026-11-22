@@ -307,7 +307,7 @@ namespace GameStash.Core.Models
         }
 
         /// <summary>
-        /// Verifica se o tipo da propriedade é IdentityOrValue<T> ou IdentitiesOrValues<T>.
+        /// Checks whether the property type is IdentityOrValue<T> or IdentitiesOrValues<T>.
         /// </summary>
         private static bool IsIdentityType(Type type)
         {
@@ -317,7 +317,7 @@ namespace GameStash.Core.Models
         }
 
         /// <summary>
-        /// Extrai reflexivamente se o objeto possui IDs ou Values hidratados.
+        /// Reflectively checks whether the object contains hydrated IDs or Values.
         /// </summary>
         private static bool HasIdentityContent(object obj, out bool hasValues)
         {

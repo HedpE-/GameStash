@@ -93,7 +93,7 @@ async function checkGlobalScanningState() {
         const oldLoader = document.querySelector('.view-loading-indicator');
         if (oldLoader) oldLoader.remove();
 
-        // FIX CRÍTICO: Remove o aviso antigo se ele já existir em transições de ecrã anteriores
+        // CRITICAL FIX: Remove the previous warning if it remains from an earlier view transition.
         const existingWarning = document.querySelector('.import-empty-warning-box');
         if (existingWarning) existingWarning.remove();
 
@@ -375,7 +375,7 @@ function renderTable() {
 
     updateMatchSelectedButtonState();
 
-    // Sincroniza e renderiza a paginação delegada
+    // Synchronize and render delegated pagination.
     pagination.setPagination(foundFolders.length, pageSize);
     pagination.renderControls();
 

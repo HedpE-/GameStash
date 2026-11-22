@@ -31,7 +31,8 @@ namespace GameStash.Core.Services
         private const string CatalogHost = "catalog-public-service-prod06.ol.epicgames.com";
         private const string _catalogUrl = $"https://{CatalogHost}/catalog/api/shared/namespace/";
 
-        private const string _graphQlEndpoint = "https://store.epicgames.com/graphql";
+        private const string StoreGqlHost = "launcher.store.epicgames.com";
+        private const string _graphqlUrl = $"https://{StoreGqlHost}/graphql";
 
         private readonly HttpClient _httpClient;
         private string? _accessToken;
@@ -269,7 +270,7 @@ namespace GameStash.Core.Services
                     .GroupBy(r => r.Namespace)
                     .ToList();
 
-                using var semaphore = new SemaphoreSlim(10); // Limita a 10 pedidos HTTP simultâneos para evitar HTTP 429
+            using var semaphore = new SemaphoreSlim(10); // Limit to 10 simultaneous HTTP requests to avoid HTTP 429 responses.
 
                 var tasks = namespaceGroups.Select(async group =>
                 {
@@ -313,6 +314,140 @@ namespace GameStash.Core.Services
             }
 
             return resolvedGames.ToList();
+        }
+
+        /// <summary>
+        /// Fetches full storefront metadata (descriptions, developers, publishers, platforms,
+        /// release date, cover, and screenshots) on demand from the Epic Games Catalog API.
+        /// </summary>
+        public async Task<EpicStoreAppDetails?> FetchStoreAppDetailsAsync(string namespaceId, string catalogItemId)
+        {
+            if (string.IsNullOrWhiteSpace(namespaceId) || string.IsNullOrWhiteSpace(catalogItemId))
+                return null;
+
+            if (string.IsNullOrWhiteSpace(_accessToken) && !await RefreshAccessTokenAsync())
+                return null;
+
+            try
+            {
+                var url = $"{_catalogUrl}{Uri.EscapeDataString(namespaceId)}/bulk/items?id={Uri.EscapeDataString(catalogItemId)}&includeDLCDetails=false&includeMainGameDetails=false&country=US&locale=en";
+
+                HttpRequestMessage BuildRequest()
+                {
+                    var req = new HttpRequestMessage(HttpMethod.Get, url);
+                    req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                    req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    return req;
+                }
+
+                using var request = BuildRequest();
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
+                {
+                    using var retry = BuildRequest();
+                    response = await _httpClient.SendAsync(retry);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var json = await response.Content.ReadAsStringAsync();
+                using var doc = JsonDocument.Parse(json);
+
+                if (!doc.RootElement.TryGetProperty(catalogItemId, out var item) ||
+                    item.ValueKind != JsonValueKind.Object)
+                {
+                    return null;
+                }
+
+                var details = new EpicStoreAppDetails
+                {
+                    Namespace = namespaceId,
+                    CatalogItemId = catalogItemId,
+                    Title = item.TryGetProperty("title", out var titleProp) ? titleProp.GetString() ?? string.Empty : string.Empty,
+                    ShortDescription = item.TryGetProperty("description", out var descProp) ? descProp.GetString() ?? string.Empty : string.Empty,
+                    DetailedDescription = item.TryGetProperty("longDescription", out var longDescProp) ? longDescProp.GetString() ?? string.Empty : string.Empty
+                };
+
+                // Extract developer and publisher (top-level or customAttributes)
+                if (item.TryGetProperty("developer", out var devProp) && !string.IsNullOrWhiteSpace(devProp.GetString()))
+                {
+                    details.Developers.Add(devProp.GetString()!);
+                }
+
+                if (item.TryGetProperty("customAttributes", out var attrsNode) && attrsNode.ValueKind == JsonValueKind.Object)
+                {
+                    if (details.Developers.Count == 0 &&
+                        attrsNode.TryGetProperty("developerName", out var devAttr) &&
+                        devAttr.TryGetProperty("value", out var devVal) &&
+                        !string.IsNullOrWhiteSpace(devVal.GetString()))
+                    {
+                        details.Developers.Add(devVal.GetString()!);
+                    }
+
+                    if (attrsNode.TryGetProperty("publisherName", out var pubAttr) &&
+                        pubAttr.TryGetProperty("value", out var pubVal) &&
+                        !string.IsNullOrWhiteSpace(pubVal.GetString()))
+                    {
+                        details.Publishers.Add(pubVal.GetString()!);
+                    }
+                }
+
+                // Extract release date and supported platforms
+                if (item.TryGetProperty("releaseInfo", out var releaseArr) && releaseArr.ValueKind == JsonValueKind.Array)
+                {
+                    var firstRelease = releaseArr.EnumerateArray().FirstOrDefault();
+                    if (firstRelease.ValueKind == JsonValueKind.Object)
+                    {
+                        if (firstRelease.TryGetProperty("dateAdded", out var dateProp) &&
+                            DateTimeOffset.TryParse(dateProp.GetString(), out var parsedDate))
+                        {
+                            details.ReleaseDateText = parsedDate.ToString("MMM dd, yyyy");
+                        }
+
+                        if (firstRelease.TryGetProperty("platform", out var platsArr) && platsArr.ValueKind == JsonValueKind.Array)
+                        {
+                            foreach (var p in platsArr.EnumerateArray())
+                            {
+                                var plat = p.GetString();
+                                if (string.Equals(plat, "Windows", StringComparison.OrdinalIgnoreCase))
+                                    details.Platforms.Add("PC (Microsoft Windows)");
+                                else if (string.Equals(plat, "Mac", StringComparison.OrdinalIgnoreCase))
+                                    details.Platforms.Add("Mac");
+                            }
+                        }
+                    }
+                }
+
+                // Extract vertical cover and wide screenshots from keyImages
+                if (item.TryGetProperty("keyImages", out var imagesArr) && imagesArr.ValueKind == JsonValueKind.Array)
+                {
+                    foreach (var img in imagesArr.EnumerateArray())
+                    {
+                        var type = img.TryGetProperty("type", out var typeProp) ? typeProp.GetString() : null;
+                        var imgUrl = img.TryGetProperty("url", out var urlProp) ? urlProp.GetString() : null;
+                        if (string.IsNullOrWhiteSpace(imgUrl)) continue;
+
+                        if (string.IsNullOrWhiteSpace(details.CoverUrl) &&
+                            (type == "DieselGameBoxTall" || type == "OfferImageTall" || type == "Thumbnail"))
+                        {
+                            details.CoverUrl = imgUrl;
+                        }
+                        else if (type == "DieselGameBox" || type == "OfferImageWide" || type == "Screenshot")
+                        {
+                            details.Screenshots.Add(imgUrl);
+                        }
+                    }
+                }
+
+                return details;
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<EpicClient>().Warning(ex, "Failed to fetch Epic catalog details for {CatalogItemId}.", catalogItemId);
+                return null;
+            }
         }
 
         /// 
@@ -383,83 +518,260 @@ namespace GameStash.Core.Services
         }
 
         /// <summary>
-        /// Fetches player achievements, XP, rarity, and icons for a specific game sandbox (Namespace).
+        /// Executes a GraphQL request against Epic's official launcher GraphQL endpoint.
+        /// </summary>
+        private async Task<JsonDocument?> PostGraphQLAsync(object payload)
+        {
+            var jsonPayload = JsonSerializer.Serialize(payload);
+
+            HttpRequestMessage BuildRequest()
+            {
+                var req = new HttpRequestMessage(HttpMethod.Post, _graphqlUrl);
+                req.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                req.Headers.TryAddWithoutValidation("User-Agent", "EpicGamesLauncher/14.0.8-22004686+++Portal+Release-Live");
+                req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                req.Content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                return req;
+            }
+
+            using var request = BuildRequest();
+            var response = await _httpClient.SendAsync(request);
+
+            if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
+            {
+                using var retry = BuildRequest();
+                response = await _httpClient.SendAsync(retry);
+            }
+
+            var resJson = await response.Content.ReadAsStringAsync();
+
+            if (!response.IsSuccessStatusCode)
+            {
+                Log.ForContext<EpicClient>().Warning(
+                    "Epic GraphQL returned {StatusCode} for query: {Body}",
+                    response.StatusCode, resJson);
+                return null;
+            }
+
+            return JsonDocument.Parse(resJson);
+        }
+
+        /// <summary>
+        /// Fetches player achievements, XP, rarity, and icons for a game sandbox (Namespace)
+        /// via Epic's Store GraphQL API.
         /// </summary>
         public async Task<EpicGameAchievementsResult?> FetchGameAchievementsAsync(string sandboxId)
         {
-            if (string.IsNullOrWhiteSpace(sandboxId) ||
-                string.IsNullOrWhiteSpace(_accessToken) ||
-                string.IsNullOrWhiteSpace(_accountId))
+            if (string.IsNullOrWhiteSpace(sandboxId))
+                return null;
+
+            if (!await EnsureAccountIdAsync())
+                return null;
+
+            // 1. Query Schema Definitions with explicit operationName
+            var schemaPayload = new
+            {
+                operationName = "Achievement",
+                query = """
+            query Achievement($sandboxId: String!, $locale: String!) {
+              Achievement {
+                productAchievementsRecordBySandbox(sandboxId: $sandboxId, locale: $locale) {
+                  productId
+                  sandboxId
+                  totalAchievements
+                  totalProductXP
+                  achievements {
+                    achievement {
+                      sandboxId
+                      deploymentId
+                      name
+                      hidden
+                      isBase
+                      achievementSetId
+                      unlockedDisplayName
+                      lockedDisplayName
+                      unlockedDescription
+                      lockedDescription
+                      unlockedIconLink
+                      lockedIconLink
+                      XP
+                      rarity {
+                        percent
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """,
+                variables = new { sandboxId, locale = "en-US" }
+            };
+
+            // 2. Query Player Unlock Progress with explicit operationName
+            var userProgressPayload = new
+            {
+                operationName = "PlayerAchievement",
+                query = """
+            query PlayerAchievement($epicAccountId: String!, $sandboxId: String!, $locale: String!) {
+              PlayerAchievement {
+                playerAchievementGameRecordsBySandbox(
+                  epicAccountId: $epicAccountId
+                  sandboxId: $sandboxId
+                ) {
+                  records {
+                    totalXP
+                    totalUnlocked
+                    playerAchievements {
+                      playerAchievement {
+                        sandboxId
+                        epicAccountId
+                        unlocked
+                        progress
+                        XP
+                        unlockDate
+                        achievementName
+                        isBase
+                        achievementSetId
+                      }
+                    }
+                  }
+                }
+              }
+            }
+            """,
+                variables = new { epicAccountId = _accountId, sandboxId, locale = "en-US" }
+            };
+
+            // Execute queries concurrently
+            var schemaTask = PostGraphQLAsync(schemaPayload);
+            var userTask = PostGraphQLAsync(userProgressPayload);
+            await Task.WhenAll(schemaTask, userTask);
+
+            using var schemaDoc = await schemaTask;
+            using var userDoc = await userTask;
+
+            // If schema query failed (or game doesn't support achievements), return null gracefully
+            if (schemaDoc == null)
+                return null;
+
+            if (!schemaDoc.RootElement.TryGetProperty("data", out var data) ||
+                !data.TryGetProperty("Achievement", out var achRoot) ||
+                !achRoot.TryGetProperty("productAchievementsRecordBySandbox", out var prodRecord) ||
+                prodRecord.ValueKind != JsonValueKind.Object ||
+                !prodRecord.TryGetProperty("achievements", out var achArray) ||
+                achArray.ValueKind != JsonValueKind.Array ||
+                achArray.GetArrayLength() == 0)
             {
                 return null;
             }
 
-            const string persistedQueryHash = "7489b966f9380d376d2697b518de455765f23c20f2ba13d8d43f1643eecb24f4";
+            // Build lookup of player unlock records
+            var userProgressMap = new Dictionary<string, (bool Unlocked, double Progress, DateTimeOffset? UnlockDate)>(StringComparer.OrdinalIgnoreCase);
 
-            var variablesJson = JsonSerializer.Serialize(new
+            if (userDoc != null &&
+                userDoc.RootElement.TryGetProperty("data", out var uData) &&
+                uData.TryGetProperty("PlayerAchievement", out var pa) &&
+                pa.TryGetProperty("playerAchievementGameRecordsBySandbox", out var paRec) &&
+                paRec.TryGetProperty("records", out var records) &&
+                records.ValueKind == JsonValueKind.Array)
             {
-                epicAccountId = _accountId,
-                sandboxId = sandboxId
-            });
-
-            var extensionsJson = JsonSerializer.Serialize(new
-            {
-                persistedQuery = new
+                foreach (var rec in records.EnumerateArray())
                 {
-                    version = 1,
-                    sha256Hash = persistedQueryHash
-                }
-            });
-
-            var requestUrl = $"{_graphQlEndpoint}?operationName=PlayerAchievement" +
-                 $"&variables={Uri.EscapeDataString(variablesJson)}" +
-                 $"&extensions={Uri.EscapeDataString(extensionsJson)}";
-
-            using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
-            request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
-
-            var response = await _httpClient.SendAsync(request);
-            if (!response.IsSuccessStatusCode)
-                return null;
-
-            var json = await response.Content.ReadAsStringAsync();
-            var parsed = JsonSerializer.Deserialize<EpicGraphQlAchievementResponse>(json);
-
-            var record = parsed?.Data?.PlayerAchievement?.Records?.FirstOrDefault();
-            if (record == null || record.TotalAchievements == 0)
-                return null;
-
-            var achievements = (record.PlayerAchievements ?? [])
-                .Select(node => node.Detail)
-                .Where(detail => detail != null)
-                .Select(detail =>
-                {
-                    var meta = detail!.Metadata;
-                    bool isUnlocked = detail.Unlocked;
-
-                    string displayName = isUnlocked
-                        ? (meta?.UnlockedDisplayName ?? detail.AchievementName ?? "Unknown Achievement")
-                        : (meta?.LockedDisplayName ?? meta?.UnlockedDisplayName ?? detail.AchievementName ?? "Hidden Achievement");
-
-                    string description = isUnlocked
-                        ? (meta?.UnlockedDescription ?? string.Empty)
-                        : (meta?.LockedDescription ?? meta?.UnlockedDescription ?? string.Empty);
-
-                    return new EpicPlayerAchievement
+                    if (rec.TryGetProperty("playerAchievements", out var paList) && paList.ValueKind == JsonValueKind.Array)
                     {
-                        Id = detail.AchievementName ?? string.Empty,
-                        Name = displayName,
-                        Description = description,
-                        Unlocked = isUnlocked,
-                        UnlockDate = detail.UnlockDate,
-                        Progress = detail.Progress,
-                        Xp = detail.Xp,
-                        RarityPercent = detail.Rarity?.Percent ?? 0,
-                        UnlockedIconUrl = meta?.UnlockedIconLink,
-                        LockedIconUrl = meta?.LockedIconLink,
-                        IsHidden = meta?.Hidden ?? false
-                    };
-                })
+                        foreach (var paItem in paList.EnumerateArray())
+                        {
+                            if (paItem.TryGetProperty("playerAchievement", out var pObj))
+                            {
+                                string achName = pObj.TryGetProperty("achievementName", out var nProp) ? nProp.GetString() ?? "" : "";
+                                if (string.IsNullOrWhiteSpace(achName)) continue;
+
+                                bool unlocked = pObj.TryGetProperty("unlocked", out var uProp) && uProp.ValueKind == JsonValueKind.True;
+                                double progress = pObj.TryGetProperty("progress", out var prProp) && prProp.ValueKind == JsonValueKind.Number ? prProp.GetDouble() : (unlocked ? 100.0 : 0.0);
+                                DateTimeOffset? unlockDate = null;
+                                if (pObj.TryGetProperty("unlockDate", out var dProp) &&
+                                    dProp.ValueKind == JsonValueKind.String &&
+                                    DateTimeOffset.TryParse(dProp.GetString(), out var parsedDate))
+                                {
+                                    unlockDate = parsedDate;
+                                }
+
+                                userProgressMap[achName] = (unlocked, progress, unlockDate);
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Merge definitions with player progress
+            int totalProductXp = 0;
+            var achievements = new List<EpicPlayerAchievement>();
+
+            foreach (var item in achArray.EnumerateArray())
+            {
+                if (!item.TryGetProperty("achievement", out var achObj))
+                    continue;
+
+                string id = achObj.TryGetProperty("name", out var nameProp) ? nameProp.GetString() ?? "" : "";
+                if (string.IsNullOrWhiteSpace(id)) continue;
+
+                bool hidden = achObj.TryGetProperty("hidden", out var hProp) && hProp.ValueKind == JsonValueKind.True;
+                int xp = achObj.TryGetProperty("XP", out var xpProp) && xpProp.ValueKind == JsonValueKind.Number ? xpProp.GetInt32() : 0;
+
+                double rarityPercent = 0;
+                if (achObj.TryGetProperty("rarity", out var rarObj) &&
+                    rarObj.ValueKind == JsonValueKind.Object &&
+                    rarObj.TryGetProperty("percent", out var pctProp) &&
+                    pctProp.ValueKind == JsonValueKind.Number)
+                {
+                    rarityPercent = pctProp.GetDouble();
+                }
+
+                string uDisplayName = achObj.TryGetProperty("unlockedDisplayName", out var udn) ? udn.GetString() ?? "" : "";
+                string lDisplayName = achObj.TryGetProperty("lockedDisplayName", out var ldn) ? ldn.GetString() ?? "" : "";
+                string uDesc = achObj.TryGetProperty("unlockedDescription", out var udd) ? udd.GetString() ?? "" : "";
+                string lDesc = achObj.TryGetProperty("lockedDescription", out var ldd) ? ldd.GetString() ?? "" : "";
+                string? uIcon = achObj.TryGetProperty("unlockedIconLink", out var uil) ? uil.GetString() : null;
+                string? lIcon = achObj.TryGetProperty("lockedIconLink", out var lil) ? lil.GetString() : null;
+
+                bool unlocked = false;
+                double progress = 0.0;
+                DateTimeOffset? unlockDate = null;
+
+                if (userProgressMap.TryGetValue(id, out var userProg))
+                {
+                    unlocked = userProg.Unlocked;
+                    progress = userProg.Progress;
+                    unlockDate = userProg.UnlockDate;
+                }
+
+                string displayName = unlocked && !string.IsNullOrWhiteSpace(uDisplayName)
+                    ? uDisplayName
+                    : (!string.IsNullOrWhiteSpace(lDisplayName) ? lDisplayName : (!string.IsNullOrWhiteSpace(uDisplayName) ? uDisplayName : id));
+
+                string description = unlocked && !string.IsNullOrWhiteSpace(uDesc)
+                    ? uDesc
+                    : (!string.IsNullOrWhiteSpace(lDesc) ? lDesc : (!string.IsNullOrWhiteSpace(uDesc) ? uDesc : string.Empty));
+
+                totalProductXp += xp;
+
+                achievements.Add(new EpicPlayerAchievement
+                {
+                    Id = id,
+                    Name = displayName,
+                    Description = description,
+                    Unlocked = unlocked,
+                    UnlockDate = unlockDate,
+                    Progress = progress,
+                    Xp = xp,
+                    RarityPercent = rarityPercent,
+                    UnlockedIconUrl = uIcon,
+                    LockedIconUrl = lIcon ?? uIcon,
+                    IsHidden = hidden
+                });
+            }
+
+            var ordered = achievements
                 .OrderByDescending(a => a.Unlocked)
                 .ThenByDescending(a => a.UnlockDate)
                 .ThenByDescending(a => a.Progress)
@@ -469,13 +781,12 @@ namespace GameStash.Core.Services
             return new EpicGameAchievementsResult
             {
                 SandboxId = sandboxId,
-                TotalAchievements = record.TotalAchievements,
-                UnlockedAchievements = achievements.Count(a => a.Unlocked),
-                TotalXp = record.TotalXp,
-                EarnedXp = achievements.Where(a => a.Unlocked).Sum(a => a.Xp),
-                Achievements = achievements
+                TotalAchievements = ordered.Count,
+                UnlockedAchievements = ordered.Count(a => a.Unlocked),
+                TotalXp = totalProductXp,
+                EarnedXp = ordered.Where(a => a.Unlocked).Sum(a => a.Xp),
+                Achievements = ordered
             };
         }
-
     }
 }

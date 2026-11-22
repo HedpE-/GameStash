@@ -32,15 +32,6 @@ namespace GameStash.Web.GUI.Services
 
                 using var context = new GameStashDbContext();
 
-                try
-                {
-                    await context.Database.MigrateAsync();
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("Failed to apply migrations to PostgreSQL database. Please check your connection string and database configuration.\n" + ex.Message);
-                }
-
                 var entries = await context.LocalStash.ToListAsync();
 
                 lock (SyncLock)

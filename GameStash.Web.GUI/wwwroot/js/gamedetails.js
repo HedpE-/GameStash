@@ -1,6 +1,9 @@
 import { showSuccess, showError } from './snackbar.js';
 import { createGameCard } from './gamecard.js';
 import { renderStarRating } from './starrating.js';
+import { openEditModal, openDeleteModal } from './stash.js';
+
+let activeModalContext = null;
 
 let currentScreenshots = [];
 let currentScreenshotIndex = 0;
@@ -9,6 +12,8 @@ let currentVideos = [];
 let currentVideoIndex = 0;
 
 let currentViewerMode = 'screenshot'; // 'screenshot' | 'video'
+
+let revealHiddenAchievements = false;
 
 // Screenshot Zoom State
 let currentZoom = 1;
@@ -26,59 +31,27 @@ let historyPointer = -1;
 let isInternalNavigation = false;
 
 /**
- * Preloads media assets into the browser cache for seamless transitions.
- */
-function preloadMedia(screenshots, videos) {
-    if (Array.isArray(screenshots)) {
-        screenshots.forEach(shot => {
-            const url = shot.HugeRetinaUrl ||
-                shot.hugeRetinaUrl ||
-                shot.MediumUrl ||
-                shot.mediumUrl;
-
-            if (url && !imageCache.has(url)) {
-                const img = new Image();
-                img.src = url;
-                imageCache.add(url);
-            }
-        });
-    }
-
-    if (Array.isArray(videos)) {
-        videos.forEach(vid => {
-            const thumb = vid.ThumbnailUrl || vid.thumbnailUrl;
-
-            if (thumb && !imageCache.has(thumb)) {
-                const img = new Image();
-                img.src = thumb;
-                imageCache.add(thumb);
-            }
-        });
-    }
-}
-
-/**
  * Orchestrates async loading of target game record.
  *
  * @param {number} gameId - The game identity identifier.
- * @param {string|null} libraryType - Library provider ('local', 'steam', 'epic', or null for external browse).
+ * @param {string|null} libraryType - Library provider ('local', 'steam', 'epic', 'gog', 'amazon', or null for external browse).
  * @param {object|null} initialData - Optional hint with pre-loaded state (e.g. { isInPlaylist: true }).
  */
 export async function openGameDetails(gameId, libraryType = "none", initialData = null) {
     try {
+        ensureModalGlobalListeners();
         let modalOverlay = document.getElementById('game-details-modal');
 
-        // If the modal does not exist or is an outdated version missing new dialogs/franchise tabs, re-fetch it
+        // If the modal does not exist or is an outdated version missing new tabs, re-fetch it
         if (!modalOverlay ||
-            !document.getElementById('gd-edit-modal') ||
+            !document.getElementById('tab-link-similar-games') ||
             !document.getElementById('tab-link-same-franchise') ||
+            !document.getElementById('tab-link-achievements') ||
             !document.getElementById('md-franchise')) {
 
             if (modalOverlay) {
                 modalOverlay.remove();
                 document.getElementById('media-viewer')?.remove();
-                document.getElementById('gd-edit-modal')?.remove();
-                document.getElementById('gd-delete-modal')?.remove();
             }
 
             const templateResponse = await fetch(`/gamedetails.html?v=${Date.now()}`);
@@ -155,6 +128,20 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
         // Franchise field assignment
         setText('md-franchise', franchise ? franchise : 'No franchise');
 
+        // Playtime field assignment (shown for managed stashes that track playtime)
+        const playtimeRow = document.getElementById('md-playtime-row');
+        const playtimeMinutes = game.PlaytimeMinutes ?? game.playtimeMinutes ?? null;
+        const playtimeSupportedStores = ['steam', 'epic', 'gog'];
+
+        if (playtimeRow) {
+            if (libraryType && playtimeSupportedStores.includes(libraryType.toLowerCase()) && playtimeMinutes !== null) {
+                setText('md-playtime', formatDetailedPlaytime(playtimeMinutes));
+                playtimeRow.style.display = 'block';
+            } else {
+                playtimeRow.style.display = 'none';
+            }
+        }
+
         const devLogoEl = document.getElementById('md-developer-logo');
         if (devLogoEl) {
             devLogoEl.style.display = developerLogoUrl ? 'block' : 'none';
@@ -199,6 +186,23 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
             if (platformSelect) platformSelect.style.display = 'none';
         }
 
+        // Storefront Achievements Tab Management (Steam, Epic, GOG, Amazon)
+        const achievementsTabLink = document.getElementById('tab-link-achievements');
+        const supportedAchievementStores = ['steam', 'epic', 'gog', 'amazon'];
+
+        if (libraryType && supportedAchievementStores.includes(libraryType.toLowerCase())) {
+            if (achievementsTabLink) achievementsTabLink.style.display = 'block';
+            loadStoreAchievements(libraryType.toLowerCase(), gameId);
+        } else {
+            if (achievementsTabLink) achievementsTabLink.style.display = 'none';
+            const achList = document.getElementById('md-achievements-list');
+            const achSummary = document.getElementById('md-achievements-summary');
+            const achTabCount = document.getElementById('md-achievements-tab-count');
+            if (achList) achList.innerHTML = '';
+            if (achSummary) achSummary.style.display = 'none';
+            if (achTabCount) achTabCount.innerText = '';
+        }
+
         // 2. Library Management Sidebar Elements Bindings
         const localSidebar = document.getElementById('md-local-sidebar');
         const localSpecs = document.getElementById('md-local-specs');
@@ -215,7 +219,7 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
         const openFolderBtn = document.getElementById('md-open-folder-btn');
         const removeStashBtn = document.getElementById('md-remove-stash-btn');
 
-        // Check if library is managed (Local Stash or Steam Stash)
+        // Check if library is managed (Local Stash or Store Stashes)
         const isManagedLibrary = Boolean(libraryType) && libraryType !== 'none';
 
         if (isManagedLibrary) {
@@ -224,12 +228,142 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
             // Disk path & size specs are exclusive to Local Stash
             if (localSpecs) localSpecs.style.display = libraryType === 'local' ? 'flex' : 'none';
 
-            // Playlist controls are exclusive to Local Stash for now
+            // Playlist controls are supported across all managed stashes
             if (playlistBtn) playlistBtn.style.display = 'flex';
             if (playlistBadge) playlistBadge.style.display = 'flex';
 
-            // Favorite button is supported for both Local and Steam
+            // Favorite button is supported across managed libraries
             if (favoriteBtn) favoriteBtn.style.display = 'flex';
+
+            // Progress badges (Currently Playing, Have Played, Played to End)
+            if (playingBadge) playingBadge.style.display = 'flex';
+            if (playedBadge) playedBadge.style.display = 'flex';
+            if (playedToEndBadge) playedToEndBadge.style.display = 'flex';
+
+            const updateProgressUI = () => {
+                const isPlaying = !!(game.IsPlaying ?? game.isPlaying);
+                const isPlayed = !!(game.IsPlayed ?? game.isPlayed);
+                let playedToEnd = !!(game.PlayedToEnd ?? game.playedToEnd);
+
+                const canComplete = isPlaying || isPlayed;
+                if (!canComplete && playedToEnd) {
+                    playedToEnd = false;
+                    game.PlayedToEnd = false;
+                    game.playedToEnd = false;
+                }
+
+                if (playingBadge) {
+                    playingBadge.classList.toggle('active', isPlaying);
+                    playingBadge.classList.toggle('status-playing', isPlaying);
+                }
+                if (playedBadge) {
+                    playedBadge.classList.toggle('active', isPlayed);
+                    playedBadge.classList.toggle('status-played', isPlayed);
+                }
+                if (playedToEndBadge) {
+                    const isFinishedActive = canComplete && playedToEnd;
+                    playedToEndBadge.classList.toggle('disabled', !canComplete);
+                    playedToEndBadge.classList.toggle('active', isFinishedActive);
+                    playedToEndBadge.classList.toggle('status-finished', isFinishedActive);
+                }
+            };
+
+            const persistProgressProperty = async (propertyName, value) => {
+                const detailsUrl = `/api/stash/${libraryType}/${gameId}/details`;
+                try {
+                    const res = await fetch(detailsUrl, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ propertyName, value })
+                    });
+                    if (!res.ok) {
+                        showError(`Failed to update ${propertyName}.`);
+                    } else {
+                        window.dispatchEvent(new CustomEvent('gameProgressChanged', {
+                            detail: {
+                                gameId,
+                                isPlaying: !!game.IsPlaying,
+                                isPlayed: !!game.IsPlayed,
+                                playedToEnd: !!game.PlayedToEnd
+                            }
+                        }));
+                    }
+                } catch {
+                    showError('Network error while updating game progress.');
+                }
+            };
+
+            updateProgressUI();
+
+            if (playingBadge) {
+                playingBadge.onclick = async (e) => {
+                    e.stopPropagation();
+                    const newPlaying = !game.IsPlaying;
+                    const wasPlayed = !!game.IsPlayed;
+                    const hadPlayedToEnd = !!game.PlayedToEnd;
+
+                    game.IsPlaying = newPlaying;
+                    game.isPlaying = newPlaying;
+
+                    // Mutual exclusivity: IsPlaying = true forces IsPlayed = false
+                    if (newPlaying && wasPlayed) {
+                        game.IsPlayed = false;
+                        game.isPlayed = false;
+                    }
+
+                    updateProgressUI();
+
+                    await persistProgressProperty('IsPlaying', newPlaying);
+                    if (newPlaying && wasPlayed) {
+                        await persistProgressProperty('IsPlayed', false);
+                    }
+                    if (hadPlayedToEnd && !game.PlayedToEnd) {
+                        await persistProgressProperty('PlayedToEnd', false);
+                    }
+                };
+            }
+
+            if (playedBadge) {
+                playedBadge.onclick = async (e) => {
+                    e.stopPropagation();
+                    const newPlayed = !game.IsPlayed;
+                    const wasPlaying = !!game.IsPlaying;
+                    const hadPlayedToEnd = !!game.PlayedToEnd;
+
+                    game.IsPlayed = newPlayed;
+                    game.isPlayed = newPlayed;
+
+                    // Mutual exclusivity: IsPlayed = true forces IsPlaying = false
+                    if (newPlayed && wasPlaying) {
+                        game.IsPlaying = false;
+                        game.isPlaying = false;
+                    }
+
+                    updateProgressUI();
+
+                    await persistProgressProperty('IsPlayed', newPlayed);
+                    if (newPlayed && wasPlaying) {
+                        await persistProgressProperty('IsPlaying', false);
+                    }
+                    if (hadPlayedToEnd && !game.PlayedToEnd) {
+                        await persistProgressProperty('PlayedToEnd', false);
+                    }
+                };
+            }
+
+            if (playedToEndBadge) {
+                playedToEndBadge.onclick = async (e) => {
+                    e.stopPropagation();
+                    if (!game.IsPlaying && !game.IsPlayed) return;
+
+                    const newVal = !game.PlayedToEnd;
+                    game.PlayedToEnd = newVal;
+                    game.playedToEnd = newVal;
+                    updateProgressUI();
+
+                    await persistProgressProperty('PlayedToEnd', newVal);
+                };
+            }
 
             // Local-only file management actions visibility
             // 1. Edit Sort Name (Supported across all managed stashes)
@@ -237,55 +371,7 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
                 editSortNameBtn.style.display = 'block';
                 editSortNameBtn.onclick = (e) => {
                     e.stopPropagation();
-
-                    const editModal = document.getElementById('gd-edit-modal');
-                    const sortInput = document.getElementById('gd-edit-sortname-input');
-                    const saveBtn = document.getElementById('gd-edit-save-btn');
-                    const closeBtn = document.getElementById('gd-edit-close-btn');
-
-                    if (!editModal || !sortInput || !saveBtn) return;
-
-                    sortInput.value = game.SortName || game.Name || '';
-                    editModal.classList.add('active');
-                    sortInput.focus();
-                    sortInput.select();
-
-                    const closeEditModal = () => editModal.classList.remove('active');
-                    if (closeBtn) closeBtn.onclick = closeEditModal;
-
-                    editModal.onclick = (ev) => {
-                        if (ev.target === editModal) closeEditModal();
-                    };
-
-                    saveBtn.onclick = async () => {
-                        const newSortName = sortInput.value.trim();
-                        if (!newSortName) {
-                            showError("Sort name cannot be empty.");
-                            return;
-                        }
-
-                        try {
-                            const res = await fetch(`/api/stash/${libraryType}/${gameId}/details`, {
-                                method: 'PUT',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ propertyName: 'SortName', value: newSortName })
-                            });
-
-                            if (res.ok) {
-                                game.SortName = newSortName;
-                                showSuccess("Sort name updated.");
-                                closeEditModal();
-
-                                window.dispatchEvent(new CustomEvent('gameSortNameChanged', {
-                                    detail: { gameId: gameId, libraryType: libraryType, sortName: newSortName }
-                                }));
-                            } else {
-                                showError("Failed to update sort name.");
-                            }
-                        } catch {
-                            showError("Network error while updating sort name.");
-                        }
-                    };
+                    openEditModal({ ...game, stashType: libraryType });
                 };
             }
 
@@ -295,7 +381,7 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
                 openFolderBtn.onclick = async (e) => {
                     e.stopPropagation();
                     try {
-                        const res = await fetch(`/api/stash/local/${gameId}/open-folder`, { method: 'POST' });
+                        const res = await fetch(`/api/stash/${libraryType}/${gameId}/open-folder`, { method: 'POST' });
                         if (!res.ok) {
                             const errData = await res.json().catch(() => ({}));
                             showError(errData.Message || errData.message || "Failed to open game folder.");
@@ -311,54 +397,9 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
                 removeStashBtn.style.display = libraryType === 'local' ? 'block' : 'none';
                 removeStashBtn.onclick = (e) => {
                     e.stopPropagation();
-
-                    const deleteModal = document.getElementById('gd-delete-modal');
-                    const deleteMsgEl = document.getElementById('gd-delete-message');
-                    const confirmBtn = document.getElementById('gd-delete-confirm-btn');
-                    const cancelBtn = document.getElementById('gd-delete-cancel-btn');
-
-                    if (!deleteModal || !confirmBtn) return;
-
-                    if (deleteMsgEl) {
-                        deleteMsgEl.innerText = `Are you sure you want to remove "${game.Name || 'this game'}" from your Local Stash?`;
-                    }
-                    deleteModal.classList.add('active');
-
-                    const closeDeleteModal = () => deleteModal.classList.remove('active');
-                    if (cancelBtn) cancelBtn.onclick = closeDeleteModal;
-
-                    deleteModal.onclick = (ev) => {
-                        if (ev.target === deleteModal) closeDeleteModal();
-                    };
-
-                    confirmBtn.onclick = async () => {
-                        try {
-                            const res = await fetch(`/api/stash/local/${gameId}`, { method: 'DELETE' });
-                            if (res.ok) {
-                                closeDeleteModal();
-                                closeGameDetails();
-                                showSuccess(`Removed "${game.Name}" from Local Stash.`);
-
-                                if (initialData && typeof initialData.onDeleteCallback === 'function') {
-                                    initialData.onDeleteCallback(game);
-                                } else {
-                                    document.querySelector(`.game-card-container[data-id="${gameId}"]`)?.remove();
-                                }
-                            } else {
-                                showError("Failed to remove game from stash.");
-                            }
-                        } catch {
-                            showError("Network error while removing game.");
-                        }
-                    };
+                    openDeleteModal(game, () => closeGameDetails());
                 };
             }
-
-
-            // Progress badges are local-only features
-            if (playingBadge) playingBadge.style.display = 'flex';
-            if (playedBadge) playedBadge.style.display = 'flex';
-            if (playedToEndBadge) playedToEndBadge.style.display = 'flex';
 
             if (libraryType === 'local') {
                 setText('md-added-date', game.DateAddedFormatted || 'TBD');
@@ -393,62 +434,69 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
                 }
             };
 
-                let resolvedPlaylistStatus = undefined;
-                const playlistKeys = ['IsInPlaylist', 'isInPlaylist', 'InPlaylist', 'inPlaylist', 'IsPlaylist', 'isPlaylist'];
-                for (const key of playlistKeys) {
-                    if (typeof game[key] === 'boolean') {
-                        resolvedPlaylistStatus = game[key];
-                        break;
-                    }
+            let resolvedPlaylistStatus = undefined;
+            const playlistKeys = ['IsInPlaylist', 'isInPlaylist', 'InPlaylist', 'inPlaylist', 'IsPlaylist', 'isPlaylist'];
+            for (const key of playlistKeys) {
+                if (typeof game[key] === 'boolean') {
+                    resolvedPlaylistStatus = game[key];
+                    break;
                 }
+            }
 
-                if (resolvedPlaylistStatus === undefined && initialData && typeof initialData.isInPlaylist === 'boolean') {
-                    resolvedPlaylistStatus = initialData.isInPlaylist;
-                }
+            if (resolvedPlaylistStatus === undefined && initialData && typeof initialData.isInPlaylist === 'boolean') {
+                resolvedPlaylistStatus = initialData.isInPlaylist;
+            }
 
-                const initialInPlaylist = !!resolvedPlaylistStatus;
-                game.IsInPlaylist = initialInPlaylist;
-                game.isInPlaylist = initialInPlaylist;
-                updatePlaylistUI(initialInPlaylist);
+            const initialInPlaylist = !!resolvedPlaylistStatus;
+            game.IsInPlaylist = initialInPlaylist;
+            game.isInPlaylist = initialInPlaylist;
+            updatePlaylistUI(initialInPlaylist);
 
-                const togglePlaylistState = async () => {
-                    const currentStatus = !!(game.IsInPlaylist || game.isInPlaylist);
-                    const newStatus = !currentStatus;
+            const togglePlaylistState = async () => {
+                const currentStatus = !!(game.IsInPlaylist || game.isInPlaylist);
+                const newStatus = !currentStatus;
 
-                    game.IsInPlaylist = newStatus;
-                    game.isInPlaylist = newStatus;
-                    updatePlaylistUI(newStatus);
+                game.IsInPlaylist = newStatus;
+                game.isInPlaylist = newStatus;
+                updatePlaylistUI(newStatus);
 
-                    const method = newStatus ? 'PUT' : 'DELETE';
-                    const url = `/api/stash/local/playlist/${gameId}`;
+                const method = newStatus ? 'PUT' : 'DELETE';
+                const url = `/api/playlist/${libraryType}/${gameId}`;
 
-                    try {
-                        const res = await fetch(url, { method: method });
-                        if (res.ok) {
-                            window.dispatchEvent(new CustomEvent('gamePlaylistStatusChanged', {
-                                detail: { gameId: gameId, isInPlaylist: newStatus }
-                            }));
-                        } else {
-                            game.IsInPlaylist = currentStatus;
-                            game.isInPlaylist = currentStatus;
-                            updatePlaylistUI(currentStatus);
-                            showError("Failed to update playlist state.");
-                        }
-                    } catch (err) {
-                        console.error("Network communication exception during playlist toggle:", err);
+                try {
+                    const res = await fetch(url, { method: method });
+                    if (res.ok) {
+                        window.dispatchEvent(new CustomEvent('gamePlaylistStatusChanged', {
+                            detail: { gameId: gameId, isInPlaylist: newStatus }
+                        }));
+                    } else {
                         game.IsInPlaylist = currentStatus;
                         game.isInPlaylist = currentStatus;
                         updatePlaylistUI(currentStatus);
-                        showError("Error connecting to server.");
+                        showError("Failed to update playlist state.");
                     }
-                };
+                } catch (err) {
+                    console.error("Network communication exception during playlist toggle:", err);
+                    game.IsInPlaylist = currentStatus;
+                    game.isInPlaylist = currentStatus;
+                    updatePlaylistUI(currentStatus);
+                    showError("Error connecting to server.");
+                }
+            };
 
-                if (playlistBtn) playlistBtn.onclick = (e) => { e.stopPropagation(); togglePlaylistState(); };
-                if (playlistBadge) playlistBadge.onclick = (e) => { e.stopPropagation(); togglePlaylistState(); };
+            if (playlistBtn) playlistBtn.onclick = (e) => { e.stopPropagation(); togglePlaylistState(); };
+            if (playlistBadge) playlistBadge.onclick = (e) => { e.stopPropagation(); togglePlaylistState(); };
 
             updateInstallUI(!!game.IsInstalled);
 
-            // Wire Install Status Toggle (supports both local and steam endpoints)
+            activeModalContext = {
+                gameId,
+                game,
+                updateInstallUI,
+                updatePlaylistUI
+            };
+
+            // Wire Install Status Toggle (All managed stashes)
             if (installBadge) {
                 installBadge.onclick = async (e) => {
                     e.stopPropagation();
@@ -456,23 +504,19 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
                     game.IsInstalled = newInstalledState;
                     updateInstallUI(newInstalledState);
 
-                    const updateEndpoint = libraryType === 'steam'
-                        ? `/api/stash/steam/${game.ExternalAppId || gameId}/installed`
-                        : `/api/stash/local/${gameId}/details`;
-
-                    const payload = libraryType === 'steam'
-                        ? JSON.stringify(newInstalledState)
-                        : JSON.stringify({ propertyName: 'IsInstalled', value: newInstalledState });
-
-                    await fetch(updateEndpoint, {
+                    await fetch(`/api/stash/${libraryType}/${gameId}/details`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
-                        body: payload
+                        body: JSON.stringify({ propertyName: 'IsInstalled', value: newInstalledState })
                     });
+
+                    window.dispatchEvent(new CustomEvent('gameInstalledChanged', {
+                        detail: { gameId: game.Id ?? gameId, isInstalled: newInstalledState }
+                    }));
                 };
             }
 
-            // Wire Favorite Toggle Button (supports both local and steam endpoints)
+            // Wire Favorite Toggle Button (All managed stashes)
             if (favoriteBtn) {
                 favoriteBtn.onclick = async (e) => {
                     e.stopPropagation();
@@ -481,31 +525,16 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
 
                     favoriteBtn.classList.toggle('active', newFavoriteState);
 
-                    const favEndpoint = libraryType === 'steam'
-                        ? `/api/stash/steam/${game.ExternalAppId || gameId}/details`
-                        : `/api/stash/local/${gameId}/details`;
-
-                    await fetch(favEndpoint, {
+                    await fetch(`/api/stash/${libraryType}/${gameId}/details`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ propertyName: 'IsFavorite', value: newFavoriteState })
                     });
 
                     window.dispatchEvent(new CustomEvent('gameFavoriteChanged', {
-                        detail: { gameId: game.Id, isFavorite: newFavoriteState }
+                        detail: { gameId: game.Id ?? gameId, isFavorite: newFavoriteState }
                     }));
                 };
-
-                if (!favoriteBtn._hasGlobalListener) {
-                    window.addEventListener('gameFavoriteChanged', (e) => {
-                        const { gameId: evGameId, isFavorite } = e.detail;
-                        if (String(gameId) === String(evGameId)) {
-                            game.IsFavorite = isFavorite;
-                            favoriteBtn.classList.toggle('active', isFavorite);
-                        }
-                    });
-                    favoriteBtn._hasGlobalListener = true;
-                }
             }
         } else {
             if (localSidebar) localSidebar.style.display = 'none';
@@ -513,6 +542,7 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
             if (playlistBtn) playlistBtn.style.display = 'none';
             if (playlistBadge) playlistBadge.style.display = 'none';
             if (favoriteBtn) favoriteBtn.style.display = 'none';
+            activeModalContext = null;
         }
 
         // Render Media Grids and Similar Games
@@ -529,6 +559,224 @@ export async function openGameDetails(gameId, libraryType = "none", initialData 
         isInternalNavigation = false;
     }
 }
+
+/**
+ * Preloads media assets into the browser cache for seamless transitions.
+ */
+function preloadMedia(screenshots, videos) {
+    if (Array.isArray(screenshots)) {
+        screenshots.forEach(shot => {
+            const url = shot.HugeRetinaUrl ||
+                shot.hugeRetinaUrl ||
+                shot.MediumUrl ||
+                shot.mediumUrl;
+
+            if (url && !imageCache.has(url)) {
+                const img = new Image();
+                img.src = url;
+                imageCache.add(url);
+            }
+        });
+    }
+
+    if (Array.isArray(videos)) {
+        videos.forEach(vid => {
+            const thumb = vid.ThumbnailUrl || vid.thumbnailUrl;
+
+            if (thumb && !imageCache.has(thumb)) {
+                const img = new Image();
+                img.src = thumb;
+                imageCache.add(thumb);
+            }
+        });
+    }
+}
+
+function formatDetailedPlaytime(totalMinutes) {
+    let remaining = Math.floor(Number(totalMinutes) || 0);
+    if (remaining <= 0) return 'Unplayed';
+
+    const MINS_PER_HOUR = 60;
+    const MINS_PER_DAY = 24 * MINS_PER_HOUR;     // 1440
+    const MINS_PER_MONTH = 30 * MINS_PER_DAY;    // 43200
+    const MINS_PER_YEAR = 365 * MINS_PER_DAY;    // 525600
+
+    const years = Math.floor(remaining / MINS_PER_YEAR);
+    remaining %= MINS_PER_YEAR;
+
+    const months = Math.floor(remaining / MINS_PER_MONTH);
+    remaining %= MINS_PER_MONTH;
+
+    const days = Math.floor(remaining / MINS_PER_DAY);
+    remaining %= MINS_PER_DAY;
+
+    const hours = Math.floor(remaining / MINS_PER_HOUR);
+    const minutes = remaining % MINS_PER_HOUR;
+
+    const parts = [];
+    if (years > 0) parts.push(`${years} ${years === 1 ? 'year' : 'years'}`);
+    if (months > 0) parts.push(`${months} ${months === 1 ? 'month' : 'months'}`);
+    if (days > 0) parts.push(`${days} ${days === 1 ? 'day' : 'days'}`);
+    if (hours > 0) parts.push(`${hours} ${hours === 1 ? 'hour' : 'hours'}`);
+    if (minutes > 0) parts.push(`${minutes} ${minutes === 1 ? 'minute' : 'minutes'}`);
+
+    return parts.join(' ');
+}
+
+/**
+ * Fetches and renders normalized achievements for Steam, Epic, GOG, or Amazon.
+ *
+ * @param {string} store - The library provider ('steam', 'epic', 'gog', 'amazon').
+ * @param {number|string} gameId - The game identifier.
+ */
+async function loadStoreAchievements(store, gameId) {
+    const listEl = document.getElementById('md-achievements-list');
+    const summaryEl = document.getElementById('md-achievements-summary');
+    const tabCountEl = document.getElementById('md-achievements-tab-count');
+    const tabLinkEl = document.getElementById('tab-link-achievements');
+    const filterSelect = document.getElementById('md-achievements-filter-select');
+
+    if (!listEl) return;
+
+    listEl.innerHTML = '<p class="loading-text">Loading achievements...</p>';
+    if (summaryEl) summaryEl.style.display = 'none';
+    if (tabCountEl) tabCountEl.innerText = '';
+
+    try {
+        const res = await fetch(`/api/games/${encodeURIComponent(store)}/${encodeURIComponent(gameId)}/achievements`);
+        if (!res.ok) {
+            if (tabLinkEl) tabLinkEl.style.display = 'none';
+            listEl.innerHTML = '';
+            return;
+        }
+
+        const data = await res.json();
+        const total = data.TotalAchievements ?? data.totalAchievements ?? 0;
+        const unlocked = data.UnlockedAchievements ?? data.unlockedAchievements ?? 0;
+        const totalXp = data.TotalXp ?? data.totalXp ?? null;
+        const earnedXp = data.EarnedXp ?? data.earnedXp ?? null;
+        const items = data.Achievements ?? data.achievements ?? [];
+
+        if (total === 0 || items.length === 0) {
+            if (tabLinkEl) tabLinkEl.style.display = 'none';
+            listEl.innerHTML = '';
+            return;
+        }
+
+        if (tabCountEl) tabCountEl.innerText = `(${unlocked}/${total})`;
+
+        const pct = Math.min(100, Math.round((unlocked / total) * 100));
+        const progressTextEl = document.getElementById('md-achievements-progress-text');
+        const progressFillEl = document.getElementById('md-achievements-progress-fill');
+        const xpBadgeEl = document.getElementById('md-achievements-xp-badge');
+
+        if (progressTextEl) progressTextEl.innerText = `${unlocked} / ${total} Unlocked (${pct}%)`;
+        if (progressFillEl) progressFillEl.style.width = `${pct}%`;
+
+        if (xpBadgeEl) {
+            if (totalXp && totalXp > 0) {
+                xpBadgeEl.innerText = `${earnedXp ?? 0} / ${totalXp} XP`;
+                xpBadgeEl.style.display = 'inline-flex';
+            } else {
+                xpBadgeEl.style.display = 'none';
+            }
+        }
+
+        if (summaryEl) summaryEl.style.display = 'flex';
+        revealHiddenAchievements = false;
+        const revealBtn = document.getElementById('md-achievements-reveal-btn');
+        const hasLockedSecrets = items.some(a => !(a.IsUnlocked ?? a.isUnlocked) && !!(a.IsHidden ?? a.isHidden));
+
+        const getFilteredAchievements = () => {
+            const mode = filterSelect ? filterSelect.value : 'all';
+            if (mode === 'unlocked') return items.filter(a => !!(a.IsUnlocked ?? a.isUnlocked));
+            if (mode === 'locked') return items.filter(a => !(a.IsUnlocked ?? a.isUnlocked));
+            return items;
+        };
+
+        if (revealBtn) {
+            revealBtn.style.display = hasLockedSecrets ? 'inline-flex' : 'none';
+            revealBtn.innerText = '👁 Reveal Hidden Achievements';
+            revealBtn.onclick = () => {
+                revealHiddenAchievements = !revealHiddenAchievements;
+                revealBtn.innerText = revealHiddenAchievements ? '🙈 Mask Hidden Achievements' : '👁 Reveal Hidden Achievements';
+                renderAchievementsList(listEl, getFilteredAchievements());
+            };
+        }
+
+        if (filterSelect) {
+            filterSelect.value = 'all';
+            filterSelect.onchange = () => renderAchievementsList(listEl, getFilteredAchievements());
+        }
+
+
+        renderAchievementsList(listEl, items);
+    } catch (err) {
+        console.error('Failed to load store achievements:', err);
+        if (tabLinkEl) tabLinkEl.style.display = 'none';
+        listEl.innerHTML = '';
+    }
+}
+
+/**
+ * Helper function to render normalized achievement items inside the container.
+ */
+function renderAchievementsList(container, items) {
+    container.innerHTML = '';
+
+    if (!items || items.length === 0) {
+        container.innerHTML = '<p class="loading-text">No achievements match the selected filter.</p>';
+        return;
+    }
+
+    items.forEach(item => {
+        const isUnlocked = !!(item.IsUnlocked ?? item.isUnlocked);
+        const isHidden = !!(item.IsHidden ?? item.isHidden);
+        const shouldMask = isHidden && !isUnlocked && !revealHiddenAchievements;
+
+        const name = shouldMask ? 'Hidden Achievement' : ((item.Name ?? item.name ?? 'Achievement') + (isHidden && !isUnlocked ? ' (Hidden)' : ''));
+        const desc = shouldMask
+            ? 'Details for this achievement will be revealed once unlocked.'
+            : (item.Description ?? item.description ?? '');
+
+        const unlockedAt = item.UnlockedAt ?? item.unlockedAt ?? null;
+        const rarity = item.RarityPercent ?? item.rarityPercent ?? 0;
+        const xp = item.Xp ?? item.xp ?? null;
+        const iconUrl = isUnlocked
+            ? (item.IconUrl ?? item.iconUrl ?? '/css/placeholder.png')
+            : (item.LockedIconUrl ?? item.lockedIconUrl ?? item.IconUrl ?? item.iconUrl ?? '/css/placeholder.png');
+
+        let unlockDateText = '';
+        if (isUnlocked && unlockedAt) {
+            const parsed = new Date(unlockedAt);
+            if (!isNaN(parsed.getTime())) {
+                unlockDateText = 'Unlocked ' + parsed.toLocaleDateString();
+            }
+        }
+
+        const rarityText = rarity > 0 ? Number(rarity).toFixed(1) + '% of players' : '';
+        const xpText = xp && xp > 0 ? '+' + xp + ' XP' : '';
+        const metaParts = [unlockDateText, rarityText, xpText].filter(Boolean);
+
+        const row = document.createElement('div');
+        row.className = 'achievement-row ' + (isUnlocked ? 'unlocked' : 'locked');
+        row.innerHTML =
+            '<img class="achievement-icon" src="' + escapeHtml(iconUrl) + '" alt="' + escapeHtml(name) + '" loading="lazy" />' +
+            '<div class="achievement-info">' +
+            '<div class="achievement-header-line">' +
+            '<span class="achievement-name">' + escapeHtml(name) + '</span>' +
+            '<span class="achievement-status-pill ' + (isUnlocked ? 'is-unlocked' : 'is-locked') + '">' +
+            (isUnlocked ? '✓ Unlocked' : '🔒 Locked') +
+            '</span>' +
+            '</div>' +
+            (desc ? '<p class="achievement-desc">' + escapeHtml(desc) + '</p>' : '') +
+            (metaParts.length > 0 ? '<div class="achievement-meta">' + escapeHtml(metaParts.join(' • ')) + '</div>' : '') +
+            '</div>';
+
+        container.appendChild(row);
+    });
+}
+
 
 /**
  * Loads same-franchise games by their IDs using the batch endpoint.
@@ -730,17 +978,21 @@ function renderMediaGrids(screenshots, videos, similarGames) {
     }
 
     // Render Similar Games Grid
+    // Render Similar Games Grid
+    const similarTabLink = document.getElementById('tab-link-similar-games');
     const similarGrid = document.getElementById('md-similar');
 
     if (similarGrid) {
         similarGrid.innerHTML = '';
 
-        if (similarGames.length > 0) {
+        if (Array.isArray(similarGames) && similarGames.length > 0) {
+            if (similarTabLink) similarTabLink.style.display = 'block';
+
             similarGames.forEach(sim => {
                 const mappedGame = {
                     Id: sim.Id || sim.id,
                     Name: sim.Name || sim.name || 'Unknown',
-                    CoverUrl: sim.CoverUrl || sim.coverUrl || '/css/placeholder.png',
+                    CoverUrl: sim.CoverUrl || sim.coverUrl,
                     ReleaseYear: sim.ReleaseYear || sim.releaseYear || ''
                 };
 
@@ -756,6 +1008,7 @@ function renderMediaGrids(screenshots, videos, similarGames) {
                 similarGrid.appendChild(simCard);
             });
         } else {
+            if (similarTabLink) similarTabLink.style.display = 'none';
             similarGrid.innerHTML = 'No similar catalog items mapped.';
         }
     }
@@ -773,6 +1026,7 @@ export function closeGameDetails() {
         modal.classList.remove('active');
     }
 
+    activeModalContext = null;
     historyStack = [];
     historyPointer = -1;
 }
@@ -836,15 +1090,21 @@ export function switchTab(tabId) {
 
     if (activeContent) {
         activeContent.classList.add('active');
+        activeContent.scrollTop = 0;
+        if (tabId === 'tab-achievements') {
+            const achList = document.getElementById('md-achievements-list');
+            if (achList) achList.scrollTop = 0;
+        }
     }
 
     const tabName = tabId.replace('tab-', '').replace(/-/g, ' ').trim();
 
     const activeLink = Array.from(
         document.querySelectorAll('.modal-tab-link')
-    ).find(link =>
-        link.innerText.toLowerCase().trim() === tabName
-    );
+    ).find(link => {
+        const cleanLabel = link.innerText.replace(/\(\d+\/\d+\)/g, '').toLowerCase().trim();
+        return cleanLabel === tabName;
+    });
 
     if (activeLink) {
         activeLink.classList.add('active');
@@ -1138,6 +1398,7 @@ function setupModalCloseEvents() {
     tabLinks.forEach(link => {
         link.addEventListener('click', () => {
             const normalizedTabName = link.innerText
+                .replace(/\(\d+\/\d+\)/g, '')
                 .toLowerCase()
                 .trim()
                 .replace(/\s+/g, '-');
@@ -1146,6 +1407,38 @@ function setupModalCloseEvents() {
             switchTab(targetId);
         });
     });
+}
+
+function ensureModalGlobalListeners() {
+    if (window._hasGameDetailsGlobalListeners) return;
+
+    window.addEventListener('gameFavoriteChanged', (e) => {
+        const { gameId: evGameId, isFavorite } = e.detail;
+        if (activeModalContext && String(activeModalContext.gameId) === String(evGameId)) {
+            activeModalContext.game.IsFavorite = isFavorite;
+            const favBtn = document.getElementById('md-favorite-btn');
+            if (favBtn) favBtn.classList.toggle('active', isFavorite);
+        }
+    });
+
+    window.addEventListener('gameInstalledChanged', (e) => {
+        const { gameId: evGameId, isInstalled } = e.detail;
+        if (activeModalContext && String(activeModalContext.gameId) === String(evGameId)) {
+            activeModalContext.game.IsInstalled = isInstalled;
+            activeModalContext.updateInstallUI(isInstalled);
+        }
+    });
+
+    window.addEventListener('gamePlaylistStatusChanged', (e) => {
+        const { gameId: evGameId, isInPlaylist } = e.detail;
+        if (activeModalContext && String(activeModalContext.gameId) === String(evGameId)) {
+            activeModalContext.game.IsInPlaylist = isInPlaylist;
+            activeModalContext.game.isInPlaylist = isInPlaylist;
+            activeModalContext.updatePlaylistUI(isInPlaylist);
+        }
+    });
+
+    window._hasGameDetailsGlobalListeners = true;
 }
 
 window.switchTab = switchTab;

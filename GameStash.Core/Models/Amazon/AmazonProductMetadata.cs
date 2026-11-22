@@ -4,6 +4,12 @@ namespace GameStash.Core.Models.Amazon
 {
     public class AmazonProductMetadata
     {
+        [JsonPropertyName("description")]
+        public string? Description { get; set; }
+
+        [JsonPropertyName("genres")]
+        public List<string>? Genres { get; set; }
+
         [JsonPropertyName("backgroundUrl1")]
         public string? BackgroundUrl1 { get; set; }
 

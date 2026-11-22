@@ -100,7 +100,7 @@
     border-radius: 12px;
 }
 
-/* Subtítulo agora alinhado por baixo com cor suave */
+/* Subtitle aligned below with a soft color. */
 .strip-caption {
     font-size: 13px;
     color: var(--text-muted, #9ca3af);

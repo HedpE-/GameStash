@@ -9,9 +9,19 @@ using GameStash.Web.GUI.Interfaces;
 
 namespace GameStash.Web.GUI.Services
 {
-    public class RecommendationService : IRecommendationService
+    public class RecommendationService(
+        ILocalStashService localStashService,
+        ISteamStashService steamStashService,
+        IEpicStashService epicStashService,
+        IGogStashService gogStashService,
+        IAmazonStashService amazonStashService) : IRecommendationService
     {
-        private readonly ILocalStashService _stashService;
+        private readonly ILocalStashService _localStashService = localStashService;
+        private readonly ISteamStashService _steamStashService = steamStashService;
+        private readonly IEpicStashService _epicStashService = epicStashService;
+        private readonly IGogStashService _gogStashService = gogStashService;
+        private readonly IAmazonStashService _amazonStashService = amazonStashService;
+
 
         // Domain Importance Weights
         private const double WeightFranchise = 3.5;
@@ -26,31 +36,25 @@ namespace GameStash.Web.GUI.Services
         // Can be increased to 3 or more if desired
         private const int MaxGamesPerFranchise = 2;
 
-        public RecommendationService(ILocalStashService stashService)
+        public async Task<List<GameRecommendationDto>> GetPlaylistSuggestionsAsync(int limit = 10)
         {
-            _stashService = stashService;
-        }
-
-        public async Task<List<GameRecommendationDto>> GetPlaylistSuggestionsAsync(string libraryType, int limit = 10)
-        {
-            var allGames = await _stashService.GetStashAsync();
-            var playlistGames = _stashService.GetPlaylist().ToList();
+            var (allGames, playlistGames) = await GetUnifiedStashPoolAsync();
 
             if (!playlistGames.Any())
                 return new List<GameRecommendationDto>();
 
             var playlistIds = playlistGames
-                .Where(p => p.Id.HasValue)
-                .Select(p => p.Id.Value)
+                .Where(p => p.Game.Id.HasValue)
+                .Select(p => p.Game.Id!.Value)
                 .ToHashSet();
 
-            // Candidates: Games in Stash NOT in the playlist and NOT finished
+            // Candidates: Games across all stashes NOT in the playlist and NOT finished
             var candidatePool = allGames
-                .Where(g => g.Id.HasValue && !playlistIds.Contains(g.Id.Value) && !g.IsFinished)
+                .Where(x => x.Game.Id.HasValue && !playlistIds.Contains(x.Game.Id.Value) && !x.Game.IsFinished && !x.Game.PlayedToEnd)
                 .ToList();
 
             if (!candidatePool.Any())
-                candidatePool = allGames.Where(g => g.Id.HasValue && !playlistIds.Contains(g.Id.Value)).ToList();
+                candidatePool = allGames.Where(x => x.Game.Id.HasValue && !playlistIds.Contains(x.Game.Id.Value)).ToList();
 
             var results = CalculateRecommendations(playlistGames, candidatePool, limit);
 
@@ -62,39 +66,43 @@ namespace GameStash.Web.GUI.Services
             return results;
         }
 
-        public async Task<List<GameRecommendationDto>> GetStashSuggestionsAsync(string libraryType, int limit = 10)
+        public async Task<List<GameRecommendationDto>> GetStashSuggestionsAsync(int limit = 10)
         {
-            var allGames = (await _stashService.GetStashAsync()).ToList();
+            var (allGames, _) = await GetUnifiedStashPoolAsync();
             if (!allGames.Any())
                 return new List<GameRecommendationDto>();
 
-            // 1. Seeds: Games marked as Favorite, Currently Playing, or high rating
-            var seedGames = allGames.Where(g =>
-                g.IsFavorite ||
-                g.IsPlaying ||
-                (g.Rating.HasValue && g.Rating.Value >= 70.0)
+            // 1. Seeds: Games marked as Favorite, Currently Playing, or high rating across all stashes
+            // 1. Seeds: Games marked as Favorite, Currently Playing, high playtime (5h+), or high rating
+            var seedGames = allGames.Where(x =>
+                x.Game.IsFavorite ||
+                x.Game.IsPlaying ||
+                GetPlaytimeMinutes(x.Game) >= 300 ||
+                (x.Game.Rating.HasValue && x.Game.Rating.Value >= 70.0)
             ).ToList();
 
             // 2. Cold Start Fallback: Top modern backlog games
             if (!seedGames.Any())
             {
                 seedGames = allGames
-                    .OrderByDescending(g => g.Rating ?? 0)
-                    .ThenByDescending(g => g.FirstReleaseDate ?? DateTimeOffset.MinValue)
+                    .OrderByDescending(x => x.Game.Rating ?? 0)
+                    .ThenByDescending(x => x.Game.FirstReleaseDate ?? DateTimeOffset.MinValue)
                     .Take(limit)
                     .ToList();
             }
 
-            var seedIds = seedGames.Where(s => s.Id.HasValue).Select(s => s.Id.Value).ToHashSet();
+            var seedIds = seedGames.Where(s => s.Game.Id.HasValue).Select(s => s.Game.Id!.Value).ToHashSet();
 
-            var candidatePool = allGames.Where(g =>
-                g.Id.HasValue &&
-                !seedIds.Contains(g.Id.Value) &&
-                !g.IsFinished
+            var candidatePool = allGames.Where(x =>
+                x.Game.Id.HasValue &&
+                !seedIds.Contains(x.Game.Id.Value) &&
+                !x.Game.IsFinished &&
+                !x.Game.PlayedToEnd &&
+                GetPlaytimeMinutes(x.Game) < 120
             ).ToList();
 
             if (!candidatePool.Any())
-                candidatePool = allGames.Where(g => g.Id.HasValue && !g.IsFinished).ToList();
+                candidatePool = allGames.Where(x => x.Game.Id.HasValue && !x.Game.IsFinished && !x.Game.PlayedToEnd).ToList();
 
             var results = CalculateRecommendations(seedGames, candidatePool, limit);
 
@@ -107,8 +115,8 @@ namespace GameStash.Web.GUI.Services
         }
 
         public List<GameRecommendationDto> CalculateRecommendations(
-            IEnumerable<LocalStashGame> seedGames,
-            IEnumerable<LocalStashGame> candidatePool,
+            IEnumerable<(StashGame Game, string Source)> seedGames,
+            IEnumerable<(StashGame Game, string Source)> candidatePool,
             int limit = 10)
         {
             var seeds = seedGames.ToList();
@@ -117,37 +125,27 @@ namespace GameStash.Web.GUI.Services
             if (!seeds.Any() || !candidates.Any())
                 return new List<GameRecommendationDto>();
 
-            // Calculate average release year of the seed games to anchor era proximity
             var validSeedYears = seeds
-                .Where(s => s.FirstReleaseDate.HasValue)
-                .Select(s => s.FirstReleaseDate.Value.Year)
+                .Where(s => s.Game.FirstReleaseDate.HasValue)
+                .Select(s => s.Game.FirstReleaseDate!.Value.Year)
                 .ToList();
 
             double targetAverageYear = validSeedYears.Any() ? validSeedYears.Average() : DateTime.Now.Year;
 
-            // 1. Build Target Taste Vector from Seed Games
-            var (tasteVector, tasteVectorMagnitude) = BuildTasteVector(seeds);
-
+            var (tasteVector, tasteVectorMagnitude) = BuildTasteVector(seeds.Select(s => s.Game).ToList());
             if (tasteVectorMagnitude <= 0)
                 return new List<GameRecommendationDto>();
 
-            var scoredCandidates = new List<(LocalStashGame Candidate, double Score, double Similarity, List<string> Reasons)>();
+            var scoredCandidates = new List<(StashGame Candidate, string Source, double Score, double Similarity, List<string> Reasons)>();
 
-            // 2. Score Each Candidate
-            foreach (var candidate in candidates)
+            // Deduplicate candidates across stores by positive IGDB ID (preferring installed copies)
+            var deduplicatedCandidates = candidates
+                .GroupBy(x => x.Game.Id!.Value)
+                .Select(grp => grp.OrderByDescending(x => x.Game.IsInstalled).First())
+                .ToList();
+
+            foreach (var (candidate, source) in deduplicatedCandidates)
             {
-                /* 
-                // =========================================================================
-                // PREQUEL BLOCK RULE (DESATIVADO TEMPORARIAMENTE)
-                // Descomenta este bloco quando quiseres bloquear sequelas enquanto
-                // os jogos anteriores da mesma saga não estiverem marcados como IsFinished:
-                // =========================================================================
-                if (IsUnfinishedPrequelInQueue(candidate, seeds))
-                {
-                    continue; 
-                }
-                */
-
                 var candidateFeatures = ExtractFeatures(candidate);
                 if (!candidateFeatures.Any())
                     continue;
@@ -175,16 +173,10 @@ namespace GameStash.Web.GUI.Services
                 if (candidateMagnitude <= 0)
                     continue;
 
-                // Cosine Similarity
                 double cosineSimilarity = dotProduct / (tasteVectorMagnitude * candidateMagnitude);
-
-                // Multiplier 1: Era Proximity (Penaliza jogos de décadas muito distantes da queue)
                 double eraMultiplier = CalculateEraMultiplier(candidate, targetAverageYear);
-
-                // Multiplier 2: Friction bonus (+15% se o jogo já estiver instalado)
                 double installMultiplier = candidate.IsInstalled ? 1.15 : 1.0;
 
-                // Quality boost para jogos aclamados
                 double qualityBoost = 0;
                 if (candidate.Rating.HasValue && candidate.Rating.Value >= 75.0)
                 {
@@ -200,10 +192,9 @@ namespace GameStash.Web.GUI.Services
                     .Take(2)
                     .ToList();
 
-                scoredCandidates.Add((candidate, finalScore, cosineSimilarity, topReasons));
+                scoredCandidates.Add((candidate, source, finalScore, cosineSimilarity, topReasons));
             }
 
-            // 3. Diversity Re-ranking: Teto por franquia para garantir variedade de géneros na strip
             var finalRecommendations = new List<GameRecommendationDto>();
             var franchiseCountTracker = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
 
@@ -219,15 +210,17 @@ namespace GameStash.Web.GUI.Services
                 {
                     franchiseCountTracker.TryGetValue(franchiseKey, out int currentCount);
                     if (currentCount >= MaxGamesPerFranchise)
-                    {
-                        continue; // Passa ao próximo para dar espaço a outros estilos
-                    }
+                        continue;
+
                     franchiseCountTracker[franchiseKey] = currentCount + 1;
                 }
 
+                var dto = StashGameCardDto.FromModel(item.Candidate);
+                dto.ExternalSystem = item.Source;
+
                 finalRecommendations.Add(new GameRecommendationDto
                 {
-                    Game = StashGameCardDto.FromModel(item.Candidate),
+                    Game = dto,
                     MatchScore = Math.Round(item.Score, 4),
                     MatchPercentage = Math.Min(99.0, Math.Round(item.Similarity * 100.0, 1)),
                     MatchReasons = item.Reasons
@@ -240,7 +233,29 @@ namespace GameStash.Web.GUI.Services
             return finalRecommendations;
         }
 
-        private (Dictionary<string, double> Vector, double Magnitude) BuildTasteVector(List<LocalStashGame> seedGames)
+        private async Task<(List<(StashGame Game, string Source)> AllGames, List<(StashGame Game, string Source)> PlaylistGames)> GetUnifiedStashPoolAsync()
+        {
+            var localGames = (await _localStashService.GetStashAsync()).Select(g => ((StashGame)g, "local"));
+            var steamGames = (await _steamStashService.GetStashAsync()).Select(g => ((StashGame)g, "steam"));
+            var epicGames = (await _epicStashService.GetStashAsync()).Select(g => ((StashGame)g, "epic"));
+            var gogGames = (await _gogStashService.GetStashAsync()).Select(g => ((StashGame)g, "gog"));
+            var amazonGames = (await _amazonStashService.GetStashAsync()).Select(g => ((StashGame)g, "amazon"));
+
+            var all = localGames
+                .Concat(steamGames)
+                .Concat(epicGames)
+                .Concat(gogGames)
+                .Concat(amazonGames)
+                .ToList();
+
+            var playlist = all
+                .Where(x => x.Item1.IsInPlaylist)
+                .ToList();
+
+            return (all, playlist);
+        }
+
+        private (Dictionary<string, double> Vector, double Magnitude) BuildTasteVector(List<StashGame> seedGames)
         {
             var vector = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
 
@@ -249,6 +264,11 @@ namespace GameStash.Web.GUI.Services
                 double confidenceMultiplier = 1.0;
                 if (game.IsFavorite) confidenceMultiplier += 0.8;
                 if (game.IsPlaying) confidenceMultiplier += 0.8;
+
+                int mins = GetPlaytimeMinutes(game);
+                if (mins >= 6000) confidenceMultiplier += 1.0;       // 100+ hours played
+                else if (mins >= 1800) confidenceMultiplier += 0.7; // 30+ hours played
+                else if (mins >= 600) confidenceMultiplier += 0.4;  // 10+ hours played
 
                 var features = ExtractFeatures(game);
                 foreach (var (featureKey, weight, _) in features)
@@ -267,7 +287,7 @@ namespace GameStash.Web.GUI.Services
             return (vector, magnitude);
         }
 
-        private List<(string Key, double Weight, string DisplayLabel)> ExtractFeatures(LocalStashGame game)
+        private List<(string Key, double Weight, string DisplayLabel)> ExtractFeatures(StashGame game)
         {
             var features = new List<(string Key, double Weight, string DisplayLabel)>();
 
@@ -365,7 +385,15 @@ namespace GameStash.Web.GUI.Services
             return features;
         }
 
-        private static List<(long Id, string Name)> GetFranchises(LocalStashGame game)
+        private static int GetPlaytimeMinutes(StashGame game) => game switch
+        {
+            SteamStashGame s => s.PlaytimeMinutes,
+            EpicStashGame e => e.PlaytimeMinutes,
+            GogStashGame g => g.PlaytimeMinutes,
+            _ => 0
+        };
+
+        private static List<(long Id, string Name)> GetFranchises(StashGame game)
         {
             var list = new List<(long Id, string Name)>();
 
@@ -398,7 +426,7 @@ namespace GameStash.Web.GUI.Services
             return list;
         }
 
-        private static string GetPrimaryFranchiseGroup(LocalStashGame game)
+        private static string GetPrimaryFranchiseGroup(StashGame game)
         {
             if (game.Franchise?.Value != null && !string.IsNullOrWhiteSpace(game.Franchise.Value.Name))
                 return game.Franchise.Value.Name.Trim();
@@ -442,7 +470,7 @@ namespace GameStash.Web.GUI.Services
             return string.Empty;
         }
 
-        private static double CalculateEraMultiplier(LocalStashGame candidate, double targetAverageYear)
+        private static double CalculateEraMultiplier(StashGame candidate, double targetAverageYear)
         {
             if (!candidate.FirstReleaseDate.HasValue || targetAverageYear <= 0)
                 return 1.0;
@@ -459,7 +487,7 @@ namespace GameStash.Web.GUI.Services
 
         /*
         /// <summary>
-        /// Verifica se existe um jogo anterior da mesma saga na queue que ainda não foi terminado.
+        /// Checks whether an earlier game from the same series is unfinished in the queue.
         /// </summary>
         private static bool IsUnfinishedPrequelInQueue(LocalStashGame candidate, List<LocalStashGame> seeds)
         {
@@ -479,10 +507,10 @@ namespace GameStash.Web.GUI.Services
         */
 
         private static void BackfillRemainingSlots(
-            List<GameRecommendationDto> currentRecommendations,
-            List<LocalStashGame> candidates,
-            int limit,
-            string fallbackReason)
+    List<GameRecommendationDto> currentRecommendations,
+    List<(StashGame Game, string Source)> candidates,
+    int limit,
+    string fallbackReason)
         {
             var existingIds = currentRecommendations
                 .Where(r => r.Game?.Id != null)
@@ -490,20 +518,25 @@ namespace GameStash.Web.GUI.Services
                 .ToHashSet();
 
             var backfillCandidates = candidates
-                .Where(c => c.Id.HasValue && !existingIds.Contains(c.Id.Value))
-                .OrderByDescending(c => c.IsInstalled)
-                .ThenByDescending(c => c.FirstReleaseDate ?? DateTimeOffset.MinValue)
-                .ThenByDescending(c => c.Rating ?? 0)
+                .Where(c => c.Game.Id.HasValue && !existingIds.Contains(c.Game.Id.Value))
+                .GroupBy(c => c.Game.Id!.Value)
+                .Select(grp => grp.OrderByDescending(c => c.Game.IsInstalled).First())
+                .OrderByDescending(c => c.Game.IsInstalled)
+                .ThenByDescending(c => c.Game.FirstReleaseDate ?? DateTimeOffset.MinValue)
+                .ThenByDescending(c => c.Game.Rating ?? 0)
                 .Take(limit - currentRecommendations.Count);
 
-            foreach (var candidate in backfillCandidates)
+            foreach (var item in backfillCandidates)
             {
+                var dto = StashGameCardDto.FromModel(item.Game);
+                dto.ExternalSystem = item.Source;
+
                 currentRecommendations.Add(new GameRecommendationDto
                 {
-                    Game = StashGameCardDto.FromModel(candidate),
-                    MatchScore = candidate.IsInstalled ? 0.70 : 0.55,
-                    MatchPercentage = candidate.IsInstalled ? 70.0 : 55.0,
-                    MatchReasons = new List<string> { candidate.IsInstalled ? "Ready to Play (Installed)" : fallbackReason }
+                    Game = dto,
+                    MatchScore = item.Game.IsInstalled ? 0.70 : 0.55,
+                    MatchPercentage = item.Game.IsInstalled ? 70.0 : 55.0,
+                    MatchReasons = new List<string> { item.Game.IsInstalled ? "Ready to Play (Installed)" : fallbackReason }
                 });
             }
         }

@@ -3,7 +3,7 @@
    ========================================================================== */
 .settings-container {
     width: 100%;
-    min-width: 650px; /* LIMITE MÍNIMO: abaixo disto ativa a barra de scroll na view */
+    min-width: 650px; /* Minimum limit: below this value the view scrollbar is enabled. */
     margin: 0;
     padding: 10px 25px 40px 25px;
     display: flex;
@@ -22,7 +22,7 @@
     margin: 0;
 }
 
-/* 2. Regra base elástica dos cards */
+/* 2. Flexible card base rule. */
 .settings-card {
     background-color: var(--bg-sidebar, #1a1a1a);
     border: 1px solid var(--border-color, #2e2e2e);
@@ -31,17 +31,17 @@
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
     box-sizing: border-box;
     width: 100%;
-    min-width: 650px; /* Garante que os cards nunca encolhem abaixo do mínimo */
+    min-width: 650px; /* Ensure cards never shrink below the minimum. */
     transition: width 0.15s ease, max-width 0.15s ease;
 }
 
-    /* PAINEL IGDB: Fluido entre 650px (mínimo) e 750px (máximo) */
+    /* IGDB PANEL: Flexible between 650px (minimum) and 750px (maximum). */
     .settings-card.compact-card {
         width: 100%;
         max-width: 60px;
     }
 
-    /* PAINEL ROOT FOLDERS: Totalmente fluido entre 650px (mínimo) e 1450px (máximo do ecrã) */
+    /* ROOT FOLDERS PANEL: Fully flexible between 650px (minimum) and 1450px (screen maximum). */
     .settings-card.wide-card {
         width: 100%;
         max-width: 800px;

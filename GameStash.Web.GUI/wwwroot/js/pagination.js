@@ -66,16 +66,16 @@ export class PaginationController {
         const isFirst = this.currentPage === 1;
         const isLast = this.currentPage === this.totalPages;
 
-        // Contentor Principal da Barra de Paginação
+        // Main pagination bar container.
         const container = document.getElementById('pagination-numbers-container');
         if (!container) return;
         container.innerHTML = '';
 
-        // --- 1. BOTÕES DE CONTROLE ESQUERDOS (First, Jumps decrescentes, Prev) ---
+        // --- 1. LEFT CONTROL BUTTONS (First, descending jumps, Prev) ---
         const firstBtn = this._createSvgButton('M18.5 5L12 12l6.5 7M11.5 5L5 12l6.5 7', isFirst, () => this.goToPage(1));
         container.appendChild(firstBtn);
 
-        // Renderiza os Jumps de trás para a frente (ex: -10, -5) para manter a ordem lógica no ecrã
+        // Render jumps from back to front (for example, -10 and -5) to preserve logical screen order.
         [...this.jumpSteps].reverse().forEach(step => {
             const disabledCondition = this.currentPage === 1;
             const jumpBtn = this._createTextButton(`-${step}`, disabledCondition, () => this.goToPage(Math.max(1, this.currentPage - step)));
@@ -85,7 +85,7 @@ export class PaginationController {
         const prevBtn = this._createSvgButton('M15.5 19l-7-7 7-7', isFirst, () => this.goToPage(this.currentPage - 1));
         container.appendChild(prevBtn);
 
-        // --- 2. BLOCO CENTRAL DE NÚMEROS DE PÁGINA (± RADIUS) ---
+        // --- 2. CENTRAL PAGE NUMBER BLOCK (± RADIUS) ---
         const numbersGroup = document.createElement('div');
         numbersGroup.className = 'pagination-numbers';
 
@@ -102,7 +102,7 @@ export class PaginationController {
         }
         container.appendChild(numbersGroup);
 
-        // --- 3. BOTÕES DE CONTROLE DIREITOS (Next, Jumps crescentes, Last) ---
+        // --- 3. RIGHT CONTROL BUTTONS (Next, ascending jumps, Last) ---
         const nextBtn = this._createSvgButton('M8.5 5l7 7-7 7', isLast, () => this.goToPage(this.currentPage + 1));
         container.appendChild(nextBtn);
 

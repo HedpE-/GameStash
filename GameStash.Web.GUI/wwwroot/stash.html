@@ -23,6 +23,13 @@
             </div>
 
             <div class="toolbar-right-actions">
+                <!-- Live Name Search Box -->
+                <div class="stash-search-box">
+                    <span class="stash-search-icon">🔍</span>
+                    <input type="text" id="stash-search-input" placeholder="Search games..." autocomplete="off" />
+                    <button type="button" id="stash-search-clear" class="stash-search-clear" title="Clear search" style="display: none;">✕</button>
+                </div>
+
                 <!-- Store Filter Dropdown (Visible only on Unified Stash) -->
                 <div class="dropdown-container" id="stash-store-dropdown" style="display: none;">
                     <button type="button" class="toolbar-dropdown-btn" id="stash-store-toggle">
@@ -97,4 +104,85 @@
             </div>
         </div>
     </div>
+
+    <!-- Export Stash Modal -->
+    <div id="stash-export-modal" class="modal-overlay">
+        <div class="modal-dialog-card" style="max-width: 440px; width: 92%;">
+            <h3>Export Games List</h3>
+            <p style="margin: 8px 0 14px 0; font-size: 13px; color: var(--text-muted);">
+                Select the fields and format to export (<span id="stash-export-count-info">0</span> games):
+            </p>
+
+            <!-- Export Format Selector -->
+            <div style="margin-bottom: 14px;">
+                <label style="display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 6px; font-weight: 700;">
+                    Export Format
+                </label>
+                <div class="export-format-group">
+                    <label class="export-radio-pill">
+                        <input type="radio" name="stash-export-format" value="csv" checked />
+                        <span>CSV (.csv)</span>
+                    </label>
+                    <label class="export-radio-pill">
+                        <input type="radio" name="stash-export-format" value="json" />
+                        <span>JSON (.json)</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- Field Checkboxes -->
+            <div style="margin-bottom: 18px;">
+                <label style="display: block; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700;">
+                    Included Fields
+                </label>
+                <div class="export-fields-grid" id="stash-export-fields">
+                    <label class="export-checkbox-item is-locked">
+                        <input type="checkbox" value="name" checked disabled />
+                        <span>Game Name</span>
+                    </label>
+                    <label class="export-checkbox-item">
+                        <input type="checkbox" value="igdbId" checked />
+                        <span>IGDB ID</span>
+                    </label>
+                    <label class="export-checkbox-item">
+                        <input type="checkbox" value="store" checked />
+                        <span>Game Store</span>
+                    </label>
+                    <label class="export-checkbox-item">
+                        <input type="checkbox" value="installed" checked />
+                        <span>Installed</span>
+                    </label>
+                    <label class="export-checkbox-item">
+                        <input type="checkbox" value="isPlayed" />
+                        <span>Played</span>
+                    </label>
+                    <label class="export-checkbox-item">
+                        <input type="checkbox" value="isPlaying" />
+                        <span>Currently Playing</span>
+                    </label>
+                    <label class="export-checkbox-item">
+                        <input type="checkbox" value="playedToEnd" />
+                        <span>Completed (Played to End)</span>
+                    </label>
+                    <label class="export-checkbox-item">
+                        <input type="checkbox" value="playtime" checked />
+                        <span>Playtime</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="modal-actions" style="display: flex; justify-content: flex-end; gap: 10px;">
+                <button type="button" id="stash-export-copy-btn" class="toolbar-action-btn">
+                    <span>📋</span> Copy
+                </button>
+                <button type="button" id="stash-export-download-btn" class="toolbar-action-btn" style="background: var(--primary-purple); border-color: var(--primary-purple);">
+                    <span>⬇</span> Download
+                </button>
+                <button type="button" id="stash-export-close-btn" class="toolbar-action-btn">
+                    Close
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>

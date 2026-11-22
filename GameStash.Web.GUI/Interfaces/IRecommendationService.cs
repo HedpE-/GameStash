@@ -10,19 +10,19 @@ namespace GameStash.Core.Services
         /// <summary>
         /// Recommends unplayed stash games matching the profile of the current Playlist queue.
         /// </summary>
-        Task<List<GameRecommendationDto>> GetPlaylistSuggestionsAsync(string libraryType, int limit = 10);
+        Task<List<GameRecommendationDto>> GetPlaylistSuggestionsAsync(int limit = 10);
 
         /// <summary>
         /// Recommends backlog games matching the user's all-time favorites, currently playing, and highest rated games.
         /// </summary>
-        Task<List<GameRecommendationDto>> GetStashSuggestionsAsync(string libraryType, int limit = 10);
+        Task<List<GameRecommendationDto>> GetStashSuggestionsAsync(int limit = 10);
 
         /// <summary>
         /// Core mathematical engine: compares candidate games against a set of seed reference games.
         /// </summary>
         List<GameRecommendationDto> CalculateRecommendations(
-            IEnumerable<LocalStashGame> seedGames,
-            IEnumerable<LocalStashGame> candidatePool,
+            IEnumerable<(StashGame Game, string Source)> seedGames,
+            IEnumerable<(StashGame Game, string Source)> candidatePool,
             int limit = 10);
     }
 }

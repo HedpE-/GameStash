@@ -10,7 +10,7 @@ namespace GameStash.Core.Services
 {
     public class GameIdentifier
     {
-        // Método para identificar jogos e seus tipos a partir de caminhos de arquivo
+        // Identifies games and their types from file paths.
         public IEnumerable<LocalStashGame> IdentifyGames(IEnumerable<string> files)
         {
             ConcurrentBag<LocalStashGame> identifiedGames = new ConcurrentBag<LocalStashGame>();
@@ -24,11 +24,11 @@ namespace GameStash.Core.Services
                 string gameName = string.Empty;
                 string repackType = string.Empty;
 
-                // Verificar se o arquivo gamestash.json existe na pasta
+                // Check whether gamestash.json exists in the folder.
                 string gamestashFilePath = Path.Combine(directory, "gamestash.json");
                 if (File.Exists(gamestashFilePath))
                 {
-                    // Ler o conteúdo do arquivo gamestash.json
+                    // Read the contents of gamestash.json.
                     string jsonContent = File.ReadAllText(gamestashFilePath);
                     try
                     {
@@ -36,18 +36,18 @@ namespace GameStash.Core.Services
                         if (gamestashData != null && gamestashData.ContainsKey("Name"))
                         {
                             gameName = gamestashData["Name"];
-                            repackType = gamestashData.ContainsKey("Type") ? gamestashData["Type"] : "Other"; // Default para "Other" se Type não estiver presente
+                            repackType = gamestashData.ContainsKey("Type") ? gamestashData["Type"] : "Other"; // Default to "Other" when Type is missing
                         }
                     }
                     catch
                     {
-                        // Se o JSON estiver malformado, prosseguir com o processo regular de identificação
+                        // If the JSON is malformed, continue with the regular identification process.
                         gameName = string.Empty;
                         File.Delete(gamestashFilePath);
                     }
                 }
 
-                // Se o gamestash.json não foi encontrado ou não foi processado, identificar o jogo através de métodos regulares
+                // If gamestash.json was not found or could not be processed, identify the game using the regular methods
                 if (string.IsNullOrEmpty(gameName))
                 {
                     var fileInfo = FileVersionInfo.GetVersionInfo(filePath);
@@ -119,7 +119,7 @@ namespace GameStash.Core.Services
                     }
                 }
 
-                // Se o nome do jogo foi identificado, adicioná-lo ao resultado
+                // Add the game to the result when its name has been identified
                 if (!string.IsNullOrEmpty(gameName))
                 {
                     identifiedGames.Add(new LocalStashGame
@@ -129,7 +129,7 @@ namespace GameStash.Core.Services
                         Folder = directory
                     });
 
-                    // Criar o arquivo gamestash.json caso ele não exista
+                    // Create gamestash.json when it does not exist
                     if (!File.Exists(gamestashFilePath))
                     {
                         var gamestashData = new Dictionary<string, string>
@@ -163,11 +163,11 @@ namespace GameStash.Core.Services
                 string gameName = string.Empty;
                 string repackType = string.Empty;
 
-                // Verificar se o arquivo gamestash.json existe na pasta
+                // Check whether gamestash.json exists in the folder.
                 string gamestashFilePath = Path.Combine(directory, "gamestash.json");
                 if (File.Exists(gamestashFilePath))
                 {
-                    // Ler o conteúdo do arquivo gamestash.json
+                    // Read the contents of gamestash.json.
                     string jsonContent = File.ReadAllText(gamestashFilePath);
                     try
                     {
@@ -175,18 +175,18 @@ namespace GameStash.Core.Services
                         if (gamestashData != null && gamestashData.ContainsKey("Name"))
                         {
                             gameName = gamestashData["Name"];
-                            repackType = gamestashData.ContainsKey("Type") ? gamestashData["Type"] : "User Release"; // Default para "User Release" se Type não estiver presente
+                            repackType = gamestashData.ContainsKey("Type") ? gamestashData["Type"] : "User Release"; // Default to "User Release" when Type is missing.
                         }
                     }
                     catch
                     {
-                        // Se o JSON estiver malformado, prosseguir com o processo regular de identificação
+                        // If the JSON is malformed, continue with the regular identification process.
                         gameName = string.Empty;
                         File.Delete(gamestashFilePath);
                     }
                 }
 
-                // Se o gamestash.json não foi encontrado ou não foi processado, identificar o jogo através de métodos regulares
+                // If gamestash.json was not found or could not be processed, identify the game using the regular methods.
                 if (string.IsNullOrEmpty(gameName))
                 {
                     var fileInfo = FileVersionInfo.GetVersionInfo(filePath);
@@ -257,7 +257,7 @@ namespace GameStash.Core.Services
                     }
                 }
 
-                // Se o nome do jogo foi identificado, adicioná-lo ao resultado
+                // Add the game to the result when its name has been identified.
                 if (!string.IsNullOrEmpty(gameName))
                 {
                     identifiedGames.Add(new LocalStashGame
@@ -267,7 +267,7 @@ namespace GameStash.Core.Services
                         Folder = directory
                     });
 
-                    // Criar o arquivo gamestash.json caso ele não exista
+                    // Create gamestash.json when it does not exist.
                     if (!File.Exists(gamestashFilePath))
                     {
                         var gamestashData = new Dictionary<string, string>
@@ -319,7 +319,7 @@ namespace GameStash.Core.Services
             return hasKaOsFiles;
         }
 
-        // Método para extrair o nome do jogo do arquivo KaOs.nfo, se presente
+        // Extracts the game name from KaOs.nfo when present.
         private static string ExtractGameNameFromKaOsNfo(string folderPath)
         {
             string nfoPath = Path.Combine(folderPath, "KaOs.nfo");
@@ -331,7 +331,7 @@ namespace GameStash.Core.Services
                     return match.Groups["name"].Value;
             }
 
-            // Se o arquivo NFO não existir, tentar extrair o nome a partir do nome da pasta
+            // If the NFO file does not exist, try to extract the name from the folder name.
             string folderName = Path.GetFileName(folderPath);
             var folderMatch = Regex.Match(folderName, @"(?<name>.+?)REPACK-KaOs", RegexOptions.IgnoreCase);
             return folderMatch.Success ? folderMatch.Groups["name"].Value : string.Empty;

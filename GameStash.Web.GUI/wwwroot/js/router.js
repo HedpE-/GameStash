@@ -15,13 +15,13 @@ import { initStashView } from './stash.js';
 const routes = {
     'home': { templateUrl: '/home.html', init: loadDashboard },
     'browse': { templateUrl: '/browse.html', init: initBrowseView },
-    'unifiedstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'unified') },
     'localstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'local') },
     'importfolders': { templateUrl: '/importfolders.html', init: initImportFoldersView },
     'steamstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'steam') },
     'epicstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'epic') },
     'gogstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'gog') },
     'amazonstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'amazon') },
+    'unifiedstash': { templateUrl: '/stash.html', init: (ws) => initStashView(ws, 'unified') },
     'playlist': { templateUrl: '/playlist.html', init: initPlaylistView },
     'externalservicessettings': { templateUrl: '/externalservicessettings.html', init: initExternalServicesSettingsView },
     'rootfolderssettings': { templateUrl: '/rootfolderssettings.html', init: initRootFoldersSettingsView }

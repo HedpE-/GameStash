@@ -41,6 +41,25 @@ namespace GameStash.Core.Tests
         }
 
         [Test]
+        public async Task FetchGameAchievementsAsync_ShouldReturnAchievementsForFinalFantasy()
+        {
+            // Arrange: retrieve tokens from settings or config
+            var client = new EpicClient(refreshToken: _refreshToken, accessToken: _accessToken);
+
+            // Act: Final Fantasy VII Remake Intergrade sandbox
+            var result = await client.FetchGameAchievementsAsync("6f43ab8025ad42d18510aa91e9eb688b");
+
+            // Assert
+            result.Should().NotBeNull();
+            result!.TotalAchievements.Should().Be(54); // FFVII Remake base achievements
+            result.UnlockedAchievements.Should().Be(54); // 100% unlocked by you
+            result.Achievements.Should().NotBeEmpty();
+
+            Log.Information("Total: {Total}, Unlocked: {Unlocked}, Total XP: {XP}",
+                result.TotalAchievements, result.UnlockedAchievements, result.TotalXp);
+        }
+
+        [Test]
         public async Task VerifySessionAsync_ShouldValidateAndPopulateUserSession()
         {
             // Arrange

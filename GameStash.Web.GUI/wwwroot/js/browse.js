@@ -1,4 +1,5 @@
 ﻿import { openGameDetails } from './gamedetails.js';
+import { renderStarRating } from './starrating.js';
 
 let currentSearchResults = [];
 let currentSearchQuery = '';
@@ -295,10 +296,11 @@ function renderList(games) {
         const row = document.createElement('div');
         row.className = 'game-row-item';
 
-        const ratingPercentage = Math.max(0, Math.min(100, game.Rating));
         const devLogoHtml = game.DeveloperLogoUrl
             ? `<img src="${game.DeveloperLogoUrl}" alt="Developer Logo" class="game-row-dev-logo" />`
             : '';
+
+        const ratingHtml = renderStarRating(game.Rating ?? game.rating);
 
         row.innerHTML = `
             <div class="game-row-cover" style="background-image: url('${game.CoverUrl}');"></div>
@@ -310,16 +312,13 @@ function renderList(games) {
                     <span>${game.DeveloperName}</span>
                 </div>
                 <div class="game-row-platforms">${game.Platforms}</div>
-                <div class="rating-bar-container">
-                    <div class="stars-empty">★★★★★</div>
-                    <div class="stars-fill" style="width: ${ratingPercentage}%;">★★★★★</div>
-                </div>
+                <div class="game-row-rating">${ratingHtml}</div>
             </div>
             <div class="game-row-chip">${game.GameType}</div>
         `;
 
         // Click navigates straight into the Game Details modal
-        row.addEventListener('click', () => openGameDetails(game.Id, 'browse'));
+        row.addEventListener('click', () => openGameDetails(game.Id));
         container.appendChild(row);
     });
 

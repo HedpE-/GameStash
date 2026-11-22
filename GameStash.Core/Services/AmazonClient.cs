@@ -238,7 +238,7 @@ namespace GameStash.Core.Services
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
 
                 var response = await _httpClient.SendAsync(request);
-                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
+                if ((response.StatusCode == System.Net.HttpStatusCode.Unauthorized || response.StatusCode == System.Net.HttpStatusCode.BadRequest) && await RefreshAccessTokenAsync())
                 {
                     using var retry = new HttpRequestMessage(HttpMethod.Get, $"https://{AuthHost}/user/profile");
                     retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
@@ -350,6 +350,124 @@ namespace GameStash.Core.Services
         }
 
         /// <summary>
+        /// Fetches full storefront metadata (descriptions, developer, publisher, genres,
+        /// release date, cover, and screenshots) on demand for a single Amazon product ID.
+        /// </summary>
+        public async Task<AmazonStoreAppDetails?> FetchStoreAppDetailsAsync(string productId)
+        {
+            if (string.IsNullOrWhiteSpace(productId))
+                return null;
+
+            if (string.IsNullOrWhiteSpace(_accessToken) && !await RefreshAccessTokenAsync())
+                return null;
+
+            try
+            {
+                var endpointUrl = $"https://{GamingHost}/api/distribution/entitlements";
+                var serial = _deviceSerial ?? "7721A9347744493A8F561F03E3CE2E48";
+                var hardwareHash = Convert.ToHexString(SHA256.HashData(Encoding.UTF8.GetBytes(serial))).ToUpperInvariant();
+
+                var requestBody = new Dictionary<string, object?>
+                {
+                    ["Operation"] = "GetEntitlements",
+                    ["clientId"] = "Sonic",
+                    ["syncPoint"] = null,
+                    ["nextToken"] = null,
+                    ["maxResults"] = 10,
+                    ["productIdFilter"] = new[] { productId },
+                    ["keyId"] = "d5dc8b8b-86c8-4fc4-ae93-18c0def5314d",
+                    ["hardwareHash"] = hardwareHash
+                };
+
+                var jsonPayload = JsonSerializer.Serialize(requestBody);
+
+                HttpRequestMessage BuildRequest()
+                {
+                    var req = new HttpRequestMessage(HttpMethod.Post, endpointUrl);
+                    req.Headers.TryAddWithoutValidation("User-Agent", "com.amazon.agslauncher.win/3.0.9202.1");
+                    req.Headers.Add("x-amzn-token", _accessToken);
+                    req.Headers.Add("X-Amz-Target", "com.amazon.animusdistributionservice.entitlement.AnimusEntitlementsService.GetEntitlements");
+                    req.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+
+                    var content = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
+                    content.Headers.TryAddWithoutValidation("Content-Encoding", "amz-1.0");
+                    req.Content = content;
+
+                    return req;
+                }
+
+                using var request = BuildRequest();
+                var response = await _httpClient.SendAsync(request);
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
+                {
+                    using var retry = BuildRequest();
+                    response = await _httpClient.SendAsync(retry);
+                }
+
+                if (!response.IsSuccessStatusCode)
+                    return null;
+
+                var json = await response.Content.ReadAsStringAsync();
+                var page = JsonSerializer.Deserialize<AmazonEntitlementsResponse>(json);
+                var product = page?.Entitlements?
+                    .FirstOrDefault(e => string.Equals(e.Product?.Id, productId, StringComparison.OrdinalIgnoreCase))?
+                    .Product;
+
+                if (product == null)
+                    return null;
+
+                var detail = product.ProductDetail;
+                var inner = detail?.Details;
+
+                var details = new AmazonStoreAppDetails
+                {
+                    ProductId = productId,
+                    Title = product.Title ?? string.Empty,
+                    ShortDescription = inner?.Description ?? string.Empty,
+                    DetailedDescription = inner?.Description ?? string.Empty,
+                    CoverUrl = detail?.IconUrl ?? inner?.BackgroundUrl1 ?? inner?.BackgroundUrl2 ?? string.Empty
+                };
+
+                if (!string.IsNullOrWhiteSpace(inner?.Developer))
+                    details.Developers.Add(inner.Developer);
+
+                if (!string.IsNullOrWhiteSpace(inner?.Publisher))
+                    details.Publishers.Add(inner.Publisher);
+
+                if (inner?.Genres != null && inner.Genres.Count > 0)
+                    details.Genres.AddRange(inner.Genres);
+
+                if (!string.IsNullOrWhiteSpace(inner?.BackgroundUrl1))
+                    details.Screenshots.Add(inner.BackgroundUrl1);
+
+                if (!string.IsNullOrWhiteSpace(inner?.BackgroundUrl2))
+                    details.Screenshots.Add(inner.BackgroundUrl2);
+
+                if (!string.IsNullOrWhiteSpace(inner?.BackgroundUrl1) && !details.Screenshots.Contains(inner.BackgroundUrl1))
+                    details.Screenshots.Add(inner.BackgroundUrl1);
+
+                if (!string.IsNullOrWhiteSpace(inner?.BackgroundUrl2) && !details.Screenshots.Contains(inner.BackgroundUrl2))
+                    details.Screenshots.Add(inner.BackgroundUrl2);
+
+                if (!string.IsNullOrWhiteSpace(inner?.ReleaseDate) &&
+                    DateTimeOffset.TryParse(inner.ReleaseDate, out var parsedDate))
+                {
+                    details.ReleaseDateText = parsedDate.ToString("MMM dd, yyyy");
+                }
+
+                details.Platforms.Add("PC (Microsoft Windows)");
+                return details;
+            }
+            catch (Exception ex)
+            {
+                Log.ForContext<AmazonClient>().Warning(ex, "Failed to fetch Amazon store details for ProductId {ProductId}.", productId);
+                return null;
+            }
+        }
+
+
+        /// <summary>
         /// Attempts to fetch achievements for an Amazon Luna / Gaming product ID.
         /// </summary>
         public async Task<AmazonGameAchievementsResult?> FetchGameAchievementsAsync(string productId)
@@ -390,6 +508,14 @@ namespace GameStash.Core.Services
                 request.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
 
                 var response = await _httpClient.SendAsync(request);
+                if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && await RefreshAccessTokenAsync())
+                {
+                    using var retry = new HttpRequestMessage(HttpMethod.Post, endpointUrl);
+                    retry.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _accessToken);
+                    retry.Content = new StringContent(JsonSerializer.Serialize(payload), Encoding.UTF8, "application/json");
+                    response = await _httpClient.SendAsync(retry);
+                }
+
                 if (!response.IsSuccessStatusCode)
                     return null;
 
@@ -407,8 +533,8 @@ namespace GameStash.Core.Services
                         return new AmazonPlayerAchievement
                         {
                             Id = a.Id,
-                            Name = maskSecret ? "Hidden Achievement" : a.Title,
-                            Description = maskSecret ? "Details for this achievement will be revealed once unlocked." : a.Description,
+                            Name = a.Title,
+                            Description = a.Description,
                             Unlocked = a.Unlocked,
                             UnlockDate = a.UnlockedAt,
                             RarityPercent = a.RarityPercentage,

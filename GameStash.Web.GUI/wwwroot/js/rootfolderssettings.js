@@ -1,7 +1,5 @@
 ﻿import { showWarning } from './snackbar.js';
 
-let scanPollingTimer = null;
-
 /**
  * Loads and renders monitored root storage directories.
  */
@@ -13,10 +11,6 @@ export async function initRootFoldersSettingsView() {
 
         renderFoldersList(folders);
         toggleGlobalRescanButton(folders.length > 0);
-
-        const isAnyScanning = folders.some(f => f.IsImportingFolders === true || f.isImportingFolders === true);
-        manageScanPolling(isAnyScanning);
-
         bindFolderInputEvents();
     } catch (err) {
         console.error("Failed to load root folders settings:", err);
@@ -47,27 +41,6 @@ async function browseFolder() {
     } catch (err) {
         console.error("Browse folder request error:", err);
         showWarning("Network error while trying to open folder picker. Please type the path manually.");
-    }
-}
-
-function manageScanPolling(isScanning) {
-    if (isScanning) {
-        if (!scanPollingTimer) {
-            scanPollingTimer = setInterval(() => {
-                // Stop polling automatically if the user navigated away from Root Folders
-                if (!document.getElementById('folders-list')) {
-                    clearInterval(scanPollingTimer);
-                    scanPollingTimer = null;
-                    return;
-                }
-                initRootFoldersSettingsView();
-            }, 2000);
-        }
-    } else {
-        if (scanPollingTimer) {
-            clearInterval(scanPollingTimer);
-            scanPollingTimer = null;
-        }
     }
 }
 
@@ -132,19 +105,17 @@ export async function rescanFolder(id = null) {
         const method = id ? 'POST' : 'PUT';
         const response = await fetch(url, { method: method });
 
-        if (response.status === 202 || response.ok) {
-            manageScanPolling(true);
-            setTimeout(initRootFoldersSettingsView, 500);
-        } else {
+        if (!response.ok) {
             alert("Failed to initiate folder rescan.");
-            initRootFoldersSettingsView();
         }
     } catch (err) {
         console.error("Rescan request failed:", err);
         alert("Failed to initiate folder rescan.");
-        initRootFoldersSettingsView();
+    } finally {
+        await initRootFoldersSettingsView();
     }
 }
+
 
 function renderFoldersList(folders) {
     const container = document.getElementById('folders-list');

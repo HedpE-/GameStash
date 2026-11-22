@@ -2,7 +2,7 @@
    REUSABLE PAGINATION BAR COMPONENT (OPTIMIZED & COMPACT)
    ========================================================================== */
 
-/* Contentor principal que junta todos os botões e números injetados via JS */
+/* Main container for all buttons and numbers injected by JavaScript. */
 #pagination-numbers-container {
     display: flex;
     gap: 4px;
@@ -26,50 +26,50 @@
     gap: 4px;
 }
 
-/* Redução elegante de tamanho e preenchimento de todos os botões */
+/* Elegant reduction of all button sizes and padding. */
 .pagination-btn,
 .page-number-btn {
     background: #1e1e1e;
     border: 1px solid var(--border-color, #2e2e2e);
     color: #e5e7eb;
-    padding: 4px 6px; /* Ajuste milimétrico de padding lateral */
+    padding: 4px 6px; /* Fine-grained horizontal padding adjustment. */
     border-radius: 5px;
     cursor: pointer;
-    font-size: 14px; /* AUMENTADO: Todo o texto base (números e saltos) passa para 14px */
+    font-size: 14px; /* Increased: all base text (numbers and jumps) uses 14px. */
     font-weight: 600;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    min-width: 32px; /* Ajustado ligeiramente para os saltos com 3 caracteres (+10) não cortarem */
+    min-width: 32px; /* Adjusted so three-character jumps (+10) are not clipped. */
     height: 30px;
     box-sizing: border-box;
     transition: all 0.15s ease;
 }
 
-    /* Força os botões de salto a acompanhar rigorosamente os mesmos 14px */
+    /* Keep jump buttons at exactly the same 14px size. */
     .pagination-btn.jump-btn {
         font-size: 14px;
-        letter-spacing: -0.5px; /* Compensa o espaço do caractere para não alargar o botão */
+        letter-spacing: -0.5px; /* Compensate for character spacing so the button does not expand. */
         color: #9ca3af;
     }
 
-/* Mantém os números nítidos e destacados */
+/* Keep page numbers clear and prominent. */
 .page-number-btn {
     font-size: 14px;
-    font-weight: 700; /* Ligeiramente mais negrito para destacar dos saltos */
+    font-weight: 700; /* Slightly heavier to distinguish numbers from jumps. */
 }
 
-/* Diferenciação sutil de tamanho de letra para os botões de salto (+5, +10) */
+/* Subtle font-size distinction for jump buttons (+5, +10). */
 .pagination-btn.jump-btn {
     font-size: 11px;
     letter-spacing: -0.3px;
     color: #9ca3af;
 }
 
-/* Centralização perfeita e redimensionamento dos ícones SVG internos */
+/* Perfect centering and resizing of internal SVG icons. */
 .pagination-btn.icon-btn svg {
     display: block;
-    width: 14px; /* Reduzido proporcionalmente para bater certo com os 30px */
+     width: 14px; /* Proportionally reduced to align with the 30px button height. */
     height: 14px;
     color: inherit;
     pointer-events: none;

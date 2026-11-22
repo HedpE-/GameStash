@@ -14,14 +14,14 @@
     gap: 20px;
     overflow-x: auto;
     overflow-y: hidden;
-    height: max-content; /* Adota estritamente a altura máxima do conteúdo */
-    flex-grow: 0; /* Impede que a strip estique para preencher vazios */
-    flex-shrink: 0; /* Impede que a strip encolha com a janela */
-    align-items: flex-start; /* Garante o alinhamento no topo sem esticar filhos */
+    height: max-content; /* Strictly use the maximum content height. */
+    flex-grow: 0; /* Prevent the strip from stretching to fill empty space. */
+    flex-shrink: 0; /* Prevent the strip from shrinking with the window. */
+    align-items: flex-start; /* Keep content aligned at the top without stretching children. */
 
-    padding-top: 8px; /* Espaço de segurança para a elevação de hover do card */
+    padding-top: 8px; /* Safety space for the card hover elevation. */
     margin-top: 19px;
-    padding-bottom: 20px; /* Respiro essencial para o box-shadow e translateY global */
+    padding-bottom: 20px; /* Required space for the box shadow and global translateY. */
     margin-bottom: 25px;
     scrollbar-width: thin;
     scrollbar-color: var(--border-color, rgba(255, 255, 255, 0.07)) transparent;

@@ -3,6 +3,7 @@ using GameStash.Core.Services;
 using GameStash.Web.GUI.Interfaces;
 using GameStash.Web.GUI.Services;
 using Microsoft.AspNetCore.Builder;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.FileProviders;
@@ -26,7 +27,7 @@ try
     Log.ForContext(typeof(Program)).Information("Serilog framework successfully attached to GameStash.Core execution bounds.");
     Log.ForContext(typeof(Program)).Information("Starting GameStash Web GUI host engine...");
 
-    // Garante que o diretório de trabalho é SEMPRE a pasta onde está o executável
+    // Always use the directory containing the executable as the working directory.
     Environment.CurrentDirectory = AppContext.BaseDirectory;
 
     var options = new WebApplicationOptions
@@ -37,7 +38,7 @@ try
 
     var builder = WebApplication.CreateBuilder(options);
 
-    // ALTERADO: Adicionado fallback seguro para o appsettings.json
+    // Use a safe fallback location for appsettings.json.
     builder.Configuration.SetBasePath(AppContext.BaseDirectory);
     builder.Configuration.AddJsonFile("appsettings.json", optional: true, reloadOnChange: false);
 
@@ -47,7 +48,14 @@ try
         source.ReloadOnChange = false;
     }
 
-    // Garante que o Serilog é o provedor de logs principal e respeita a consola externa
+    string databaseConnectionString = builder.Configuration.GetConnectionString("DefaultConnection")
+        ?? GameStash.Core.Data.GameStashDbContext.DefaultConnectionString;
+    GameStashDbContext.ConfigureConnectionString(databaseConnectionString);
+
+    // Rebuild the bootstrap logger from appsettings so the configured sinks are active.
+    Log.Logger = new LoggerConfiguration()
+        .ReadFrom.Configuration(builder.Configuration)
+        .CreateLogger();
     builder.Host.UseSerilog(dispose: true);
 
     builder.Host.UseWindowsService(options =>
@@ -83,12 +91,14 @@ try
 
     try
     {
+        await PostgresDatabaseBootstrapper.EnsureDatabaseExistsAsync(databaseConnectionString);
+
         using var scope = app.Services.CreateScope();
 
         var dbContext = scope.ServiceProvider.GetRequiredService<GameStashDbContext>();
-        await dbContext.Database.EnsureCreatedAsync();
+        await dbContext.Database.MigrateAsync();
 
-        // 1. Settings & SQLite structure must complete first
+        // 1. Settings and PostgreSQL structure must complete first.
         var settingsService = scope.ServiceProvider.GetRequiredService<ISettingsService>();
         Log.ForContext(typeof(Program)).Information("Initializing settings ...");
         await settingsService.InitializeAsync();
@@ -96,6 +106,7 @@ try
     catch (Exception ex)
     {
         Log.ForContext(typeof(Program)).Error(ex, "Background initialization sequence encountered an unexpected error.");
+        throw;
     }
 
     // 4. Asynchronous Concurrent Background Initialization (Non-blocking Boot)
@@ -105,7 +116,7 @@ try
         {
             using var scope = app.Services.CreateScope();
 
-            // 2. Root Folders initializition using the configured database
+            // 2. Initialize root folders using the configured database.
             var rootFoldersService = scope.ServiceProvider.GetRequiredService<IRootFoldersService>();
             await rootFoldersService.InitializeAsync();
 

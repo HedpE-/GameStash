@@ -217,17 +217,17 @@
         min-width: 420px;
     }
 
-/* Container de células com texto copiável */
+/* Container for cells with copyable text. */
 .copyable-cell {
     position: relative;
     display: flex;
     align-items: center;
     width: 100%;
     min-width: 0;
-    padding-right: 24px; /* Espaço para o ícone flutuar à direita */
+    padding-right: 24px; /* Space for the floating icon on the right. */
 }
 
-    /* Texto truncado com reticências */
+    /* Truncated text with ellipsis. */
     .copyable-cell span {
         width: 100%;
         white-space: nowrap;
@@ -235,39 +235,39 @@
         text-overflow: ellipsis;
     }
 
-/* Botão invisível (apenas ícone puro), revelado no hover da linha */
+/* Invisible button (icon only), revealed when hovering over the row. */
 .copy-btn {
     position: absolute;
     right: 0;
     top: 50%;
     transform: translateY(-50%);
-    background: transparent; /* Sem fundo */
-    border: none; /* Sem borda */
-    box-shadow: none; /* Sem sombra */
+    background: transparent; /* No background. */
+    border: none; /* No border. */
+    box-shadow: none; /* No shadow. */
     color: var(--text-muted, #9ca3af);
     cursor: pointer;
     font-size: 13px;
     padding: 0;
     width: 20px;
     height: 20px;
-    opacity: 0; /* Invisível por omissão */
-    pointer-events: none; /* Desativa cliques quando invisível */
+    opacity: 0; /* Invisible by default. */
+    pointer-events: none; /* Disable clicks while invisible. */
     display: inline-flex;
     align-items: center;
     justify-content: center;
     transition: opacity 0.2s ease, color 0.15s ease, transform 0.15s ease;
 }
 
-/* Mostra apenas o ícone ao passar o rato na linha */
+/* Show only the icon when hovering over the row. */
 .import-table tr:hover .copy-btn {
-    opacity: 0.8; /* Visível e discreto */
+    opacity: 0.8; /* Visible and subtle. */
     pointer-events: auto;
 }
 
 .copy-btn:hover {
-    opacity: 1 !important; /* Totalmente opaco ao focar o ícone */
+    opacity: 1 !important; /* Fully opaque when focusing the icon. */
     color: #ffffff;
-    transform: translateY(-50%) scale(1.15); /* Pequeno efeito de zoom no ícone */
+    transform: translateY(-50%) scale(1.15); /* Small zoom effect on the icon. */
 }
 
 .copy-btn:active {
@@ -811,7 +811,7 @@
 
 .ignore-btn:hover {
     opacity: 1 !important;
-    color: #f87171; /* Vermelho aviso ao focar */
+    color: #f87171; /* Warning red on focus. */
     transform: scale(1.15);
 }
 

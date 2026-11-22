@@ -89,6 +89,7 @@ yarn-debug.log*
 yarn-error.log*
 
 ## ==========================================================================
-## GameStash / Playarr Local Development Markers
+## GameStash Local Development Markers
 ## ==========================================================================
-playarr.ignore
+gamestash.ignore
+*.ps1

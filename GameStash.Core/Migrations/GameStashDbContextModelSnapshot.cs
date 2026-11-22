@@ -22,6 +22,195 @@ namespace GameStash.Core.Migrations
 
             NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
+            modelBuilder.Entity("GameStash.Core.Models.AmazonStashGame", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("ExtId")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsFavorite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFinished")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInPlaylist")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInstalled")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPlayed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPlaying")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PlayedToEnd")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SortName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("amazon_stash", (string)null);
+                });
+
+            modelBuilder.Entity("GameStash.Core.Models.EpicStashGame", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("AppName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CatalogItemId")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsFavorite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFinished")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInPlaylist")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInstalled")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPlayed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPlaying")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Namespace")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PlayedToEnd")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SortName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Uid")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("epic_stash", (string)null);
+                });
+
+            modelBuilder.Entity("GameStash.Core.Models.GogStashGame", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<long?>("ExtId")
+                        .HasColumnType("bigint");
+
+                    b.Property<bool>("IsFavorite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFinished")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInPlaylist")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInstalled")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPlayed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPlaying")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PlayedToEnd")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("SortName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("gog_stash", (string)null);
+                });
+
+            modelBuilder.Entity("GameStash.Core.Models.LocalStashGame", b =>
+                {
+                    b.Property<long>("Id")
+                        .HasColumnType("bigint");
+
+                    b.Property<DateTime?>("DateAdded")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Folder")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsFavorite")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFinished")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInPlaylist")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInstalled")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPlayed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPlaying")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PackageType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("PlayedToEnd")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RootFolder")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SortName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("local_stash", (string)null);
+                });
+
             modelBuilder.Entity("GameStash.Core.Models.RootFolder", b =>
                 {
                     b.Property<int>("Id")
@@ -47,32 +236,71 @@ namespace GameStash.Core.Migrations
                         .HasColumnType("text")
                         .HasColumnName("igdb_client_id");
 
+                    b.Property<string>("AmazonAccessToken")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("amazon_access_token");
+
+                    b.Property<string>("AmazonRefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("amazon_refresh_token");
+
+                    b.Property<string>("EpicAccessToken")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("epic_access_token");
+
+                    b.Property<string>("EpicRefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("epic_refresh_token");
+
+                    b.Property<string>("GogAccessToken")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("gog_access_token");
+
+                    b.Property<string>("GogRefreshToken")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("gog_refresh_token");
+
                     b.Property<string>("IGDB_Secret")
                         .IsRequired()
                         .HasColumnType("text")
                         .HasColumnName("igdb_secret");
+
+                    b.Property<string>("SteamApiKey")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("steam_api_key");
+
+                    b.Property<string>("SteamId64")
+                        .IsRequired()
+                        .HasColumnType("text")
+                        .HasColumnName("steam_id64");
 
                     b.HasKey("IGDB_Client_ID");
 
                     b.ToTable("settings", (string)null);
                 });
 
-            modelBuilder.Entity("GameStash.Core.Models.StashGame", b =>
+            modelBuilder.Entity("GameStash.Core.Models.SteamStashGame", b =>
                 {
                     b.Property<long>("Id")
                         .HasColumnType("bigint");
 
-                    b.Property<DateTime?>("DateAdded")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("Folder")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<long?>("ExtId")
+                        .HasColumnType("bigint");
 
                     b.Property<bool>("IsFavorite")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsFinished")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsInPlaylist")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsInstalled")
@@ -81,20 +309,15 @@ namespace GameStash.Core.Migrations
                     b.Property<bool>("IsPlayed")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsPlaying")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("PackageType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("RootFolder")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<int?>("RootFolderId")
-                        .HasColumnType("integer");
+                    b.Property<bool>("PlayedToEnd")
+                        .HasColumnType("boolean");
 
                     b.Property<string>("SortName")
                         .IsRequired()
@@ -102,21 +325,7 @@ namespace GameStash.Core.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RootFolderId");
-
-                    b.ToTable("localLibrary", (string)null);
-                });
-
-            modelBuilder.Entity("GameStash.Core.Models.StashGame", b =>
-                {
-                    b.HasOne("GameStash.Core.Models.RootFolder", null)
-                        .WithMany("FoundGames")
-                        .HasForeignKey("RootFolderId");
-                });
-
-            modelBuilder.Entity("GameStash.Core.Models.RootFolder", b =>
-                {
-                    b.Navigation("FoundGames");
+                    b.ToTable("steam_stash", (string)null);
                 });
 #pragma warning restore 612, 618
         }

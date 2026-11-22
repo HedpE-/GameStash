@@ -18,7 +18,7 @@
 }
 
 .stash-container {
-    padding: 24px 0 0 32px !important; /* Mantém o recuo esquerdo e remove o direito */
+    padding: 24px 0 0 32px !important; /* Preserve the left inset and remove the right inset. */
     display: flex;
     flex-direction: column;
     width: 100%;
@@ -30,9 +30,9 @@
 }
 
 .stash-fixed-header {
-    padding-right: 32px; /* Devolve a margem direita à linha de títulos e botões */
+    padding-right: 32px; /* Restore the right margin for the title and button row. */
     flex-shrink: 0;
-    z-index: 20;
+    z-index: 30;
     padding-bottom: 16px;
     border-bottom: 1px solid var(--border-color);
 }
@@ -112,6 +112,64 @@
     box-shadow: 0 0 12px var(--danger-glow);
 }
 
+/* Live Search Box */
+.stash-search-box {
+    position: relative;
+    display: flex;
+    align-items: center;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 0 12px;
+    height: 38px;
+    width: 220px;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+    .stash-search-box:focus-within {
+        border-color: var(--primary-purple);
+        box-shadow: 0 0 12px var(--primary-purple-glow);
+    }
+
+.stash-search-icon {
+    font-size: 13px;
+    opacity: 0.65;
+    margin-right: 8px;
+    user-select: none;
+}
+
+.stash-search-box input {
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-main);
+    font-size: 13px;
+    font-weight: 500;
+    width: 100%;
+}
+
+    .stash-search-box input::placeholder {
+        color: var(--text-muted);
+        opacity: 0.7;
+    }
+
+.stash-search-clear {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: color 0.15s ease;
+}
+
+    .stash-search-clear:hover {
+        color: #fff;
+    }
+
 /* 2. Workspace com Scroll Suave */
 .stash-workspace {
     flex: 1;
@@ -124,7 +182,7 @@
     padding: 20px 16px 40px 0; /* Reduzido o padding direito para aproximar os elementos da borda */
 }
 
-/* Grelha Dinâmica Auto-ajustável */
+/* Dynamic self-adjusting grid. */
 .stash-games-grid {
     flex: 1;
     display: grid;
@@ -137,7 +195,7 @@
 .stash-alphabet-bar {
     position: sticky;
     top: 0;
-    order: 2; /* Move a barra para depois da grelha de jogos (lado direito) */
+    order: 2; /* Move the bar after the game grid (right side). */
     display: flex;
     flex-direction: column;
     gap: 4px;
@@ -147,19 +205,19 @@
     padding: 8px 6px;
     border-radius: 10px;
     z-index: 10;
-    margin-right: 12px; /* Margem de segurança antes da calha física da scrollbar */
+    margin-right: 12px; /* Safety margin before the physical scrollbar track. */
 }
 
-/* 3. Aumenta o tamanho da fonte em 2px e ajusta o botão para o texto caber */
+/* 3. Increase the font size by 2px and adjust the button to fit the text. */
 .alphabet-letter-btn {
     background: transparent;
     border: none;
     color: var(--text-muted);
-    /* Aumentado de 11px para 13px (+2px) */
+    /* Increased from 11px to 13px (+2px). */
     font-size: 13px;
     font-weight: 600;
     cursor: pointer;
-    /* Ajustado o tamanho da caixa de 24px para 26px para suportar a fonte maior sem quebrar */
+    /* Increased the box from 24px to 26px to support the larger font without wrapping. */
     width: 26px;
     height: 26px;
     border-radius: 6px;
@@ -276,7 +334,7 @@
 .stash-scroll-top-btn {
     position: absolute;
     bottom: 32px;
-    right: 42px; /* Posição padrão encostada à direita */
+    right: 42px; /* Default position aligned to the right. */
     width: 46px;
     height: 46px;
     border-radius: 12px;
@@ -293,7 +351,7 @@
     opacity: 0;
     visibility: hidden;
     transform: translateY(10px);
-    /* Força o deslizamento lateral suave (0.35s) e elástico se houver colisão */
+    /* Enable a smooth, elastic horizontal slide (0.35s) when collision occurs. */
     transition: right 0.35s cubic-bezier(0.34, 1.56, 0.64, 1), transform 0.25s ease, opacity 0.25s ease;
 }
 
@@ -304,13 +362,13 @@
     }
 
 .stash-scroll-top-btn.shifted-left {
-    right: 86px !important; /* Desvia suavemente para o lado esquerdo da barra */
+    right: 86px !important; /* Shift smoothly to the left of the bar. */
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.6), 0 0 15px rgba(138, 70, 255, 0.25);
 }
 
 @media (max-height: 650px) {
     .stash-scroll-top-btn {
-        right: 86px !important; /* Empurra o botão +44px para a esquerda, limpando a alphabet bar */
+        right: 86px !important; /* Move the button 44px left to clear the alphabet bar. */
         box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5), 0 0 15px rgba(138, 70, 255, 0.2); /* Brilho extra para destaque */
     }
 }
@@ -394,4 +452,99 @@
         opacity: 1;
         transform: scale(1);
     }
+}
+
+#stash-edit-modal,
+#stash-delete-modal,
+#stash-export-modal {
+    z-index: 1001;
+}
+
+/* ==========================================================================
+   EXPORT MODAL CONTROLS
+   ========================================================================== */
+.export-format-group {
+    display: flex;
+    gap: 10px;
+}
+
+.export-radio-pill {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 8px;
+    background: var(--bg-surface, #1a1a24);
+    border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+    color: var(--text-main, #f3f4f6);
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+    .export-radio-pill:has(input:checked) {
+        border-color: var(--primary-purple, #8a46ff);
+        background: rgba(138, 70, 255, 0.14);
+        color: #ffffff;
+    }
+
+    .export-radio-pill input[type="radio"] {
+        accent-color: var(--primary-purple, #8a46ff);
+        cursor: pointer;
+    }
+
+.export-fields-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+}
+
+.export-checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    border-radius: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    font-size: 13px;
+    color: var(--text-main, #f3f4f6);
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.15s ease, border-color 0.15s ease;
+}
+
+    .export-checkbox-item:hover:not(.is-locked) {
+        background: rgba(255, 255, 255, 0.06);
+        border-color: rgba(138, 70, 255, 0.35);
+    }
+
+    .export-checkbox-item.is-locked {
+        opacity: 0.7;
+        cursor: not-allowed;
+    }
+
+    .export-checkbox-item input[type="checkbox"] {
+        accent-color: var(--primary-purple, #8a46ff);
+        width: 15px;
+        height: 15px;
+    }
+
+.dropdown-separator {
+    height: 1px;
+    background: var(--border-color);
+    margin: 6px 0;
+}
+
+.dropdown-item.dropdown-clear-item {
+    color: #b5a2ff;
+}
+
+.dropdown-item.disabled {
+    opacity: 0.4;
+    pointer-events: none;
+    cursor: default;
 }

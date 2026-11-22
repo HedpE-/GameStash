@@ -42,7 +42,6 @@ namespace GameStash.Web.GUI.DTO
             IsInstalled = game.IsInstalled;
             SortName = !string.IsNullOrEmpty(game.SortName) ? game.SortName : game.Name ?? string.Empty;
 
-            // Handle Local Stash specific properties safely
             if (game is LocalStashGame local)
             {
                 IsFolderValid = local.IsFolderValid;
@@ -64,22 +63,37 @@ namespace GameStash.Web.GUI.DTO
                     }
                 }
             }
-            // Handle Steam Stash specific properties safely
             else if (game is SteamStashGame steam)
             {
                 PlaytimeMinutes = steam.PlaytimeMinutes;
 
-                // Fallback cover via Steam CDN if IGDB cover is missing
                 if (game.Cover?.Value?.ImageId == null && steam.ExtId.HasValue)
                 {
                     var cdnUrl = $"https://shared.cloudflare.steamstatic.com/store_item_assets/steam/apps/{steam.ExtId.Value}/library_600x900.jpg";
-                    HttpClient _headClient = new HttpClient();
-                    var request = new HttpRequestMessage(HttpMethod.Head, cdnUrl);
-                    var response = _headClient.Send(request, HttpCompletionOption.ResponseHeadersRead);
+                    using var headClient = new HttpClient();
+                    using var request = new HttpRequestMessage(HttpMethod.Head, cdnUrl);
+                    using var response = headClient.Send(request, HttpCompletionOption.ResponseHeadersRead);
 
                     if (response.IsSuccessStatusCode)
                         CoverUrl = cdnUrl;
                 }
+            }
+            else if (game is EpicStashGame epic)
+            {
+                PlaytimeMinutes = epic.PlaytimeMinutes;
+                if (game.Cover?.Value?.ImageId == null && !string.IsNullOrWhiteSpace(epic.FallbackCoverUrl))
+                    CoverUrl = epic.FallbackCoverUrl;
+            }
+            else if (game is GogStashGame gog)
+            {
+                PlaytimeMinutes = gog.PlaytimeMinutes;
+                if (game.Cover?.Value?.ImageId == null && !string.IsNullOrWhiteSpace(gog.FallbackCoverUrl))
+                    CoverUrl = gog.FallbackCoverUrl;
+            }
+            else if (game is AmazonStashGame amazon)
+            {
+                if (game.Cover?.Value?.ImageId == null && !string.IsNullOrWhiteSpace(amazon.FallbackCoverUrl))
+                    CoverUrl = amazon.FallbackCoverUrl;
             }
 
             ChangeDateFormat(dateFormat);
@@ -87,19 +101,7 @@ namespace GameStash.Web.GUI.DTO
 
         public static StashGameDetailsDto FromModel(StashGame game, string? dateFormat = null)
         {
-            if (game == null) throw new ArgumentNullException(nameof(game));
-            return new StashGameDetailsDto(game, dateFormat);
-        }
-
-        public static StashGameDetailsDto FromModel(LocalStashGame game, string? dateFormat = null)
-        {
-            if (game == null) throw new ArgumentNullException(nameof(game));
-            return new StashGameDetailsDto(game, dateFormat);
-        }
-
-        public static StashGameDetailsDto FromModel(SteamStashGame game, string? dateFormat = null)
-        {
-            if (game == null) throw new ArgumentNullException(nameof(game));
+            ArgumentNullException.ThrowIfNull(game);
             return new StashGameDetailsDto(game, dateFormat);
         }
 

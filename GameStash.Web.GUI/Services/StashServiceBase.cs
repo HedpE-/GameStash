@@ -71,6 +71,17 @@ namespace GameStash.Core.Services
             }
         }
 
+        public IReadOnlyList<TEntity> GetPlaylistItems()
+        {
+            lock (SyncLock)
+            {
+                return CachedGames?
+                    .Where(g => g.IsInPlaylist)
+                    .ToList()
+                    .AsReadOnly() ?? Enumerable.Empty<TEntity>().ToList().AsReadOnly();
+            }
+        }
+
         public async Task<bool> UpdateGamePropertyAsync(long id, string propertyName, object? value)
         {
             var prop = typeof(TEntity).GetProperty(

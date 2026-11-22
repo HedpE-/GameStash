@@ -45,7 +45,8 @@
     }
 
     /* Show menu button normally when pointer enters the card */
-    .game-card-container:hover .game-card-menu-btn {
+    .game-card-container:hover .game-card-menu-btn,
+    .game-card-container:has(.game-card-favorite-btn.active):hover .game-card-menu-btn {
         opacity: 1;
         pointer-events: auto !important;
     }
@@ -346,7 +347,7 @@
     position: absolute;
     top: 6px;
     right: 8px;
-    z-index: 2;
+    z-index: 25;
     width: 30px;
     height: 30px;
     padding: 2px;

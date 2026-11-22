@@ -5,14 +5,15 @@
     <Nullable>enable</Nullable>
     <ImplicitUsings>disable</ImplicitUsings>
     <UseWPF>true</UseWPF>
-    <OutputType>WinExe</OutputType>
+    <OutputType>Exe</OutputType>
+    <AssemblyName>GameStash</AssemblyName>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
     <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
     <ApplicationIcon>Resources\GameStash_Icon.ico</ApplicationIcon>
     <UserSecretsId>bc1cfbe6-8457-40d5-9d41-ac012c85e721</UserSecretsId>
   </PropertyGroup>
 
-  <!-- Estas opções SÓ se aplicam quando fazes Publish em Release -->
+  <!-- These options apply only when publishing a Release build. -->
   <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <PublishSingleFile>true</PublishSingleFile>
     <SelfContained>true</SelfContained>
@@ -48,6 +49,8 @@
     <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="10.0.14" />
     <PackageReference Include="Nito.Collections.Deque" Version="1.2.1" />
     <PackageReference Include="Serilog.AspNetCore" Version="10.0.0" />
+    <PackageReference Include="Serilog.Settings.Configuration" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="6.5.0" />
   </ItemGroup>
 
@@ -72,7 +75,7 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Resources\steam.svg" />
 
-    <!-- Embute toda a pasta wwwroot (HTML, JS, CSS, favicon) dentro do executável -->
+    <!-- Embed the complete wwwroot folder (HTML, JS, CSS and favicon) in the executable. -->
     <EmbeddedResource Include="wwwroot\**" />
   </ItemGroup>
 

@@ -45,6 +45,29 @@ namespace GameStash.Web.GUI.Services
                     return;
                 }
 
+                // Filter out deprecated/redirected duplicate AppIDs in a single batch call (e.g. 34440 -> 3900, 34460 -> 8800)
+                var duplicateNameCandidates = rawSteamGames
+                    .GroupBy(g => NormalizeSteamTitle(g.Name), StringComparer.OrdinalIgnoreCase)
+                    .Where(grp => grp.Count() > 1)
+                    .SelectMany(grp => grp)
+                    .Select(g => g.AppId)
+                    .ToList();
+
+                if (duplicateNameCandidates.Any())
+                {
+                    var invalidAppIds = await steamClient.GetNonCanonicalStoreAppIdsAsync(duplicateNameCandidates);
+                    if (invalidAppIds.Count > 0)
+                    {
+                        rawSteamGames = rawSteamGames
+                            .Where(g => !invalidAppIds.Contains(g.AppId))
+                            .ToList();
+
+                        Log.ForContext<SteamStashService>().Information(
+                            "Discarded {Count} deprecated/redirected Steam AppID(s): {Ids}",
+                            invalidAppIds.Count, string.Join(", ", invalidAppIds));
+                    }
+                }
+
                 var locallyInstalledIds = steamClient.GetLocallyInstalledAppIds();
                 var currentSteamAppIds = rawSteamGames.Select(g => g.AppId).ToHashSet();
 
@@ -230,57 +253,14 @@ namespace GameStash.Web.GUI.Services
             return lookup;
         }
 
-        //public async Task<SteamStashGame?> GetByIdAsync(long id)
-        //{
-        //    // Ensure cache is loaded
-        //    var library = await GetSteamLibraryAsync();
-
-        //    return library.FirstOrDefault(g => g.Id == id || g.ExtId == id);
-        //}
-
-        //public async Task<bool> UpdateGamePropertyAsync(long id, string propertyName, object? value)
-        //{
-        //    var prop = typeof(SteamStashGame).GetProperty(
-        //        propertyName,
-        //        BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
-
-        //    if (prop == null || !prop.CanWrite)
-        //        return false;
-
-        //    SteamStashGame? game;
-
-        //    // Procura pelo ID do IGDB ou ExtId (Steam AppId)
-        //    game = _cachedSteamGames?.FirstOrDefault(g => g.Id == id || g.ExtId == id);
-        //    if (game == null) return false;
-
-        //    // Unwrap JsonElement (mesma lógica do teu serviço Local)
-        //    object? targetValue = value;
-        //    if (value is System.Text.Json.JsonElement jsonElement)
-        //    {
-        //        targetValue = jsonElement.ValueKind switch
-        //        {
-        //            System.Text.Json.JsonValueKind.True => true,
-        //            System.Text.Json.JsonValueKind.False => false,
-        //            System.Text.Json.JsonValueKind.String => jsonElement.GetString(),
-        //            System.Text.Json.JsonValueKind.Number => jsonElement.TryGetInt64(out var l) ? l : jsonElement.GetDouble(),
-        //            _ => jsonElement.GetRawText()
-        //        };
-        //    }
-
-        //    if (targetValue != null && !prop.PropertyType.IsInstanceOfType(targetValue))
-        //    {
-        //        var underlyingType = Nullable.GetUnderlyingType(prop.PropertyType) ?? prop.PropertyType;
-        //        targetValue = Convert.ChangeType(targetValue, underlyingType);
-        //    }
-
-        //    prop.SetValue(game, targetValue);
-
-        //    // Persiste na base de dados
-        //    await using var context = GameStashDbContext.CreateDbContext();
-        //    context.SteamStash.Update(game);
-        //    await context.SaveChangesAsync();
-
-        //    return true;
-        //}
+        private static string NormalizeSteamTitle(string? title)
+        {
+            if (string.IsNullOrWhiteSpace(title)) return string.Empty;
+            return new string([.. title
+                .Replace("®", "")
+                .Replace("™", "")
+                .ToLowerInvariant()
+                .Where(char.IsLetterOrDigit)]);
+        }
     }
 }

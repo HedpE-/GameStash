@@ -16,6 +16,8 @@ namespace GameStash.Web.GUI.Interfaces
         /// </summary>
         Task<IReadOnlyList<TEntity>> GetStashAsync(bool forceRefresh = false);
 
+        IReadOnlyList<TEntity> GetPlaylistItems();
+
         /// <summary>
         /// Retrieves a single game from the cached stash by its identifier.
         /// </summary>
